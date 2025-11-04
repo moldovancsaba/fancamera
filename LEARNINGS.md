@@ -1,0 +1,311 @@
+# LEARNINGS.md
+
+**Project**: Camera — Photo Frame Webapp
+**Current Version**: 1.0.0
+**Last Updated**: 2025-11-03T18:31:18.000Z
+
+This document records actual issues encountered during development, their solutions, and strategic decisions made. It serves as a knowledge base to prevent repeated mistakes and guide future development.
+
+---
+
+## Categories
+
+- [Development](#development)
+- [Design](#design)
+- [Backend](#backend)
+- [Frontend](#frontend)
+- [Process](#process)
+- [Other](#other)
+
+---
+
+## Development
+
+### [DEV-001] Project Planning Session — 2025-11-03T18:31:18.000Z
+
+**Issue**: Need to establish comprehensive project plan for camera webapp with clear requirements and execution strategy.
+
+**Context**:
+- User requested webapp for photo capture with graphical frames
+- Multiple clarifying questions needed to determine exact scope
+- Integration with existing SSO and imgbb.com services required
+
+**Solution**:
+- Conducted detailed requirements gathering through iterative questioning
+- Established clear feature set with user/admin distinction
+- Created 15-task execution plan with dependencies
+- Referenced established patterns from messmass project (v10.5.0)
+- Defined all documentation requirements upfront
+
+**Key Decisions**:
+- Use Next.js 15+ with App Router (latest stable version)
+- TypeScript strict mode for type safety
+- ES Modules throughout (matching SSO project v5.16.0)
+- OAuth2/OIDC with PKCE for public client authentication
+- Canvas API for image composition (browser-native, no external dependencies)
+- imgbb.com for image CDN (avoids S3 complexity)
+- Resend for email delivery (proven in SSO project)
+
+**Lessons Learned**:
+- Thorough requirements gathering prevents scope creep
+- Reusing established patterns accelerates development
+- Clear documentation from day one maintains project clarity
+- Task dependencies must be explicit to prevent blocking issues
+
+**Strategic Justification**:
+- Following proven patterns from successful projects (messmass, sso)
+- Minimizing external dependencies where browser APIs suffice
+- Leveraging existing authentication infrastructure
+- Professional documentation ensures project continuity
+
+---
+
+### [DEV-002] Documentation Structure Planning — 2025-11-03T18:31:18.000Z
+
+**Issue**: Need to establish documentation structure that supports professional development workflow and future team collaboration.
+
+**Context**:
+- User rules require specific documentation files (README, ARCHITECTURE, TASKLIST, ROADMAP, RELEASE_NOTES, LEARNINGS)
+- Documentation must follow strict conventions (timestamps, version sync, no outdated content)
+- AI-assisted development requires conversation tracking
+
+**Solution**:
+- Created comprehensive documentation suite with 5 core files + feature-specific guides
+- README.md: Project overview with complete feature list
+- WARP.DEV_AI_CONVERSATION.md: AI session tracking and development conventions
+- TASKLIST.md: Active tasks with dependencies and acceptance criteria
+- ROADMAP.md: Forward-looking plans only (no historical entries)
+- RELEASE_NOTES.md: Historical record of all completed work
+- LEARNINGS.md: This file for issues and solutions
+
+**Key Decisions**:
+- Separate WARP.DEV_AI_CONVERSATION.md for AI-specific context
+- TASKLIST.md for current work, RELEASE_NOTES.md for completed work
+- ROADMAP.md strictly forward-looking to avoid confusion
+- LEARNINGS.md categorized by Dev/Design/Backend/Frontend/Process/Other
+
+**Lessons Learned**:
+- Clear separation of current vs historical vs future prevents documentation drift
+- AI conversation log preserves context across sessions
+- Categorized learnings enable quick reference for similar issues
+- Version synchronization across all docs prevents inconsistency
+
+**Impact**:
+- Any team member can pick up project with full context
+- Documentation serves as authoritative source of truth
+- AI agents can maintain context across sessions
+- Historical decisions are preserved for future reference
+
+---
+
+## Design
+
+_No entries yet. Design learnings will be documented as UI/UX work begins._
+
+**Expected Topics**:
+- Camera capture UI for mobile vs desktop
+- Frame selection interface design
+- Real-time preview performance considerations
+- Accessibility in image-heavy interfaces
+
+---
+
+## Backend
+
+_No entries yet. Backend learnings will be documented as API development progresses._
+
+**Expected Topics**:
+- MongoDB schema optimization for submissions metadata
+- imgbb.com API rate limiting strategies
+- Session management with SSO token refresh
+- Canvas image composition on server vs client
+- Email delivery reliability and retry logic
+
+---
+
+## Frontend
+
+_No entries yet. Frontend learnings will be documented as component development progresses._
+
+**Expected Topics**:
+- getUserMedia API browser compatibility
+- Camera permissions handling (iOS Safari quirks)
+- Canvas API performance on mobile devices
+- Image upload progress feedback
+- Responsive design for camera interface
+
+---
+
+## Process
+
+### [PROC-001] Version Control Protocol Establishment — 2025-11-03T18:31:18.000Z
+
+**Issue**: Need clear version control rules that prevent version drift and ensure consistency across all project files.
+
+**Context**:
+- User rules mandate specific version increment rules (PATCH before dev, MINOR before commit)
+- Version must be synchronized across package.json and all documentation
+- ISO 8601 timestamps with milliseconds required everywhere
+
+**Solution**:
+- Established version control protocol:
+  - PATCH (1.0.X): Increment before `npm run dev`
+  - MINOR (1.X.0): Increment before `git commit`
+  - MAJOR (X.0.0): Only when explicitly instructed
+- Version must be reflected in: package.json, README.md, ARCHITECTURE.md, TASKLIST.md, LEARNINGS.md, ROADMAP.md, RELEASE_NOTES.md
+- All timestamps use format: YYYY-MM-DDTHH:MM:SS.sssZ
+
+**Key Decisions**:
+- Strict versioning before any execution (dev) or commit prevents version drift
+- Synchronization checklist prevents missing version updates
+- ISO 8601 with milliseconds ensures precise temporal tracking
+- No shortcuts allowed - automation considered for future
+
+**Lessons Learned**:
+- Manual version management is error-prone but necessary for MVP phase
+- Automation of version syncing should be high priority for v1.1.0+
+- Timestamp precision enables accurate debugging and audit trails
+- Version in all docs ensures consistency across project
+
+**Future Consideration**:
+- npm script to auto-update version across all files
+- Pre-commit hook to verify version synchronization
+- Automated timestamp insertion on file updates
+
+---
+
+### [PROC-002] Definition of Done Clarity — 2025-11-03T18:31:18.000Z
+
+**Issue**: Need clear criteria for when a task is considered complete to maintain quality and prevent incomplete work.
+
+**Context**:
+- User rules specify comprehensive Definition of Done requirements
+- Multiple steps required: verification, versioning, documentation, build, commit
+- No automated tests allowed (MVP factory approach)
+
+**Solution**:
+- Established 6-point Definition of Done:
+  1. Manual verification in development environment
+  2. Version incremented and reflected across all files
+  3. All documentation updated (ARCHITECTURE, TASKLIST, LEARNINGS, README, RELEASE_NOTES, ROADMAP)
+  4. Code committed with clear, versioned message
+  5. Build passed (npm run build)
+  6. Lint passed (npm run lint) when applicable
+
+**Key Decisions**:
+- Manual testing is the only quality gate (no automated tests)
+- Documentation updates mandatory for every task
+- Build and lint must pass before considering task complete
+- Version increment is non-negotiable
+
+**Lessons Learned**:
+- Clear DoD prevents incomplete work from being marked done
+- Manual testing requires discipline but is viable for MVP
+- Documentation drift prevented by mandatory updates
+- Quality maintained through process, not just code
+
+**Impact**:
+- Consistent quality across all deliverables
+- No orphaned code without documentation
+- Every commit represents completed, tested work
+- Future team members have complete context
+
+---
+
+## Other
+
+### [OTHER-001] External Service Integration Strategy — 2025-11-03T18:31:18.000Z
+
+**Issue**: Need to integrate three external services (SSO, imgbb, Resend) without creating tight coupling or single points of failure.
+
+**Context**:
+- SSO (sso.doneisbetter.com): Authentication authority, version 5.16.0
+- imgbb.com: Image CDN, free tier with 32 MB limit per image
+- Resend: Email delivery service
+- All services critical to core functionality
+- Dependency on external services creates reliability risk
+
+**Solution**:
+- SSO: Implement OAuth2 with token refresh and graceful degradation
+- imgbb: Implement retry logic, error handling, and consider backup CDN strategy
+- Resend: Queue failed emails for retry, log all delivery attempts
+- All external calls wrapped in try-catch with detailed error logging
+- Environment variables for all service configuration
+- Service status monitoring in future admin dashboard
+
+**Key Decisions**:
+- Accept external dependency risk for MVP (common in modern webapps)
+- Implement robust error handling and retry logic
+- Plan for service migration capability (don't hard-code service specifics)
+- Monitor service health through admin dashboard (planned Q2 2026)
+
+**Lessons Learned**:
+- External services enable faster development but require defensive coding
+- Retry logic and error handling non-negotiable for production reliability
+- Service abstraction layer aids future migration if needed
+- Monitoring external service health is critical operational requirement
+
+**Risk Mitigation**:
+- Document all service dependencies in ARCHITECTURE.md
+- Implement health check endpoints for service status
+- Plan backup CDN options for imgbb (Q1 2026)
+- Consider self-hosted email fallback (Q2 2026)
+
+**Strategic Rationale**:
+- imgbb.com eliminates S3 configuration complexity for MVP
+- SSO centralizes authentication across all doneisbetter.com projects
+- Resend proven reliable in SSO project v5.16.0
+- Service-based architecture scales better than monolithic implementation
+
+---
+
+## Learning Template
+
+_Use this template for new learnings:_
+
+### [CATEGORY-XXX] Title — YYYY-MM-DDTHH:MM:SS.sssZ
+
+**Issue**: Clear description of the problem or challenge encountered.
+
+**Context**:
+- Relevant background information
+- What was happening at the time
+- Dependencies or related systems
+
+**Solution**:
+- How the issue was resolved
+- Technical implementation details
+- Alternative approaches considered
+
+**Key Decisions**:
+- Important choices made
+- Why those choices were selected
+- Trade-offs accepted
+
+**Lessons Learned**:
+- What was learned from this experience
+- What would be done differently
+- Patterns to apply in future
+
+**Impact**:
+- Effect on project timeline, architecture, or functionality
+- Benefits gained
+- Risks introduced or mitigated
+
+---
+
+## Statistics
+
+**Total Learnings**: 6
+- Development: 2
+- Design: 0
+- Backend: 0
+- Frontend: 0
+- Process: 2
+- Other: 1
+
+**Last Updated**: 2025-11-03T18:31:18.000Z
+
+---
+
+**Note**: This document should be updated immediately when issues are encountered and resolved. It serves as the institutional memory of the project, preventing repeated mistakes and preserving the reasoning behind key decisions.
