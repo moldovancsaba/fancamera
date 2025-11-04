@@ -15,13 +15,18 @@
 
 import axios, { AxiosError } from 'axios';
 
-// Environment variable validation
-if (!process.env.IMGBB_API_KEY) {
-  throw new Error('IMGBB_API_KEY environment variable is not defined');
-}
-
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+/**
+ * Get imgbb API key with validation
+ * Lazy loaded to avoid build-time errors
+ */
+function getImgbbApiKey(): string {
+  if (!process.env.IMGBB_API_KEY) {
+    throw new Error('IMGBB_API_KEY environment variable is not defined');
+  }
+  return process.env.IMGBB_API_KEY;
+}
 
 /**
  * Upload response from imgbb.com API
@@ -133,9 +138,12 @@ export async function uploadImage(
     base64Image = await fileToBase64(image);
   }
 
+  // Get API key (lazy validation)
+  const apiKey = getImgbbApiKey();
+
   // Prepare form data
   const formData = new FormData();
-  formData.append('key', IMGBB_API_KEY);
+  formData.append('key', apiKey);
   formData.append('image', base64Image);
   if (name) {
     formData.append('name', name);
