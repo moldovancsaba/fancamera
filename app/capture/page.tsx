@@ -39,11 +39,25 @@ export default function CapturePage() {
   useEffect(() => {
     async function fetchFrames() {
       try {
-        const response = await fetch('/api/frames?active=true');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch('/api/frames?active=true', {
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
         setFrames(data.frames || []);
       } catch (error) {
         console.error('Error fetching frames:', error);
+        // Set empty array so we show "no frames" message instead of loading forever
+        setFrames([]);
       } finally {
         setIsLoading(false);
       }
