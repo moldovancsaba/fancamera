@@ -79,10 +79,23 @@ export default function CapturePage() {
     setIsProcessing(true);
 
     try {
-      // Create canvas for composition
+      // Load frame first to get its dimensions
+      const frameImg = new window.Image();
+      frameImg.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        frameImg.onload = resolve;
+        frameImg.onerror = reject;
+        frameImg.src = selectedFrame.imageUrl;
+      });
+
+      // Create canvas using FRAME dimensions (not photo dimensions)
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas not supported');
+
+      // Set canvas size to FRAME size
+      canvas.width = frameImg.width;
+      canvas.height = frameImg.height;
 
       // Load captured photo
       const photoImg = new window.Image();
@@ -93,23 +106,30 @@ export default function CapturePage() {
         photoImg.src = capturedImage;
       });
 
-      // Set canvas size to photo size
-      canvas.width = photoImg.width;
-      canvas.height = photoImg.height;
+      // Calculate photo scaling to cover frame (object-fit: cover behavior)
+      const frameAspect = canvas.width / canvas.height;
+      const photoAspect = photoImg.width / photoImg.height;
+      
+      let drawWidth, drawHeight, offsetX, offsetY;
+      
+      if (photoAspect > frameAspect) {
+        // Photo is wider - fit to height and crop sides
+        drawHeight = canvas.height;
+        drawWidth = photoImg.width * (canvas.height / photoImg.height);
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      } else {
+        // Photo is taller - fit to width and crop top/bottom
+        drawWidth = canvas.width;
+        drawHeight = photoImg.height * (canvas.width / photoImg.width);
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      }
 
-      // Draw photo
-      ctx.drawImage(photoImg, 0, 0);
+      // Draw photo (scaled and centered to cover frame area)
+      ctx.drawImage(photoImg, offsetX, offsetY, drawWidth, drawHeight);
 
-      // Load and draw frame overlay
-      const frameImg = new window.Image();
-      frameImg.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => {
-        frameImg.onload = resolve;
-        frameImg.onerror = reject;
-        frameImg.src = selectedFrame.imageUrl;
-      });
-
-      // Draw frame on top (scaled to match photo)
+      // Draw frame on top at its native size
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
       // Convert to data URL
