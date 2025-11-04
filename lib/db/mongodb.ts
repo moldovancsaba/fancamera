@@ -27,12 +27,14 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB;
 
 // Connection options for optimal performance and reliability
+// Increased timeouts for Vercel serverless cold starts
 const options = {
   maxPoolSize: 10, // Maximum number of connections in the pool
   minPoolSize: 2, // Minimum number of connections to maintain
   maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
-  serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds if no server is available
+  serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds (increased for cold starts)
   socketTimeoutMS: 45000, // Close socket after 45 seconds of inactivity
+  connectTimeoutMS: 10000, // Initial connection timeout (increased for cold starts)
 };
 
 // Global variable to cache the connection (persists across serverless invocations)
