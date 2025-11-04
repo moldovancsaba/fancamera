@@ -12,15 +12,16 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
+    const { id } = await params;
     const db = await connectToDatabase();
     const submission = await db
       .collection('submissions')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!submission) {
       return {
@@ -63,10 +64,11 @@ export default async function SharePage({ params }: Props) {
   let submission: any = null;
   
   try {
+    const { id } = await params;
     const db = await connectToDatabase();
     submission = await db
       .collection('submissions')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
   } catch (error) {
     console.error('Error fetching submission:', error);
   }
