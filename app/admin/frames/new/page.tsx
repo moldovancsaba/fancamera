@@ -76,6 +76,17 @@ export default function NewFramePage() {
             Frame Image *
           </label>
 
+          {/* File input - always present but hidden */}
+          <input
+            type="file"
+            name="file"
+            accept=".png,.svg"
+            onChange={handleFileChange}
+            className="hidden"
+            id="file-upload"
+            required
+          />
+
           {preview ? (
             <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4">
               <Image
@@ -99,15 +110,6 @@ export default function NewFramePage() {
             </div>
           ) : (
             <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12 text-center">
-              <input
-                type="file"
-                name="file"
-                accept=".png,.svg"
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-                required
-              />
               <label
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center"
