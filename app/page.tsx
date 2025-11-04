@@ -70,12 +70,12 @@ export default async function Home() {
           {session ? (
             // Logged in - show app buttons
             <>
-              <button 
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-                disabled
+              <a
+                href="/capture"
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg inline-block text-center"
               >
-                Start Capturing (Coming Soon)
-              </button>
+                📸 Start Capturing
+              </a>
               
               <a
                 href="/profile"
