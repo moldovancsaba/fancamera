@@ -15,9 +15,16 @@ export default async function Home() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <main className="flex flex-col items-center justify-center px-8 py-16 text-center">
         <div className="mb-8">
-          <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-4">
-            📸 Camera
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <img 
+              src="https://i.ibb.co/zTG7ztxC/camera-logo.png" 
+              alt="Camera Logo" 
+              className="h-16 w-auto"
+            />
+            <h1 className="text-6xl font-bold text-gray-900 dark:text-white">
+              Camera
+            </h1>
+          </div>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-2">
             Professional Photo Frame Application
           </p>
