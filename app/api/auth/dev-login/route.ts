@@ -9,10 +9,11 @@
  */
 
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createSession } from '@/lib/auth/session';
 import type { TokenResponse } from '@/lib/auth/sso';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   // Create a mock user session for development
   const mockUser = {
     id: 'dev-user-001',
@@ -33,8 +34,9 @@ export async function GET() {
   // Create session
   await createSession(mockUser, mockTokens);
 
-  // Redirect to homepage
-  const response = NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
+  // Redirect to homepage using request origin
+  const origin = request.nextUrl.origin;
+  const response = NextResponse.redirect(new URL('/', origin));
 
   return response;
 }
