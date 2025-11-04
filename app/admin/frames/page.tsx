@@ -77,18 +77,24 @@ export default async function FramesPage() {
                   unoptimized
                 />
               </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{frame.name}</h3>
-                {frame.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{frame.description}</p>
-                )}
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span className="capitalize">{frame.category}</span>
-                  <span className={frame.isActive ? 'text-green-600' : 'text-red-600'}>
-                    {frame.isActive ? '● Active' : '○ Inactive'}
-                  </span>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{frame.name}</h3>
+                  {frame.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{frame.description}</p>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    <span className="capitalize">{frame.category}</span>
+                    <span className={frame.isActive ? 'text-green-600' : 'text-red-600'}>
+                      {frame.isActive ? '● Active' : '○ Inactive'}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/admin/frames/${frame._id}/edit`}
+                    className="block w-full px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors text-center"
+                  >
+                    Edit
+                  </Link>
                 </div>
-              </div>
             </div>
           ))}
         </div>
