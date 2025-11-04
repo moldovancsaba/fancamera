@@ -288,3 +288,234 @@ Following the task list created, the next immediate actions are:
   - Used for documentation structure patterns
   - Design system patterns
   - MongoDB and Vercel deployment patterns
+
+---
+
+## Session 2: Partner/Event/Frame Hierarchy Implementation Planning
+
+**Date**: 2025-11-04T20:33:05.000Z to 2025-11-04T21:33:00.000Z (estimated)
+**Objective**: Design and plan implementation of three-tier partner/event/frame management system
+
+### User Requirements Summary
+
+**Core Requirement**:
+Implement a hierarchical frame management system where:
+- **Partners** (e.g., "AC Milan") can have multiple **Events**
+- **Events** (e.g., "Serie A - AC Milan x AS Roma") belong to a Partner and have multiple **Frames**
+- **Frames** can be created at three levels: global, partner-specific, or event-specific
+- Each level has independent activation controls with cascading visibility rules
+
+**Key Feature Changes**:
+1. **Replace Category with Hashtags**:
+   - Remove single-category dropdown from frame creation
+   - Implement multi-select hashtag system with predictive search
+   - Allow inline creation of new hashtags
+   - Store hashtags as string array for filtering and searchability
+
+2. **Frame Display Enhancement**:
+   - Remove forced `aspect-square` class from frame listings
+   - Display frames in their original aspect ratio
+   - Applies to admin listing pages and user-facing frame selection
+
+3. **Quick Toggle for Frame Activation**:
+   - Add clickable active/inactive toggle directly in frame listing
+   - No need to navigate to edit page for status changes
+   - Implement optimistic UI updates for smooth UX
+
+4. **Partner Management** (Simple Implementation for MVP):
+   - Partner stored as UUID + name only
+   - Full partner CRUD via admin UI
+   - Future: partners will sync via external API
+   - All data stored in MongoDB Atlas
+
+### Architecture Decisions
+
+**Three-Tier Frame Ownership Model**:
+
+1. **Global Frames** (`ownershipLevel: 'global'`):
+   - No partnerId or eventId
+   - Visible to all partners and events by default
+   - Can be deactivated at partner level via `frame.partnerActivation[partnerId]`
+   - Can be deactivated at event level via `event.frames[].isActive`
+
+2. **Partner Frames** (`ownershipLevel: 'partner'`):
+   - Has partnerId, no eventId
+   - Visible only to that partner's events
+   - Can be deactivated at event level
+
+3. **Event Frames** (`ownershipLevel: 'event'`):
+   - Has both partnerId and eventId
+   - Visible only to that specific event
+   - Controlled by global `frame.isActive` flag
+
+**Frame Visibility Cascade Logic**:
+```
+Global Frame
+  ↓ (frame.isActive must be true)
+  → Partner Level Override?
+     ↓ (frame.partnerActivation[partnerId].isActive !== false)
+     → Event Level Override?
+        ↓ (event.frames[].isActive !== false)
+        ✓ Frame is visible to event
+
+Partner Frame
+  ↓ (frame.isActive must be true)
+  ↓ (frame.partnerId matches event.partnerId)
+  → Event Level Override?
+     ↓ (event.frames[].isActive !== false)
+     ✓ Frame is visible to event
+
+Event Frame
+  ↓ (frame.isActive must be true)
+  ↓ (frame.eventId matches event.eventId)
+  ✓ Frame is visible to event
+```
+
+### Database Schema Changes
+
+**New Collections**:
+
+1. **partners**:
+   - `partnerId`: string (UUID)
+   - `name`: string
+   - `isActive`: boolean
+   - `createdAt`, `updatedAt`: ISO 8601 timestamps
+   - `createdBy`: string (SSO user ID)
+
+2. **events**:
+   - `eventId`: string (UUID)
+   - `name`: string
+   - `partnerId`: string (reference)
+   - `partnerName`: string (cached)
+   - `description`: string (optional)
+   - `eventDate`: string (optional ISO 8601)
+   - `isActive`: boolean
+   - `frames`: array of `{ frameId, isActive, addedAt }`
+   - `createdAt`, `updatedAt`: ISO 8601 timestamps
+   - `createdBy`: string
+
+**Updated Collection**:
+
+3. **frames** (modifications):
+   - **Removed**: `metadata.category` (single string)
+   - **Added**:
+     - `hashtags`: string[] (multiple tags)
+     - `ownershipLevel`: 'global' | 'partner' | 'event'
+     - `partnerId`: string | null
+     - `partnerName`: string | null (cached)
+     - `eventId`: string | null
+     - `eventName`: string | null (cached)
+     - `partnerActivation`: `{ [partnerId: string]: { isActive: boolean, updatedAt: string } }`
+
+### Migration Strategy
+
+**Data Migration Required**:
+- Convert existing `metadata.category` → `hashtags[]`
+- Set all existing frames to `ownershipLevel: 'global'`
+- Initialize `partnerId`, `eventId`, `partnerActivation` as null/empty
+- Ensure backward compatibility during transition
+
+**Migration Script Location**: `scripts/migrate-frames-to-hierarchy.ts`
+
+### UI/UX Changes
+
+**Admin Navigation Updates**:
+- Add "Partners" menu item → `/admin/partners`
+- Add "Events" menu item → `/admin/events`
+- Update breadcrumb navigation for nested Partner → Event → Frames flow
+
+**Frame Listing Enhancements**:
+- Display frames in original aspect ratio (dynamic, not forced square)
+- Show hashtags as colored badges/chips
+- Display ownership level badge (Global/Partner/Event)
+- Add quick toggle button for active/inactive status
+- Implement filters: by hashtag, ownership level, partner, active status
+
+**Hashtag Input Component**:
+- Autocomplete dropdown with existing hashtags
+- Multi-select with removable chips
+- Inline creation of new hashtags
+- Keyboard navigation support
+- Debounced API calls for autocomplete
+
+### Implementation Phases
+
+**Phase 1**: Database Schema Design and Implementation
+- Update `lib/db/schemas.ts` with new interfaces
+- Document frame visibility logic in code
+- Create comprehensive TypeScript types
+
+**Phase 2**: Partner Management API and Admin UI
+- Full CRUD for partners
+- Partner listing, creation, editing
+- Reusable partner selector component
+
+**Phase 3**: Event Management API and Admin UI
+- Full CRUD for events
+- Event-to-partner linking
+- Frame assignment to events
+- Event frame management interface
+
+**Phase 4**: Frame Schema Migration and Hashtag System
+- Data migration script
+- Hashtag API endpoints
+- Hashtag input component with autocomplete
+
+**Phase 5**: Update Frame Management UI
+- Replace category dropdown with hashtag input
+- Update frame listing to show original aspect ratio
+- Add quick toggle for active/inactive
+- Implement ownership level selection
+
+**Phase 6**: Implement Frame Visibility Logic
+- Create frame visibility service
+- Implement cascade logic for three-tier activation
+- Update frame selection APIs
+
+**Phase 7**: Update User-Facing Frame Selection
+- Event-based frame filtering
+- Display frames in original aspect ratio
+- Ensure backward compatibility
+
+**Phase 8**: Navigation, Documentation, and Testing
+- Update all admin navigation
+- Complete documentation updates
+- Comprehensive manual testing checklist
+- Version increment and sync
+
+**Phase 9**: Final Review and Deployment Preparation
+- Code review
+- Database migration plan
+- Performance validation
+- Security review
+- Commit and push to GitHub
+
+### User Confirmations
+
+**Frame Visibility**: Confirmed three-tier cascade (global → partner → event)
+**User Permissions**: No role-based access control in this phase (admin only)
+**Hashtags**: Multiple hashtags per frame with predictive search
+**Aspect Ratio**: Show original on all listing and selection pages
+**Partner Storage**: MongoDB collection with UUID and name
+**Quick Toggle**: Direct from listing page, globally applicable
+
+### Next Actions
+
+Begin implementation with Phase 1: Database Schema Design
+- Update `lib/db/schemas.ts`
+- Define Partners, Events, and updated Frames interfaces
+- Add comprehensive JSDoc comments
+- Document frame visibility logic in code
+
+### Success Criteria
+
+- Partners can be managed via admin UI
+- Events can be created and linked to partners
+- Frames can be created at three ownership levels
+- Frame visibility correctly follows cascade rules
+- Hashtags replace categories with predictive search
+- Frames display in original aspect ratio everywhere
+- Quick toggle works from listing pages
+- All documentation updated
+- Manual testing passes
+- No breaking changes to existing user workflows
