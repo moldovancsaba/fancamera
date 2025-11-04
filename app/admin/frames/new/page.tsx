@@ -43,20 +43,34 @@ export default function NewFramePage() {
 
     const formData = new FormData(e.currentTarget);
 
+    // Debug: Log what we're sending
+    console.log('=== Client Side Debug ===');
+    console.log('FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
+
     try {
       const response = await fetch('/api/frames', {
         method: 'POST',
         body: formData,
       });
 
+      const data = await response.json();
+      console.log('Server response:', data);
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to upload frame');
       }
 
       router.push('/admin/frames');
       router.refresh();
     } catch (err: any) {
+      console.error('Upload error:', err);
       setError(err.message);
       setIsUploading(false);
     }
