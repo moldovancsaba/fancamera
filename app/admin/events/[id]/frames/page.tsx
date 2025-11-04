@@ -73,12 +73,12 @@ export default function EventFramesPage({
     fetchData();
   }, [eventId]);
 
-  const handleAssignFrame = async (frameId: string) => {
+  const handleAssignFrame = async (frameMongoId: string) => {
     try {
       const response = await fetch(`/api/events/${eventId}/frames`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frameId, isActive: true }),
+        body: JSON.stringify({ frameId: frameMongoId, isActive: true }),
       });
 
       if (!response.ok) {
@@ -166,7 +166,7 @@ export default function EventFramesPage({
   }
 
   const assignedFrameIds = assignedFrames.map(f => f.frameId);
-  const unassignedFrames = availableFrames.filter(f => !assignedFrameIds.includes(f.frameId));
+  const unassignedFrames = availableFrames.filter(f => !assignedFrameIds.includes(f._id.toString()));
 
   return (
     <div className="p-8">
@@ -265,7 +265,7 @@ export default function EventFramesPage({
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {unassignedFrames.map((frame) => (
                   <div
-                    key={frame.frameId}
+                    key={frame._id.toString()}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
                     <div className="flex items-center gap-3">
@@ -275,12 +275,12 @@ export default function EventFramesPage({
                           {frame.name}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {frame.metadata?.category || 'No category'}
+                          {frame.category || 'No category'}
                         </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleAssignFrame(frame.frameId)}
+                      onClick={() => handleAssignFrame(frame._id.toString())}
                       className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                     >
                       Assign
