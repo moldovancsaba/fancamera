@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { getSession } from '@/lib/auth/session';
 import { uploadImage } from '@/lib/imgbb/upload';
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Get frame details from database
     const db = await connectToDatabase();
-    const frame = await db.collection('frames').findOne({ _id: frameId });
+    const frame = await db.collection('frames').findOne({ _id: new ObjectId(frameId) });
 
     if (!frame) {
       return NextResponse.json({ error: 'Frame not found' }, { status: 404 });
