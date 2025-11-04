@@ -26,18 +26,33 @@ export interface CameraCaptureProps {
   onCapture: (blob: Blob, dataUrl: string) => void;
   onError?: (error: Error) => void;
   className?: string;
+  frameOverlay?: string; // URL of frame image to overlay
 }
 
-export default function CameraCapture({ onCapture, onError, className = '' }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, onError, className = '', frameOverlay }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /**
+   * Load frame overlay image
+   */
+  useEffect(() => {
+    if (frameOverlay) {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => setFrameImage(img);
+      img.onerror = (err) => console.error('Failed to load frame overlay:', err);
+      img.src = frameOverlay;
+    }
+  }, [frameOverlay]);
 
   /**
    * Check if device has multiple cameras
@@ -205,7 +220,12 @@ export default function CameraCapture({ onCapture, onError, className = '' }: Ca
   return (
     <div className={`flex flex-col items-center justify-center w-full ${className}`}>
       {/* Video Preview or Captured Image */}
-      <div className="relative w-full max-w-2xl aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-xl">
+      <div 
+        className="relative w-full max-w-2xl bg-gray-900 rounded-lg overflow-hidden shadow-xl"
+        style={{
+          aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9'
+        }}
+      >
         {!capturedImage ? (
           <>
             {/* Live Video Stream */}
@@ -216,6 +236,17 @@ export default function CameraCapture({ onCapture, onError, className = '' }: Ca
               muted
               className="w-full h-full object-cover"
             />
+
+            {/* Frame Overlay */}
+            {frameImage && (
+              <div className="absolute inset-0 pointer-events-none">
+                <img
+                  src={frameOverlay}
+                  alt="Frame overlay"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
 
             {/* Camera Controls Overlay */}
             {stream && (

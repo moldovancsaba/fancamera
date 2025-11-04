@@ -375,7 +375,7 @@ export default function CapturePage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3">Take Photo</h3>
-                <CameraCapture onCapture={handlePhotoCapture} />
+                <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
               </div>
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3">Or Upload Image</h3>
