@@ -84,9 +84,35 @@ export async function POST(request: NextRequest) {
     const category = formData.get('category') as string;
     const isActive = formData.get('isActive') === 'true';
 
-    if (!file || !name) {
+    console.log('Form data received:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileType: file?.type,
+      fileSize: file?.size,
+      name,
+      category,
+      isActive,
+    });
+
+    if (!file || !name || name.trim() === '') {
       return NextResponse.json(
-        { error: 'File and name are required' },
+        { 
+          error: 'File and name are required',
+          debug: {
+            hasFile: !!file,
+            hasName: !!name && name.trim() !== '',
+            fileName: file?.name,
+            nameValue: name,
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if file is actually a File object
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        { error: 'Invalid file upload' },
         { status: 400 }
       );
     }
