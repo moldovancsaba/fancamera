@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
     const category = formData.get('category') as string;
-    const isActive = formData.get('isActive') === 'true';
+    // Checkbox: if present and value is 'true', then true; otherwise false
+    const isActiveValue = formData.get('isActive');
+    const isActive = isActiveValue === 'true';
 
     console.log('Form data received:', {
       hasFile: !!file,
