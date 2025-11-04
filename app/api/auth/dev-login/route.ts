@@ -10,6 +10,7 @@
 
 import { NextResponse } from 'next/server';
 import { createSession } from '@/lib/auth/session';
+import type { TokenResponse } from '@/lib/auth/sso';
 
 export async function GET() {
   // Create a mock user session for development
@@ -20,18 +21,20 @@ export async function GET() {
     role: 'admin' as const,
   };
 
+  // Create mock tokens for development
+  const mockTokens: TokenResponse = {
+    access_token: 'dev-access-token',
+    refresh_token: 'dev-refresh-token',
+    expires_in: 3600,
+    token_type: 'Bearer',
+    scope: 'openid profile email',
+  };
+
   // Create session
-  const session = await createSession(mockUser);
+  await createSession(mockUser, mockTokens);
 
   // Redirect to homepage
   const response = NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'));
-  response.cookies.set('session', session.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-    path: '/',
-  });
 
   return response;
 }
