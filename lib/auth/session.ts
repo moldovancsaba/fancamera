@@ -112,10 +112,12 @@ export async function getSession(): Promise<Session | null> {
     }
 
     // Check if access token needs refresh (refresh 5 minutes before expiry)
+    // Skip token refresh for dev sessions (dev-access-token)
     const accessTokenExpiresAt = new Date(session.accessTokenExpiresAt);
     const refreshThreshold = new Date(accessTokenExpiresAt.getTime() - 5 * 60 * 1000);
+    const isDevSession = session.accessToken === 'dev-access-token';
     
-    if (now >= refreshThreshold) {
+    if (now >= refreshThreshold && !isDevSession) {
       console.log('Access token expiring soon, refreshing...');
       try {
         // Refresh the access token
