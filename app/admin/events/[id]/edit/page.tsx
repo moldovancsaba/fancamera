@@ -14,19 +14,27 @@ import Link from 'next/link';
 export default function EditEventPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const [eventId, setEventId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [event, setEvent] = useState<any>(null);
 
+  // Unwrap params
+  useEffect(() => {
+    params.then(p => setEventId(p.id));
+  }, [params]);
+
   // Fetch event data on mount
   useEffect(() => {
+    if (!eventId) return;
+
     const fetchEvent = async () => {
       try {
-        const response = await fetch(`/api/events/${params.id}`);
+        const response = await fetch(`/api/events/${eventId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -43,7 +51,7 @@ export default function EditEventPage({
     };
 
     fetchEvent();
-  }, [params.id]);
+  }, [eventId]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,7 +70,7 @@ export default function EditEventPage({
     };
 
     try {
-      const response = await fetch(`/api/events/${params.id}`, {
+      const response = await fetch(`/api/events/${eventId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +85,7 @@ export default function EditEventPage({
       }
 
       // Navigate back to event detail page on success
-      router.push(`/admin/events/${params.id}`);
+      router.push(`/admin/events/${eventId}`);
       router.refresh();
     } catch (err: any) {
       console.error('Update event error:', err);
@@ -122,7 +130,7 @@ export default function EditEventPage({
           Events
         </Link>
         <span>→</span>
-        <Link href={`/admin/events/${params.id}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+        <Link href={`/admin/events/${eventId}`} className="hover:text-gray-700 dark:hover:text-gray-200">
           {event?.name}
         </Link>
         <span>→</span>
@@ -264,7 +272,7 @@ export default function EditEventPage({
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
           <Link
-            href={`/admin/events/${params.id}`}
+            href={`/admin/events/${eventId}`}
             className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Cancel

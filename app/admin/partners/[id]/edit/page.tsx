@@ -14,19 +14,27 @@ import Link from 'next/link';
 export default function EditPartnerPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const [partnerId, setPartnerId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partner, setPartner] = useState<any>(null);
 
+  // Unwrap params
+  useEffect(() => {
+    params.then(p => setPartnerId(p.id));
+  }, [params]);
+
   // Fetch partner data on mount
   useEffect(() => {
+    if (!partnerId) return;
+
     const fetchPartner = async () => {
       try {
-        const response = await fetch(`/api/partners/${params.id}`);
+        const response = await fetch(`/api/partners/${partnerId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -43,7 +51,7 @@ export default function EditPartnerPage({
     };
 
     fetchPartner();
-  }, [params.id]);
+  }, [partnerId]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,7 +70,7 @@ export default function EditPartnerPage({
     };
 
     try {
-      const response = await fetch(`/api/partners/${params.id}`, {
+      const response = await fetch(`/api/partners/${partnerId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +85,7 @@ export default function EditPartnerPage({
       }
 
       // Navigate back to partner detail page on success
-      router.push(`/admin/partners/${params.id}`);
+      router.push(`/admin/partners/${partnerId}`);
       router.refresh();
     } catch (err: any) {
       console.error('Update partner error:', err);
@@ -122,7 +130,7 @@ export default function EditPartnerPage({
           Partners
         </Link>
         <span>→</span>
-        <Link href={`/admin/partners/${params.id}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+        <Link href={`/admin/partners/${partnerId}`} className="hover:text-gray-700 dark:hover:text-gray-200">
           {partner?.name}
         </Link>
         <span>→</span>
@@ -256,7 +264,7 @@ export default function EditPartnerPage({
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
           <Link
-            href={`/admin/partners/${params.id}`}
+            href={`/admin/partners/${partnerId}`}
             className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Cancel
