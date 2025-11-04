@@ -25,34 +25,49 @@
 
 import crypto from 'crypto';
 
-// Environment variables validation
-if (!process.env.SSO_BASE_URL) {
-  throw new Error('SSO_BASE_URL environment variable is not defined');
+/**
+ * Get SSO configuration with validation
+ * Lazy loaded to avoid build-time errors when SSO is not configured
+ */
+function getSSoConfig() {
+  if (!process.env.SSO_BASE_URL) {
+    throw new Error('SSO_BASE_URL environment variable is not defined');
+  }
+
+  if (!process.env.SSO_CLIENT_ID) {
+    throw new Error('SSO_CLIENT_ID environment variable is not defined');
+  }
+
+  if (!process.env.SSO_REDIRECT_URI) {
+    throw new Error('SSO_REDIRECT_URI environment variable is not defined');
+  }
+
+  return {
+    baseUrl: process.env.SSO_BASE_URL,
+    clientId: process.env.SSO_CLIENT_ID,
+    redirectUri: process.env.SSO_REDIRECT_URI,
+    scopes: ['openid', 'profile', 'email'],
+  } as const;
 }
 
-if (!process.env.SSO_CLIENT_ID) {
-  throw new Error('SSO_CLIENT_ID environment variable is not defined');
+/**
+ * Get SSO endpoints
+ * Lazy loaded to avoid build-time errors when SSO is not configured
+ */
+function getSSOEndpoints() {
+  const config = getSSoConfig();
+  return {
+    authorize: `${config.baseUrl}/api/oauth/authorize`,
+    token: `${config.baseUrl}/api/oauth/token`,
+    userinfo: `${config.baseUrl}/api/oauth/userinfo`,
+    revoke: `${config.baseUrl}/api/oauth/revoke`,
+    discovery: `${config.baseUrl}/.well-known/openid-configuration`,
+  } as const;
 }
 
-if (!process.env.SSO_REDIRECT_URI) {
-  throw new Error('SSO_REDIRECT_URI environment variable is not defined');
-}
-
-export const SSO_CONFIG = {
-  baseUrl: process.env.SSO_BASE_URL,
-  clientId: process.env.SSO_CLIENT_ID,
-  redirectUri: process.env.SSO_REDIRECT_URI,
-  scopes: ['openid', 'profile', 'email'],
-} as const;
-
-// SSO Endpoints (standard OIDC discovery)
-export const SSO_ENDPOINTS = {
-  authorize: `${SSO_CONFIG.baseUrl}/api/oauth/authorize`,
-  token: `${SSO_CONFIG.baseUrl}/api/oauth/token`,
-  userinfo: `${SSO_CONFIG.baseUrl}/api/oauth/userinfo`,
-  revoke: `${SSO_CONFIG.baseUrl}/api/oauth/revoke`,
-  discovery: `${SSO_CONFIG.baseUrl}/.well-known/openid-configuration`,
-} as const;
+// Export getters instead of constants
+export const SSO_CONFIG = getSSoConfig;
+export const SSO_ENDPOINTS = getSSOEndpoints;
 
 /**
  * User information from SSO
@@ -137,17 +152,20 @@ export function generatePKCEPair(): PKCEPair {
  * @returns Authorization URL to redirect user to
  */
 export function getAuthorizationUrl(codeChallenge: string, state: string): string {
+  const config = SSO_CONFIG();
+  const endpoints = SSO_ENDPOINTS();
+  
   const params = new URLSearchParams({
-    client_id: SSO_CONFIG.clientId,
-    redirect_uri: SSO_CONFIG.redirectUri,
+    client_id: config.clientId,
+    redirect_uri: config.redirectUri,
     response_type: 'code',
-    scope: SSO_CONFIG.scopes.join(' '),
+    scope: config.scopes.join(' '),
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
   });
 
-  return `${SSO_ENDPOINTS.authorize}?${params.toString()}`;
+  return `${endpoints.authorize}?${params.toString()}`;
 }
 
 /**
@@ -162,15 +180,18 @@ export async function exchangeCodeForToken(
   code: string,
   codeVerifier: string
 ): Promise<TokenResponse> {
+  const config = SSO_CONFIG();
+  const endpoints = SSO_ENDPOINTS();
+  
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
-    redirect_uri: SSO_CONFIG.redirectUri,
-    client_id: SSO_CONFIG.clientId,
+    redirect_uri: config.redirectUri,
+    client_id: config.clientId,
     code_verifier: codeVerifier,
   });
 
-  const response = await fetch(SSO_ENDPOINTS.token, {
+  const response = await fetch(endpoints.token, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -196,13 +217,16 @@ export async function exchangeCodeForToken(
 export async function refreshAccessToken(
   refreshToken: string
 ): Promise<TokenResponse> {
+  const config = SSO_CONFIG();
+  const endpoints = SSO_ENDPOINTS();
+  
   const params = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
-    client_id: SSO_CONFIG.clientId,
+    client_id: config.clientId,
   });
 
-  const response = await fetch(SSO_ENDPOINTS.token, {
+  const response = await fetch(endpoints.token, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -226,7 +250,9 @@ export async function refreshAccessToken(
  * @returns User information
  */
 export async function getUserInfo(accessToken: string): Promise<SSOUser> {
-  const response = await fetch(SSO_ENDPOINTS.userinfo, {
+  const endpoints = SSO_ENDPOINTS();
+  
+  const response = await fetch(endpoints.userinfo, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
     },
@@ -251,13 +277,16 @@ export async function revokeToken(
   token: string,
   tokenTypeHint: 'access_token' | 'refresh_token' = 'access_token'
 ): Promise<void> {
+  const config = SSO_CONFIG();
+  const endpoints = SSO_ENDPOINTS();
+  
   const params = new URLSearchParams({
     token,
     token_type_hint: tokenTypeHint,
-    client_id: SSO_CONFIG.clientId,
+    client_id: config.clientId,
   });
 
-  const response = await fetch(SSO_ENDPOINTS.revoke, {
+  const response = await fetch(endpoints.revoke, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
