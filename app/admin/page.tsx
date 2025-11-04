@@ -8,13 +8,22 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 
 export default async function AdminDashboard() {
-  // Get database statistics
-  const db = await connectToDatabase();
-  
-  const [framesCount, submissionsCount] = await Promise.all([
-    db.collection('frames').countDocuments(),
-    db.collection('submissions').countDocuments(),
-  ]);
+  // Get database statistics with error handling
+  let framesCount = 0;
+  let submissionsCount = 0;
+  let dbError = null;
+
+  try {
+    const db = await connectToDatabase();
+    
+    [framesCount, submissionsCount] = await Promise.all([
+      db.collection('frames').countDocuments(),
+      db.collection('submissions').countDocuments(),
+    ]);
+  } catch (error) {
+    console.error('Error connecting to database:', error);
+    dbError = error instanceof Error ? error.message : 'Unknown error';
+  }
 
   return (
     <div className="p-8">
@@ -22,6 +31,13 @@ export default async function AdminDashboard() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">Overview of your Camera application</p>
       </div>
+
+      {dbError && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-800 dark:text-red-200 font-medium">Database Connection Error</p>
+          <p className="text-red-600 dark:text-red-300 text-sm mt-1">{dbError}</p>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
