@@ -175,6 +175,7 @@ export default function NewFramePage() {
           </div>
 
           <div className="flex items-center">
+            <input type="hidden" name="isActive" value="false" />
             <input
               type="checkbox"
               id="isActive"
