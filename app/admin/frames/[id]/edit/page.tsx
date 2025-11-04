@@ -7,12 +7,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-export default function EditFramePage({ params }: { params: { id: string } }) {
+export default function EditFramePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = use(params);
   const [frame, setFrame] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,7 +24,7 @@ export default function EditFramePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchFrame() {
       try {
-        const response = await fetch(`/api/frames/${params.id}`);
+        const response = await fetch(`/api/frames/${id}`);
         if (!response.ok) throw new Error('Frame not found');
         const data = await response.json();
         setFrame(data.frame);
@@ -35,7 +36,7 @@ export default function EditFramePage({ params }: { params: { id: string } }) {
     }
 
     fetchFrame();
-  }, [params.id]);
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +52,7 @@ export default function EditFramePage({ params }: { params: { id: string } }) {
     };
 
     try {
-      const response = await fetch(`/api/frames/${params.id}`, {
+      const response = await fetch(`/api/frames/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -79,7 +80,7 @@ export default function EditFramePage({ params }: { params: { id: string } }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/frames/${params.id}`, {
+      const response = await fetch(`/api/frames/${id}`, {
         method: 'DELETE',
       });
 
