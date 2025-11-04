@@ -85,8 +85,8 @@ export async function createSession(
 }
 
 /**
- * Get current session from cookie
- * Automatically refreshes access token if expired
+ * Get current session from cookie (read-only)
+ * Does NOT modify cookies - safe to use in Server Components
  * 
  * @returns Session if valid, null if expired or not found
  */
@@ -106,72 +106,16 @@ export async function getSession(): Promise<Session | null> {
     const expiresAt = new Date(session.expiresAt);
     
     if (now >= expiresAt) {
-      console.log('Session expired, clearing cookie');
-      await clearSession();
+      console.log('Session expired');
       return null;
     }
 
-    // Check if access token needs refresh (refresh 5 minutes before expiry)
-    // Skip token refresh for dev sessions (dev-access-token)
-    const accessTokenExpiresAt = new Date(session.accessTokenExpiresAt);
-    const refreshThreshold = new Date(accessTokenExpiresAt.getTime() - 5 * 60 * 1000);
-    const isDevSession = session.accessToken === 'dev-access-token';
-    
-    if (now >= refreshThreshold && !isDevSession) {
-      console.log('Access token expiring soon, refreshing...');
-      try {
-        // Refresh the access token
-        const newTokens = await refreshAccessToken(session.refreshToken);
-        
-        // Update session with new tokens
-        const updatedSession: Session = {
-          ...session,
-          accessToken: newTokens.access_token,
-          refreshToken: newTokens.refresh_token,
-          accessTokenExpiresAt: new Date(now.getTime() + newTokens.expires_in * 1000).toISOString(),
-        };
-
-        // Update cookie with new tokens
-        cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(updatedSession), {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: SESSION_MAX_AGE,
-          path: '/',
-        });
-
-        console.log('✓ Access token refreshed successfully');
-        return updatedSession;
-        
-      } catch (error) {
-        console.error('✗ Token refresh failed:', error);
-        // If refresh fails, clear session and force re-login
-        await clearSession();
-        return null;
-      }
-    }
-
-    // Session is valid and token doesn't need refresh yet
-    // Extend session expiration (sliding window)
-    const newExpiresAt = new Date(now.getTime() + SESSION_MAX_AGE * 1000);
-    const updatedSession: Session = {
-      ...session,
-      expiresAt: newExpiresAt.toISOString(),
-    };
-
-    cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(updatedSession), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: SESSION_MAX_AGE,
-      path: '/',
-    });
-
-    return updatedSession;
+    // Return session without modifying cookies
+    // Token refresh and sliding expiration happen in middleware or API routes
+    return session;
     
   } catch (error) {
     console.error('Error parsing session:', error);
-    await clearSession();
     return null;
   }
 }
