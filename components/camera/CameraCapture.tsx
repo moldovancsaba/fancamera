@@ -27,9 +27,11 @@ export interface CameraCaptureProps {
   onError?: (error: Error) => void;
   className?: string;
   frameOverlay?: string; // URL of frame image to overlay
+  frameWidth?: number;   // Frame width in pixels (for aspect ratio)
+  frameHeight?: number;  // Frame height in pixels (for aspect ratio)
 }
 
-export default function CameraCapture({ onCapture, onError, className = '', frameOverlay }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, onError, className = '', frameOverlay, frameWidth, frameHeight }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

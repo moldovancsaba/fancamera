@@ -17,6 +17,8 @@ interface Frame {
   name: string;
   imageUrl: string;
   thumbnailUrl: string;
+  width: number;
+  height: number;
 }
 
 interface EventData {
@@ -373,14 +375,19 @@ export default function EventCapturePage({
                 <button
                   key={frame._id}
                   onClick={() => handleFrameSelect(frame)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col"
+                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
                 >
-                  <div className="w-full flex items-center justify-center mb-2" style={{ minHeight: '100px' }}>
+                  <div 
+                    className="w-full mx-auto mb-2 flex items-center justify-center"
+                    style={{
+                      aspectRatio: `${frame.width} / ${frame.height}`,
+                      maxHeight: '200px',
+                    }}
+                  >
                     <img
                       src={frame.thumbnailUrl || frame.imageUrl}
                       alt={frame.name}
-                      style={{ maxHeight: '160px', maxWidth: '100%', height: 'auto', width: 'auto' }}
-                      className="object-contain"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <p className="text-xs font-medium text-gray-900 dark:text-white text-center">
@@ -406,7 +413,12 @@ export default function EventCapturePage({
               </button>
             </div>
             <div className="flex-1 flex items-center justify-center p-4">
-              <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
+              <CameraCapture 
+                onCapture={handlePhotoCapture} 
+                frameOverlay={selectedFrame.imageUrl}
+                frameWidth={selectedFrame.width}
+                frameHeight={selectedFrame.height}
+              />
             </div>
           </div>
         )}
