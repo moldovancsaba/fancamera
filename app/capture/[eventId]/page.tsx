@@ -302,113 +302,91 @@ export default function EventCapturePage({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-4 flex-shrink-0">
-        <div className="px-4">
-          <div className="text-center">
-            {event.partnerName && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {event.partnerName}
-              </p>
-            )}
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              {event.name}
-            </h1>
-            {event.eventDate && (
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {new Date(event.eventDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Steps - Hide after save */}
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Combined Header and Progress Steps - Hide after save */}
       {!shareUrl && (
-        <div className="flex-shrink-0 px-4 py-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-center gap-3 md:gap-6">
-            <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
-                step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-              }`}>
-                1
-              </div>
-              <p className={`text-xs font-medium text-center ${
-                step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                Select Frame
-              </p>
+        <div className="flex-shrink-0 px-4 py-3">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
+            {/* Event Info */}
+            <div className="text-center mb-3">
+              {event.partnerName && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {event.partnerName}
+                </p>
+              )}
+              <h1 className="text-base font-bold text-gray-900 dark:text-white">
+                {event.name}
+              </h1>
             </div>
-            <div className="w-6 h-1 bg-gray-300 dark:bg-gray-600"></div>
-            <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
-                step === 'capture-photo' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-              }`}>
-                2
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center gap-2">
+              <div className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                }`}>
+                  1
+                </div>
+                <p className={`text-[10px] font-medium text-center mt-1 ${
+                  step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  Select Frame
+                </p>
               </div>
-              <p className={`text-xs font-medium text-center ${
-                step === 'capture-photo' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                Capture Photo
-              </p>
-            </div>
-            <div className="w-6 h-1 bg-gray-300 dark:bg-gray-600"></div>
-            <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
-                step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-              }`}>
-                3
+              <div className="w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+              <div className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  step === 'capture-photo' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                }`}>
+                  2
+                </div>
+                <p className={`text-[10px] font-medium text-center mt-1 ${
+                  step === 'capture-photo' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  Capture Photo
+                </p>
               </div>
-              <p className={`text-xs font-medium text-center ${
-                step === 'preview' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                Preview & Save
-              </p>
+              <div className="w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+              <div className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                }`}>
+                  3
+                </div>
+                <p className={`text-[10px] font-medium text-center mt-1 ${
+                  step === 'preview' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  Preview & Save
+                </p>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       )}
 
       {/* Content Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4">
         {/* Step 1: Frame Selection */}
         {step === 'select-frame' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div className="grid grid-cols-2 gap-3">
-              {frames.map((frame) => {
-                // Calculate aspect ratio from frame image
-                const frameImg = new window.Image();
-                frameImg.src = frame.imageUrl;
-                
-                return (
-                  <button
-                    key={frame._id}
-                    onClick={() => handleFrameSelect(frame)}
-                    className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
-                  >
-                    <div className="relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
-                      <Image
-                        src={frame.thumbnailUrl || frame.imageUrl}
-                        alt={frame.name}
-                        width={300}
-                        height={300}
-                        className="w-full h-auto object-contain p-2"
-                        unoptimized
-                      />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
-                      {frame.name}
-                    </p>
-                  </button>
-                );
-              })}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
+            <div className="grid grid-cols-2 gap-2">
+              {frames.map((frame) => (
+                <button
+                  key={frame._id}
+                  onClick={() => handleFrameSelect(frame)}
+                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col items-center"
+                >
+                  <div className="w-full max-h-32 flex items-center justify-center mb-2">
+                    <img
+                      src={frame.thumbnailUrl || frame.imageUrl}
+                      alt={frame.name}
+                      className="max-w-full max-h-32 object-contain"
+                    />
+                  </div>
+                  <p className="text-xs font-medium text-gray-900 dark:text-white text-center">
+                    {frame.name}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
         )}
