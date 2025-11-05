@@ -238,18 +238,24 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
     };
   }, []);
 
+  // Calculate fixed aspect ratio from props or fallback
+  const aspectRatio = (frameWidth && frameHeight) 
+    ? `${frameWidth} / ${frameHeight}`
+    : frameImage 
+      ? `${frameImage.width} / ${frameImage.height}` 
+      : '9 / 16';
+
   return (
-    <div className={`flex items-center justify-center w-full h-full p-4 ${className}`}>
-      {/* Video Preview or Captured Image - Always fit within screen */}
+    <div className={`flex items-center justify-center w-full h-full ${className}`}>
+      {/* Video Preview - Fixed aspect ratio container that fits within viewport */}
       <div 
-        className="relative bg-gray-900 rounded-lg overflow-hidden shadow-xl"
+        className="relative bg-gray-900 overflow-hidden"
         style={{
-          aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9',
-          width: '100%',
-          height: '100%',
+          aspectRatio: aspectRatio,
           maxWidth: '100%',
           maxHeight: '100%',
-          objectFit: 'contain',
+          width: 'auto',
+          height: 'auto',
         }}
       >
         {!capturedImage ? (
