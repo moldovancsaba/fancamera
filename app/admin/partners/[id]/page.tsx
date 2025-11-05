@@ -25,6 +25,7 @@ export default async function PartnerDetailPage({
 
   let partner: any = null;
   let events: any[] = [];
+  let submissions: any[] = [];
   let dbError = null;
 
   try {
@@ -42,6 +43,14 @@ export default async function PartnerDetailPage({
     // Get events for this partner
     events = await db
       .collection(COLLECTIONS.EVENTS)
+      .find({ partnerId: partner.partnerId })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
+
+    // Get submissions for all events under this partner (limit to most recent 50)
+    submissions = await db
+      .collection(COLLECTIONS.SUBMISSIONS)
       .find({ partnerId: partner.partnerId })
       .sort({ createdAt: -1 })
       .limit(50)
@@ -244,6 +253,76 @@ export default async function PartnerDetailPage({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Partner Gallery Section */}
+      <div id="gallery" className="mt-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              📷 Partner Gallery
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              All photos captured across {partner.name}'s events
+            </p>
+          </div>
+
+          {submissions.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="text-5xl mb-4">📸</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No submissions yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Photos captured at this partner's events will appear here
+              </p>
+              {events.length > 0 && (
+                <Link
+                  href={`/capture/${events[0]._id}`}
+                  className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  📸 Start Capturing
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {submissions.map((submission: any) => (
+                  <Link
+                    key={submission._id.toString()}
+                    href={`/share/${submission._id}`}
+                    className="group relative aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all"
+                  >
+                    <img
+                      src={submission.imageUrl || submission.finalImageUrl}
+                      alt={`Photo by ${submission.userName || submission.userEmail}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-2">
+                        <p className="text-white text-xs font-medium truncate">
+                          {submission.eventName || 'General'}
+                        </p>
+                        <p className="text-white/80 text-xs truncate">
+                          {submission.userName || submission.userEmail}
+                        </p>
+                        <p className="text-white/60 text-xs">
+                          {new Date(submission.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              {submissions.length >= 50 && (
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+                  Showing the 50 most recent submissions
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
