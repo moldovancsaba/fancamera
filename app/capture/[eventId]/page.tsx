@@ -410,24 +410,17 @@ export default function EventCapturePage({
 
         {/* Step 3: Preview */}
         {step === 'preview' && compositeImage && selectedFrame && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 landscape:flex landscape:gap-4 landscape:h-full">
-            {/* Image - Left side in landscape */}
-            <div className="landscape:flex-1 landscape:flex landscape:items-center landscape:justify-center">
-              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 landscape:mb-0" style={{
-                maxWidth: '100%',
-              }}>
-                <Image
-                  src={compositeImage}
-                  alt="Final result"
-                  width={2048}
-                  height={2048}
-                  className="w-full h-auto object-contain landscape:max-h-[80vh]"
-                  unoptimized
-                />
-              </div>
+          <div className="h-full flex flex-col landscape:flex-row gap-4 p-4">
+            {/* Image - Fits within available space */}
+            <div className="flex-1 flex items-center justify-center min-h-0">
+              <img
+                src={compositeImage}
+                alt="Final result"
+                className="max-h-[60vh] max-w-full object-contain landscape:max-h-[80vh]"
+              />
             </div>
-            {/* Actions - Right side in landscape, bottom in portrait */}
-            <div className="space-y-3 landscape:flex landscape:flex-col landscape:justify-center landscape:w-20">
+            {/* Actions - Always visible */}
+            <div className="flex-shrink-0 flex flex-col gap-3 landscape:w-20 landscape:justify-center">
               {!shareUrl && (
                 <button
                   onClick={handleSave}
