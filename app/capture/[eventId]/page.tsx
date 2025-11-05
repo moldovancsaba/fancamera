@@ -375,10 +375,10 @@ export default function EventCapturePage({
                 <button
                   key={frame._id}
                   onClick={() => handleFrameSelect(frame)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
+                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col"
                 >
                   <div 
-                    className="w-full mx-auto mb-2 flex items-center justify-center"
+                    className="w-full mb-2 overflow-hidden"
                     style={{
                       aspectRatio: `${frame.width} / ${frame.height}`,
                       maxHeight: '200px',
@@ -387,7 +387,10 @@ export default function EventCapturePage({
                     <img
                       src={frame.thumbnailUrl || frame.imageUrl}
                       alt={frame.name}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
+                      style={{
+                        aspectRatio: `${frame.width} / ${frame.height}`,
+                      }}
                     />
                   </div>
                   <p className="text-xs font-medium text-gray-900 dark:text-white text-center">
