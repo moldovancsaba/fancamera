@@ -187,7 +187,9 @@ export default function EventCapturePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save submission');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Save failed:', response.status, errorData);
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -195,9 +197,9 @@ export default function EventCapturePage({
       setShareUrl(`${origin}/share/${data.submission._id}`);
       
       alert('Photo saved successfully! You can now share it.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving submission:', error);
-      alert('Failed to save photo. Please try again.');
+      alert(`Failed to save photo: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSaving(false);
     }
