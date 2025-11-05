@@ -1,88 +1,261 @@
 /**
  * Event-Specific Capture Page
- * Version: 1.2.0
+ * Version: 1.3.0
  * 
- * Allows users to capture photos with frames assigned to a specific event
- * Submissions are tagged with partner/event context for gallery organization
+ * Public page for capturing photos at events
+ * Full interactive capture flow with camera/upload support
  */
 
-import { connectToDatabase } from '@/lib/db/mongodb';
-import { COLLECTIONS } from '@/lib/db/schemas';
-import { ObjectId } from 'mongodb';
-import { notFound } from 'next/navigation';
+'use client';
 
-export default async function EventCapturePage({
+import { useState, useEffect, use } from 'react';
+import Image from 'next/image';
+import CameraCapture from '@/components/camera/CameraCapture';
+import FileUpload from '@/components/camera/FileUpload';
+
+interface Frame {
+  _id: string;
+  name: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+}
+
+interface EventData {
+  eventId: string;
+  name: string;
+  partnerId: string | null;
+  partnerName: string | null;
+  eventDate: string | null;
+  location: string | null;
+}
+
+export default function EventCapturePage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  const { eventId } = await params;
+  const { eventId } = use(params);
+  
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [frames, setFrames] = useState<Frame[]>([]);
+  const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [compositeImage, setCompositeImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [step, setStep] = useState<'select-frame' | 'capture-photo' | 'preview'>('select-frame');
 
-  // Validate MongoDB ObjectId format
-  if (!ObjectId.isValid(eventId)) {
-    notFound();
-  }
+  // Fetch event and frames
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch(`/api/events/${eventId}`);
+        if (!response.ok) throw new Error('Event not found');
+        
+        const data = await response.json();
+        const eventData = data.event;
+        
+        setEvent({
+          eventId: eventData.eventId,
+          name: eventData.name,
+          partnerId: eventData.partnerId || null,
+          partnerName: eventData.partnerName || null,
+          eventDate: eventData.eventDate || null,
+          location: eventData.location || null,
+        });
 
-  let event: any = null;
-  let partner: any = null;
-  let frames: any[] = [];
+        // Get frames assigned to this event
+        const activeFrameAssignments = (eventData.frames || []).filter((f: any) => f.isActive);
+        const frameIds = activeFrameAssignments.map((f: any) => f.frameId);
 
-  try {
-    const db = await connectToDatabase();
-
-    // Fetch event details
-    event = await db
-      .collection(COLLECTIONS.EVENTS)
-      .findOne({ _id: new ObjectId(eventId) });
-
-    if (!event || !event.isActive) {
-      notFound();
+        if (frameIds.length > 0) {
+          // Fetch frame details
+          const framesResponse = await fetch('/api/frames?active=true&limit=100');
+          const framesData = await framesResponse.json();
+          
+          // Filter to only frames assigned to this event
+          const eventFrames = (framesData.frames || []).filter((f: any) => 
+            frameIds.includes(f._id.toString())
+          );
+          setFrames(eventFrames);
+        }
+      } catch (error) {
+        console.error('Error fetching event data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    // Fetch partner details
-    if (event.partnerId) {
-      partner = await db
-        .collection(COLLECTIONS.PARTNERS)
-        .findOne({ partnerId: event.partnerId });
+    fetchData();
+  }, [eventId]);
+
+  // Composite image with frame when photo is captured
+  useEffect(() => {
+    if (capturedImage && selectedFrame) {
+      compositeImageWithFrame();
     }
+  }, [capturedImage, selectedFrame]);
 
-    // Get frames assigned to this event (only active ones)
-    const activeFrameAssignments = (event.frames || []).filter((f: any) => f.isActive);
-    const frameIds = activeFrameAssignments.map((f: any) => f.frameId);
+  const compositeImageWithFrame = async () => {
+    if (!capturedImage || !selectedFrame) return;
 
-    if (frameIds.length > 0) {
-      // Convert string frameIds to ObjectId
-      const objectIds = frameIds
-        .filter((id: string) => ObjectId.isValid(id))
-        .map((id: string) => new ObjectId(id));
+    setIsProcessing(true);
 
-      frames = await db
-        .collection(COLLECTIONS.FRAMES)
-        .find({
-          _id: { $in: objectIds },
-          isActive: true,
-        })
-        .toArray();
+    try {
+      const frameImg = new window.Image();
+      frameImg.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        frameImg.onload = resolve;
+        frameImg.onerror = reject;
+        frameImg.src = selectedFrame.imageUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
+
+      canvas.width = frameImg.width;
+      canvas.height = frameImg.height;
+
+      const photoImg = new window.Image();
+      photoImg.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        photoImg.onload = resolve;
+        photoImg.onerror = reject;
+        photoImg.src = capturedImage;
+      });
+
+      const frameAspect = canvas.width / canvas.height;
+      const photoAspect = photoImg.width / photoImg.height;
+      
+      let drawWidth, drawHeight, offsetX, offsetY;
+      
+      if (photoAspect > frameAspect) {
+        drawHeight = canvas.height;
+        drawWidth = photoImg.width * (canvas.height / photoImg.height);
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      } else {
+        drawWidth = canvas.width;
+        drawHeight = photoImg.height * (canvas.width / photoImg.width);
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      }
+
+      ctx.drawImage(photoImg, offsetX, offsetY, drawWidth, drawHeight);
+      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+      const composite = canvas.toDataURL('image/png', 0.95);
+      setCompositeImage(composite);
+      setStep('preview');
+    } catch (error) {
+      console.error('Error compositing image:', error);
+      alert('Failed to apply frame. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
-  } catch (error) {
-    console.error('Error loading event capture page:', error);
-    notFound();
+  };
+
+  const handleFrameSelect = (frame: Frame) => {
+    setSelectedFrame(frame);
+    setStep('capture-photo');
+  };
+
+  const handlePhotoCapture = (blob: Blob, dataUrl: string) => {
+    setCapturedImage(dataUrl);
+  };
+
+  const handleSave = async () => {
+    if (!compositeImage || !selectedFrame || !event) return;
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageData: compositeImage,
+          frameId: selectedFrame._id,
+          eventId: eventId,
+          eventName: event.name,
+          partnerId: event.partnerId,
+          partnerName: event.partnerName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save submission');
+      }
+
+      const data = await response.json();
+      const origin = window.location.origin;
+      setShareUrl(`${origin}/share/${data.submission._id}`);
+      
+      alert('Photo saved successfully! You can now share it.');
+    } catch (error) {
+      console.error('Error saving submission:', error);
+      alert('Failed to save photo. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!compositeImage) return;
+
+    const link = document.createElement('a');
+    link.href = compositeImage;
+    link.download = `${event?.name || 'photo'}-${Date.now()}.png`;
+    link.click();
+  };
+
+  const handleReset = () => {
+    setSelectedFrame(null);
+    setCapturedImage(null);
+    setCompositeImage(null);
+    setShareUrl(null);
+    setStep('select-frame');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⏳</div>
+          <p className="text-gray-600 dark:text-gray-400">Loading event...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!event) {
-    notFound();
+  if (!event || frames.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">🖼️</div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            No Frames Available
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            This event doesn't have any active frames yet.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  // Pass event and partner context to the client via data attributes
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header with event branding */}
+      {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-6">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
-            {partner && (
+            {event.partnerName && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                {partner.name}
+                {event.partnerName}
               </p>
             )}
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -107,123 +280,198 @@ export default async function EventCapturePage({
         </div>
       </div>
 
-      {/* Main capture interface */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        {frames.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">🖼️</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              No frames available
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              This event doesn't have any active frames yet.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Progress Steps */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                📸 Take a Photo
-              </h2>
-              <div className="flex items-center justify-center gap-4 md:gap-8">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg mb-2">
-                    1
-                  </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
-                    Select Frame
-                  </p>
-                </div>
-                <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center font-bold text-lg mb-2">
-                    2
-                  </div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 text-center">
-                    Capture Photo
-                  </p>
-                </div>
-                <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center font-bold text-lg mb-2">
-                    3
-                  </div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 text-center">
-                    Preview & Save
-                  </p>
-                </div>
+      {/* Progress Steps */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            📸 Take a Photo
+          </h2>
+          <div className="flex items-center justify-center gap-4 md:gap-8">
+            <div className="flex flex-col items-center">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+                step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+              }`}>
+                1
               </div>
+              <p className={`text-sm font-medium text-center ${
+                step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                Select Frame
+              </p>
             </div>
-
-            {/* Event context data for JavaScript */}
-            <div
-              id="event-context"
-              data-event-id={eventId}
-              data-event-name={event.name}
-              data-partner-id={event.partnerId || ''}
-              data-partner-name={partner?.name || ''}
-              className="hidden"
-            />
-
-            {/* Step 1: Frame Selection */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Step 1: Choose Your Frame
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Select a frame design for your photo
-                </p>
+            <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
+            <div className="flex flex-col items-center">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+                step === 'capture-photo' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+              }`}>
+                2
               </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {frames.map((frame: any) => (
-                  <button
-                    key={frame._id.toString()}
-                    className="frame-selector group relative bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
-                    data-frame-id={frame._id.toString()}
-                    data-frame-name={frame.name}
-                  >
-                    <div className="aspect-square relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
-                      <img
-                        src={frame.thumbnailUrl || frame.imageUrl}
-                        alt={frame.name}
-                        className="w-full h-full object-contain p-2"
-                      />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
-                      {frame.name}
-                    </p>
-                  </button>
-                ))}
-              </div>
+              <p className={`text-sm font-medium text-center ${
+                step === 'capture-photo' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                Capture Photo
+              </p>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Instructions */}
-      {frames.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 pb-12">
-          <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-3">
-              📝 How it works
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800 dark:text-blue-300">
-              <div>
-                <span className="font-semibold">1. Select Frame:</span> Choose your favorite frame design
+            <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
+            <div className="flex flex-col items-center">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+                step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+              }`}>
+                3
               </div>
-              <div>
-                <span className="font-semibold">2. Capture Photo:</span> Take a photo or upload from your device
-              </div>
-              <div>
-                <span className="font-semibold">3. Preview & Save:</span> Review and download your framed photo
-              </div>
+              <p className={`text-sm font-medium text-center ${
+                step === 'preview' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                Preview & Save
+              </p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Step 1: Frame Selection */}
+        {step === 'select-frame' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Step 1: Choose Your Frame
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Select a frame design for your photo
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {frames.map((frame) => (
+                <button
+                  key={frame._id}
+                  onClick={() => handleFrameSelect(frame)}
+                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
+                >
+                  <div className="aspect-square relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
+                    <Image
+                      src={frame.thumbnailUrl || frame.imageUrl}
+                      alt={frame.name}
+                      fill
+                      className="object-contain p-2"
+                      unoptimized
+                    />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                    {frame.name}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Photo Capture */}
+        {step === 'capture-photo' && selectedFrame && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Step 2: Capture Your Photo
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Selected frame: <span className="font-medium">{selectedFrame.name}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setStep('select-frame')}
+                className="px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Change Frame
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Take Photo</h4>
+                <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Or Upload Image</h4>
+                <FileUpload onUpload={handlePhotoCapture} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Preview */}
+        {step === 'preview' && compositeImage && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Step 3: Preview & Save
+            </h3>
+            <div className="max-w-2xl mx-auto">
+              <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-6">
+                <Image
+                  src={compositeImage}
+                  alt="Final result"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || !!shareUrl}
+                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {shareUrl ? '✓ Saved!' : isSaving ? '💾 Saving...' : '💾 Save & Share'}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    💾 Download
+                  </button>
+                </div>
+                {shareUrl && (
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+                      Share your photo:
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={shareUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-sm"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(shareUrl)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleReset}
+                  className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  📸 Take Another Photo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Processing Overlay */}
+        {isProcessing && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+              <div className="text-6xl mb-4 animate-pulse">✨</div>
+              <p className="text-gray-900 dark:text-white font-medium">
+                Applying frame...
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
