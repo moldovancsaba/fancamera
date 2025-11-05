@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
       eventId: eventId || null,
       eventName: eventName || null,
       imageUrl: uploadResult.imageUrl,
-      thumbnailUrl: uploadResult.thumbnailUrl,
       deleteUrl: uploadResult.deleteUrl,
       imageId: uploadResult.imageId,
       fileSize: uploadResult.fileSize,

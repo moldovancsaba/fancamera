@@ -140,7 +140,6 @@ export async function POST(request: NextRequest) {
       description,
       category: category || 'general',
       imageUrl: uploadResult.imageUrl,
-      thumbnailUrl: uploadResult.thumbnailUrl,
       deleteUrl: uploadResult.deleteUrl,
       imageId: uploadResult.imageId,
       fileSize: uploadResult.fileSize,

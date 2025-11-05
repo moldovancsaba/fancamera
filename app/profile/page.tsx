@@ -101,20 +101,19 @@ export default async function ProfilePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Pinterest-style masonry grid */}
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
               {submissions.map((submission: any) => (
                 <div
                   key={submission._id.toString()}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow group"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow group mb-4 break-inside-avoid"
                 >
                   <Link href={`/share/${submission._id}`}>
-                    <div className="aspect-square relative bg-gray-100 dark:bg-gray-700">
-                      <Image
-                        src={submission.thumbnailUrl || submission.imageUrl}
+                    <div className="relative bg-gray-100 dark:bg-gray-700">
+                      <img
+                        src={submission.imageUrl}
                         alt={`Photo with ${submission.frameName}`}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform"
-                        unoptimized
+                        className="w-full h-auto group-hover:scale-105 transition-transform"
                       />
                     </div>
                   </Link>

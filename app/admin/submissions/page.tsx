@@ -54,20 +54,19 @@ export default async function AdminSubmissionsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* Pinterest-style masonry grid */}
+          <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4">
             {submissions.map((submission: any) => (
               <div
                 key={submission._id.toString()}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-4 break-inside-avoid"
               >
                 <Link href={`/share/${submission._id}`}>
-                  <div className="aspect-square relative bg-gray-100 dark:bg-gray-700">
-                    <Image
-                      src={submission.thumbnailUrl || submission.imageUrl}
+                  <div className="relative bg-gray-100 dark:bg-gray-700">
+                    <img
+                      src={submission.imageUrl}
                       alt={`Photo by ${submission.userName}`}
-                      fill
-                      className="object-cover hover:scale-105 transition-transform"
-                      unoptimized
+                      className="w-full h-auto hover:scale-105 transition-transform"
                     />
                   </div>
                 </Link>

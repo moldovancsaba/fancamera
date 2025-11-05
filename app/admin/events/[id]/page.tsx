@@ -310,17 +310,18 @@ export default async function EventDetailPage({
             </div>
           ) : (
             <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {/* Pinterest-style masonry grid */}
+              <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4">
                 {submissions.map((submission: any) => (
                   <Link
                     key={submission._id.toString()}
                     href={`/share/${submission._id}`}
-                    className="group relative aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all"
+                    className="group relative bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all mb-4 break-inside-avoid block"
                   >
                     <img
                       src={submission.imageUrl || submission.finalImageUrl}
                       alt={`Photo by ${submission.userName || submission.userEmail}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-auto"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-3">
