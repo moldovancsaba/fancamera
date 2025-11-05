@@ -203,7 +203,15 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
       return;
     }
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // If front camera, flip horizontally to match mirror view
+    if (facingMode === 'user') {
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
 
     // Convert canvas to blob and data URL
     canvas.toBlob((blob) => {
@@ -300,13 +308,16 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
       >
         {!capturedImage ? (
           <>
-            {/* Live Video Stream - Cover the frame area */}
+            {/* Live Video Stream - Cover the frame area, mirror if front camera */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               className="w-full h-full object-cover"
+              style={{
+                transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
+              }}
             />
 
             {/* Frame Overlay - Always on top */}
