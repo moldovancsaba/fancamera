@@ -302,13 +302,13 @@ export default function EventCapturePage({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="fixed inset-0 flex flex-col landscape:flex-row bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       {/* Combined Header and Progress Steps - Hide after save */}
       {!shareUrl && (
-        <div className="flex-shrink-0 px-4 py-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
+        <div className="flex-shrink-0 px-4 py-3 landscape:w-auto landscape:h-full landscape:py-4 landscape:px-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 landscape:h-full landscape:flex landscape:flex-col landscape:justify-center landscape:writing-mode-vertical">
             {/* Event Info */}
-            <div className="text-center mb-3">
+            <div className="text-center mb-3 landscape:mb-6 landscape:[writing-mode:vertical-lr] landscape:rotate-180">
               {event.partnerName && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {event.partnerName}
@@ -319,7 +319,7 @@ export default function EventCapturePage({
               </h1>
             </div>
             {/* Progress Steps */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 landscape:flex-col landscape:gap-4">
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
@@ -364,11 +364,11 @@ export default function EventCapturePage({
       )}
 
       {/* Content Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 landscape:overflow-x-auto landscape:overflow-y-hidden">
         {/* Step 1: Frame Selection */}
         {step === 'select-frame' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 landscape:grid-cols-4 gap-2">
               {frames.map((frame) => (
                 <button
                   key={frame._id}
@@ -404,7 +404,7 @@ export default function EventCapturePage({
                 Change
               </button>
             </div>
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center p-4">
               <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
             </div>
           </div>
@@ -412,9 +412,10 @@ export default function EventCapturePage({
 
         {/* Step 3: Preview */}
         {step === 'preview' && compositeImage && selectedFrame && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div>
-              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4" style={{
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 landscape:flex landscape:gap-4 landscape:h-full">
+            {/* Image - Left side in landscape */}
+            <div className="landscape:flex-1 landscape:flex landscape:items-center landscape:justify-center">
+              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 landscape:mb-0" style={{
                 maxWidth: '100%',
               }}>
                 <Image
@@ -422,78 +423,83 @@ export default function EventCapturePage({
                   alt="Final result"
                   width={2048}
                   height={2048}
-                  className="w-full h-auto object-contain"
+                  className="w-full h-auto object-contain landscape:max-h-[80vh]"
                   unoptimized
                 />
               </div>
-              <div className="space-y-3">
+            </div>
+            {/* Actions - Right side in landscape, bottom in portrait */}
+            <div className="space-y-3 landscape:flex landscape:flex-col landscape:justify-center landscape:w-20">
+              {!shareUrl && (
                 <button
                   onClick={handleSave}
-                  disabled={isSaving || !!shareUrl}
-                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={isSaving}
+                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 landscape:flex-col landscape:px-3 landscape:py-6"
                 >
-                  <span className="material-icons">favorite</span>
-                  {shareUrl ? 'SAVED!' : isSaving ? 'SAVING...' : 'LOVE IT'}
+                  <span className="material-icons text-2xl">favorite</span>
+                  <span className="landscape:hidden">{isSaving ? 'SAVING...' : 'LOVE IT'}</span>
                 </button>
-                {shareUrl && (
-                  <div className="border-t pt-3">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-sm flex items-center gap-1">
-                      <span className="material-icons text-lg">share</span>
-                      Share Your Photo
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={shareUrl}
-                          readOnly
-                          className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                        />
-                        <button
-                          onClick={handleCopyLink}
-                          className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
-                        >
-                          <span className="material-icons text-sm">content_copy</span>
-                          <span className="text-xs">Copy</span>
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => handleShareSocial('facebook')}
-                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs"
-                        >
-                          Facebook
-                        </button>
-                        <button
-                          onClick={() => handleShareSocial('twitter')}
-                          className="px-3 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-xs"
-                        >
-                          Twitter
-                        </button>
-                        <button
-                          onClick={() => handleShareSocial('linkedin')}
-                          className="px-3 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs"
-                        >
-                          LinkedIn
-                        </button>
-                        <button
-                          onClick={() => handleShareSocial('whatsapp')}
-                          className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs"
-                        >
-                          WhatsApp
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              )}
+              {!shareUrl && (
                 <button
                   onClick={handleReset}
-                  className="w-full px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 landscape:flex-col landscape:px-3 landscape:py-6"
                 >
-                  <span className="material-icons">refresh</span>
-                  TRY AGAIN
+                  <span className="material-icons text-2xl">refresh</span>
+                  <span className="landscape:hidden">TRY AGAIN</span>
                 </button>
-              </div>
+              )}
+              {shareUrl && (
+                <div className="border-t pt-3 landscape:border-t-0 landscape:pt-0 landscape:flex-1 landscape:flex landscape:flex-col landscape:gap-2">
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-sm flex items-center gap-1 landscape:hidden">
+                    <span className="material-icons text-lg">share</span>
+                    Share Your Photo
+                  </h3>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2 landscape:flex-col">
+                      <input
+                        type="text"
+                        value={shareUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs landscape:text-[10px]"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <span className="material-icons text-sm">content_copy</span>
+                        <span className="text-xs landscape:hidden">Copy</span>
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 landscape:grid-cols-1">
+                      <button
+                        onClick={() => handleShareSocial('facebook')}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs landscape:text-[10px]"
+                      >
+                        Facebook
+                      </button>
+                      <button
+                        onClick={() => handleShareSocial('twitter')}
+                        className="px-3 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-xs landscape:text-[10px]"
+                      >
+                        Twitter
+                      </button>
+                      <button
+                        onClick={() => handleShareSocial('linkedin')}
+                        className="px-3 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs landscape:text-[10px]"
+                      >
+                        LinkedIn
+                      </button>
+                      <button
+                        onClick={() => handleShareSocial('whatsapp')}
+                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs landscape:text-[10px]"
+                      >
+                        WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
