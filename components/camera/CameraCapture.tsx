@@ -241,8 +241,10 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
       const container = containerRef.current.parentElement;
       if (!container) return;
       
-      const availableWidth = container.clientWidth;
-      const availableHeight = container.clientHeight;
+      // Account for padding/margins and UI elements (change button, controls)
+      const padding = 32; // 16px padding on each side
+      const availableWidth = Math.max(container.clientWidth - padding, 200);
+      const availableHeight = Math.max(container.clientHeight - padding, 200);
       
       // Use frame dimensions or fallback
       const frameAspectRatio = (frameWidth && frameHeight) 
