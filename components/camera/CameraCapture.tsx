@@ -39,9 +39,11 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   /**
    * Load frame overlay image
@@ -230,6 +232,52 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
   };
 
   /**
+   * Calculate container size based on viewport and frame aspect ratio
+   */
+  useEffect(() => {
+    const calculateSize = () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current.parentElement;
+      if (!container) return;
+      
+      const availableWidth = container.clientWidth;
+      const availableHeight = container.clientHeight;
+      
+      // Use frame dimensions or fallback
+      const frameAspectRatio = (frameWidth && frameHeight) 
+        ? frameWidth / frameHeight
+        : frameImage
+          ? frameImage.width / frameImage.height
+          : 9 / 16;
+      
+      // Calculate which dimension is the constraint
+      const widthConstrained = availableWidth / availableHeight < frameAspectRatio;
+      
+      if (widthConstrained) {
+        // Width is the limiting factor
+        const width = availableWidth;
+        const height = width / frameAspectRatio;
+        setContainerSize({ width, height });
+      } else {
+        // Height is the limiting factor
+        const height = availableHeight;
+        const width = height * frameAspectRatio;
+        setContainerSize({ width, height });
+      }
+    };
+    
+    calculateSize();
+    window.addEventListener('resize', calculateSize);
+    window.addEventListener('orientationchange', calculateSize);
+    
+    return () => {
+      window.removeEventListener('resize', calculateSize);
+      window.removeEventListener('orientationchange', calculateSize);
+    };
+  }, [frameWidth, frameHeight, frameImage]);
+
+  /**
    * Cleanup on unmount
    */
   useEffect(() => {
@@ -238,24 +286,14 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
     };
   }, []);
 
-  // Calculate fixed aspect ratio from props or fallback
-  const aspectRatio = (frameWidth && frameHeight) 
-    ? `${frameWidth} / ${frameHeight}`
-    : frameImage 
-      ? `${frameImage.width} / ${frameImage.height}` 
-      : '9 / 16';
-
   return (
-    <div className={`flex items-center justify-center w-full h-full ${className}`}>
-      {/* Video Preview - Fixed aspect ratio container that fits within viewport */}
+    <div ref={containerRef} className={`flex items-center justify-center w-full h-full ${className}`}>
+      {/* Video Preview - Calculated to fit within viewport */}
       <div 
         className="relative bg-gray-900 overflow-hidden"
         style={{
-          aspectRatio: aspectRatio,
-          maxWidth: '100%',
-          maxHeight: '100%',
-          width: 'auto',
-          height: 'auto',
+          width: containerSize.width > 0 ? `${containerSize.width}px` : '100%',
+          height: containerSize.height > 0 ? `${containerSize.height}px` : '100%',
         }}
       >
         {!capturedImage ? (
