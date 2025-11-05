@@ -163,6 +163,25 @@ export default async function EventDetailPage({
             </dl>
           </div>
 
+          {/* Capture URL Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">📸 Event Capture URL</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Share this URL to let users take photos for this event
+            </p>
+            <div className="bg-white dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600 p-3 mb-3">
+              <code className="text-xs text-gray-900 dark:text-white break-all">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/capture/{id}
+              </code>
+            </div>
+            <Link
+              href={`/capture/${id}`}
+              className="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors text-center"
+            >
+              Open Capture Page →
+            </Link>
+          </div>
+
           {/* Statistics Card */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Statistics</h2>
@@ -176,6 +195,12 @@ export default async function EventDetailPage({
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">{event.submissionCount || 0}</dd>
               </div>
             </dl>
+            <Link
+              href={`/admin/events/${id}#gallery`}
+              className="mt-4 block w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors text-center"
+            >
+              View Gallery →
+            </Link>
           </div>
         </div>
 

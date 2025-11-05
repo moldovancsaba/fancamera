@@ -21,6 +21,23 @@ export default async function PartnersPage() {
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
+
+    // Aggregate real-time counts for each partner
+    for (const partner of partners) {
+      // Count events for this partner
+      const eventCount = await db
+        .collection(COLLECTIONS.EVENTS)
+        .countDocuments({ partnerId: partner.partnerId });
+      
+      partner.eventCount = eventCount;
+      
+      // Count frames for this partner (partner-level and event-level frames)
+      const frameCount = await db
+        .collection(COLLECTIONS.FRAMES)
+        .countDocuments({ partnerId: partner.partnerId });
+      
+      partner.frameCount = frameCount;
+    }
   } catch (error) {
     console.error('Error fetching partners:', error);
     dbError = error instanceof Error ? error.message : 'Unknown error';

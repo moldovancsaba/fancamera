@@ -153,7 +153,17 @@ export default async function PartnerDetailPage({
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Frames</dt>
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">{partner.frameCount || 0}</dd>
               </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Submissions</dt>
+                <dd className="text-2xl font-bold text-gray-900 dark:text-white">{partner.submissionCount || 0}</dd>
+              </div>
             </dl>
+            <Link
+              href={`/admin/partners/${id}#gallery`}
+              className="mt-4 block w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors text-center"
+            >
+              View Gallery →
+            </Link>
           </div>
         </div>
 

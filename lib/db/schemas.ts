@@ -285,6 +285,12 @@ export interface Submission {
   userEmail: string;                 // User email from SSO
   frameId: string;                   // Reference to frame used
   
+  // Partner/Event context for gallery organization
+  partnerId: string | null;          // Partner ID if submission is from event capture, null for general
+  partnerName: string | null;        // Cached partner name for display
+  eventId: string | null;            // Event ID if submission is from event capture, null for general
+  eventName: string | null;          // Cached event name for display
+  
   // Image URLs (all hosted on imgbb.com)
   originalImageUrl: string;          // User's original photo
   finalImageUrl: string;             // Composed photo with frame
