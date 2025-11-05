@@ -68,9 +68,9 @@ export default async function FramesPage() {
               key={frame._id.toString()}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="aspect-square relative bg-gray-100 dark:bg-gray-700">
+              <div className="relative bg-gray-100 dark:bg-gray-700" style={{ aspectRatio: '1', maxHeight: '300px' }}>
                 <Image
-                  src={frame.thumbnailUrl || frame.imageUrl}
+                  src={frame.imageUrl}
                   alt={frame.name}
                   fill
                   className="object-contain p-4"
