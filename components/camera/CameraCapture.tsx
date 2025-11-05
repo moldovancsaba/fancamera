@@ -63,6 +63,7 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        // Always show camera selector if more than 1 camera available
         setHasMultipleCameras(videoDevices.length > 1);
       } catch (err) {
         console.error('Error checking cameras:', err);
@@ -71,6 +72,24 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
 
     checkCameras();
   }, []);
+
+  /**
+   * Re-check cameras when stream changes
+   */
+  useEffect(() => {
+    if (stream) {
+      const checkCameras = async () => {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setHasMultipleCameras(videoDevices.length > 1);
+        } catch (err) {
+          console.error('Error checking cameras:', err);
+        }
+      };
+      checkCameras();
+    }
+  }, [stream]);
 
   /**
    * Start camera stream with specified constraints
@@ -306,24 +325,21 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
 
             {/* Start Camera Prompt */}
             {!stream && !isLoading && !error && (
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900 flex items-center justify-center p-6">
+              <button
+                onClick={() => startCamera(facingMode)}
+                className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900 flex items-center justify-center p-6 w-full h-full cursor-pointer hover:from-blue-800 hover:to-indigo-800 transition-colors"
+              >
                 <div className="text-white text-center max-w-md">
                   <svg className="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <p className="text-xl font-semibold mb-4">Ready to capture?</p>
-                  <p className="text-sm mb-6 text-blue-100">
-                    Click below to start your camera and take a photo
+                  <p className="text-xl font-semibold mb-2">Ready to capture?</p>
+                  <p className="text-sm text-blue-100">
+                    Click to start your camera and take a photo
                   </p>
-                  <button
-                    onClick={() => startCamera(facingMode)}
-                    className="px-8 py-3 bg-white text-blue-900 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg"
-                  >
-                    Start Camera
-                  </button>
                 </div>
-              </div>
+              </button>
             )}
           </>
         ) : (

@@ -344,35 +344,34 @@ export default function EventCapturePage({
         {/* Step 1: Frame Selection */}
         {step === 'select-frame' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Step 1: Choose Your Frame
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Select a frame design for your photo
-              </p>
-            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {frames.map((frame) => (
-                <button
-                  key={frame._id}
-                  onClick={() => handleFrameSelect(frame)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
-                >
-                  <div className="aspect-square relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
-                    <Image
-                      src={frame.thumbnailUrl || frame.imageUrl}
-                      alt={frame.name}
-                      fill
-                      className="object-contain p-2"
-                      unoptimized
-                    />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
-                    {frame.name}
-                  </p>
-                </button>
-              ))}
+              {frames.map((frame) => {
+                // Calculate aspect ratio from frame image
+                const frameImg = new window.Image();
+                frameImg.src = frame.imageUrl;
+                
+                return (
+                  <button
+                    key={frame._id}
+                    onClick={() => handleFrameSelect(frame)}
+                    className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
+                  >
+                    <div className="relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
+                      <Image
+                        src={frame.thumbnailUrl || frame.imageUrl}
+                        alt={frame.name}
+                        width={300}
+                        height={300}
+                        className="w-full h-auto object-contain p-2"
+                        unoptimized
+                      />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                      {frame.name}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -380,18 +379,10 @@ export default function EventCapturePage({
         {/* Step 2: Photo Capture */}
         {step === 'capture-photo' && selectedFrame && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Step 2: Capture Your Photo
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Selected frame: <span className="font-medium">{selectedFrame.name}</span>
-                </p>
-              </div>
+            <div className="mb-6 flex items-center justify-end">
               <button
                 onClick={() => setStep('select-frame')}
-                className="px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors"
+                className="px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors font-medium"
               >
                 Change Frame
               </button>
@@ -403,18 +394,18 @@ export default function EventCapturePage({
         )}
 
         {/* Step 3: Preview */}
-        {step === 'preview' && compositeImage && (
+        {step === 'preview' && compositeImage && selectedFrame && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Step 3: Preview & Save
-            </h3>
             <div className="max-w-2xl mx-auto">
-              <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-6">
+              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-6 mx-auto" style={{
+                maxWidth: '100%',
+              }}>
                 <Image
                   src={compositeImage}
                   alt="Final result"
-                  fill
-                  className="object-contain"
+                  width={2048}
+                  height={2048}
+                  className="w-full h-auto object-contain"
                   unoptimized
                 />
               </div>
