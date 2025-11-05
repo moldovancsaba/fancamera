@@ -19,7 +19,6 @@ interface Frame {
   description?: string;
   category: string;
   imageUrl: string;
-  thumbnailUrl: string;
   isActive: boolean;
 }
 
@@ -335,7 +334,7 @@ export default function CapturePage() {
                 >
                   <div className="aspect-square relative bg-gray-100 dark:bg-gray-700">
                     <Image
-                      src={frame.thumbnailUrl}
+                      src={frame.imageUrl}
                       alt={frame.name}
                       fill
                       className="object-contain p-4"
