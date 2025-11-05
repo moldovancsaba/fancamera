@@ -90,7 +90,15 @@ export default async function SharePage({ params }: Props) {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
-          <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4">
+          <div 
+            className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 mx-auto"
+            style={{
+              aspectRatio: submission.metadata?.finalWidth && submission.metadata?.finalHeight 
+                ? `${submission.metadata.finalWidth} / ${submission.metadata.finalHeight}`
+                : '1',
+              maxWidth: '100%',
+            }}
+          >
             <Image
               src={submission.imageUrl}
               alt="Shared photo"
