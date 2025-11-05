@@ -18,15 +18,12 @@ import { uploadImage } from '@/lib/imgbb/upload';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Check authentication (optional for event submissions)
     const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Parse request body
     const body = await request.json();
-    const { imageData, frameId } = body;
+    const { imageData, frameId, eventId, eventName, partnerId, partnerName } = body;
 
     if (!imageData || !frameId) {
       return NextResponse.json(
@@ -51,12 +48,17 @@ export async function POST(request: NextRequest) {
 
     // Save submission to database
     const submission = {
-      userId: session.user.id,
-      userEmail: session.user.email,
-      userName: session.user.name || session.user.email,
+      userId: session?.user?.id || 'anonymous',
+      userEmail: session?.user?.email || 'anonymous@event',
+      userName: session?.user?.name || session?.user?.email || 'Event Guest',
       frameId: frame._id,
       frameName: frame.name,
       frameCategory: frame.category,
+      // Partner/Event context (for gallery filtering)
+      partnerId: partnerId || null,
+      partnerName: partnerName || null,
+      eventId: eventId || null,
+      eventName: eventName || null,
       imageUrl: uploadResult.imageUrl,
       thumbnailUrl: uploadResult.thumbnailUrl,
       deleteUrl: uploadResult.deleteUrl,
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         device: request.headers.get('user-agent'),
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        finalFileSize: uploadResult.fileSize,
       },
       createdAt: new Date().toISOString(),
     };
