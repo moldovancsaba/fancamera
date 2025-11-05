@@ -318,8 +318,8 @@ export default function EventCapturePage({
                 {event.name}
               </h1>
             </div>
-            {/* Progress Steps */}
-            <div className="flex items-center justify-center gap-2 landscape:flex-col landscape:gap-4">
+            {/* Progress Steps - Hide in landscape for camera */}
+            <div className="flex items-center justify-center gap-2 landscape:flex-col landscape:gap-4 landscape:hidden">
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
@@ -373,13 +373,14 @@ export default function EventCapturePage({
                 <button
                   key={frame._id}
                   onClick={() => handleFrameSelect(frame)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col items-center"
+                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col"
                 >
-                  <div className="w-full max-h-32 flex items-center justify-center mb-2">
+                  <div className="w-full flex items-center justify-center mb-2" style={{ minHeight: '100px' }}>
                     <img
                       src={frame.thumbnailUrl || frame.imageUrl}
                       alt={frame.name}
-                      className="max-w-full max-h-32 object-contain"
+                      style={{ maxHeight: '160px', maxWidth: '100%', height: 'auto', width: 'auto' }}
+                      className="object-contain"
                     />
                   </div>
                   <p className="text-xs font-medium text-gray-900 dark:text-white text-center">

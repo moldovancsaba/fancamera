@@ -237,14 +237,19 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
   }, []);
 
   return (
-    <div className={`flex flex-col items-center justify-center w-full ${className}`}>
+    <div className={`flex flex-col items-center justify-center w-full h-full ${className}`}>
       {/* Video Preview or Captured Image */}
       <div 
-        className="relative w-full max-w-2xl bg-gray-900 rounded-lg overflow-hidden shadow-xl"
-        style={{
-          aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9'
-        }}
+        className="relative w-full h-full max-w-full max-h-full bg-gray-900 rounded-lg overflow-hidden shadow-xl flex items-center justify-center"
       >
+        <div
+          className="relative w-full h-full flex items-center justify-center"
+          style={{
+            aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9',
+            maxWidth: '100%',
+            maxHeight: '100%',
+          }}
+        >
         {!capturedImage ? (
           <>
             {/* Live Video Stream */}
@@ -253,7 +258,7 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
 
             {/* Frame Overlay */}
@@ -269,11 +274,11 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
 
             {/* Camera Controls Overlay */}
             {stream && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4">
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4 z-20">
                 {/* Capture Button */}
                 <button
                   onClick={capturePhoto}
-                  className="w-16 h-16 rounded-full bg-white border-4 border-blue-500 hover:bg-blue-50 transition-colors shadow-lg"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-blue-500 hover:bg-blue-50 transition-colors shadow-lg flex-shrink-0"
                   aria-label="Capture photo"
                 >
                   <div className="w-full h-full rounded-full bg-blue-500"></div>
@@ -283,10 +288,10 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
                 {hasMultipleCameras && (
                   <button
                     onClick={switchCamera}
-                    className="w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg flex-shrink-0"
                     aria-label="Switch camera"
                   >
-                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </button>
@@ -296,26 +301,26 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
 
             {/* Loading Overlay */}
             {isLoading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                  <p>Starting camera...</p>
+                  <p className="text-sm">Starting camera...</p>
                 </div>
               </div>
             )}
 
             {/* Error Overlay */}
             {error && !stream && (
-              <div className="absolute inset-0 bg-red-900/90 flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-red-900/90 flex items-center justify-center p-6 z-10">
                 <div className="text-white text-center max-w-md">
-                  <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-lg font-semibold mb-2">Camera Error</p>
-                  <p className="text-sm mb-4">{error}</p>
+                  <p className="text-base md:text-lg font-semibold mb-2">Camera Error</p>
+                  <p className="text-xs md:text-sm mb-4">{error}</p>
                   <button
                     onClick={() => startCamera(facingMode)}
-                    className="px-6 py-2 bg-white text-red-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                    className="px-4 py-2 md:px-6 md:py-2 bg-white text-red-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-sm"
                   >
                     Try Again
                   </button>
@@ -327,15 +332,15 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
             {!stream && !isLoading && !error && (
               <button
                 onClick={() => startCamera(facingMode)}
-                className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900 flex items-center justify-center p-4 w-full h-full cursor-pointer hover:from-blue-800 hover:to-indigo-800 transition-colors"
+                className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900 flex items-center justify-center p-3 md:p-4 w-full h-full cursor-pointer hover:from-blue-800 hover:to-indigo-800 transition-colors z-10"
               >
-                <div className="text-white text-center max-w-md">
-                  <svg className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-white text-center max-w-xs md:max-w-md">
+                  <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <p className="text-lg md:text-xl font-semibold mb-2">Ready to capture?</p>
-                  <p className="text-xs md:text-sm text-blue-100">
+                  <p className="text-base md:text-lg font-semibold mb-2">Ready to capture?</p>
+                  <p className="text-xs text-blue-100">
                     Click to start your camera and take a photo
                   </p>
                 </div>
@@ -348,20 +353,21 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
             <img
               src={capturedImage}
               alt="Captured photo"
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
 
             {/* Retake Button */}
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
               <button
                 onClick={retake}
-                className="px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+                className="px-4 py-2 md:px-6 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg text-sm md:text-base"
               >
                 Retake Photo
               </button>
             </div>
           </>
         )}
+        </div>
       </div>
 
       {/* Hidden Canvas for Image Capture */}
