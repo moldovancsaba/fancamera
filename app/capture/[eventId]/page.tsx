@@ -9,20 +9,13 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { COLLECTIONS } from '@/lib/db/schemas';
 import { ObjectId } from 'mongodb';
-import { notFound, redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth/session';
+import { notFound } from 'next/navigation';
 
 export default async function EventCapturePage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
-  // Check authentication
-  const session = await getSession();
-  if (!session) {
-    redirect('/api/auth/login');
-  }
-
   const { eventId } = await params;
 
   // Validate MongoDB ObjectId format
@@ -114,16 +107,10 @@ export default async function EventCapturePage({
             </div>
             <div className="flex items-center gap-4">
               <a
-                href={`/admin/events/${eventId}`}
-                className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400"
-              >
-                Event Details →
-              </a>
-              <a
-                href="/profile"
+                href="/"
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
               >
-                My Gallery
+                ← Back to Home
               </a>
             </div>
           </div>
