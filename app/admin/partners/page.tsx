@@ -109,9 +109,12 @@ export default async function PartnersPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <Link
+                          href={`/admin/partners/${partner._id}`}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
                           {partner.name}
-                        </div>
+                        </Link>
                         {partner.description && (
                           <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                             {partner.description}

@@ -200,8 +200,8 @@ export default async function EventDetailPage({
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">{event.frames?.length || 0}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Submissions</dt>
-                <dd className="text-2xl font-bold text-gray-900 dark:text-white">{event.submissionCount || 0}</dd>
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Photos</dt>
+                <dd className="text-2xl font-bold text-gray-900 dark:text-white">{submissions.length}</dd>
               </div>
             </dl>
             <Link
