@@ -115,8 +115,19 @@ export default function EventCapturePage({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas not supported');
 
-      canvas.width = frameImg.width;
-      canvas.height = frameImg.height;
+      // Limit canvas size to prevent large payloads (max 2048px on longest side)
+      const maxDimension = 2048;
+      let targetWidth = frameImg.width;
+      let targetHeight = frameImg.height;
+      
+      if (targetWidth > maxDimension || targetHeight > maxDimension) {
+        const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+        targetWidth = Math.floor(targetWidth * scale);
+        targetHeight = Math.floor(targetHeight * scale);
+      }
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
       const photoImg = new window.Image();
       photoImg.crossOrigin = 'anonymous';
@@ -146,7 +157,8 @@ export default function EventCapturePage({
       ctx.drawImage(photoImg, offsetX, offsetY, drawWidth, drawHeight);
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
-      const composite = canvas.toDataURL('image/png', 0.95);
+      // Convert to JPEG with compression to reduce file size (quality 0.85 = ~85%)
+      const composite = canvas.toDataURL('image/jpeg', 0.85);
       setCompositeImage(composite);
       setStep('preview');
     } catch (error) {
