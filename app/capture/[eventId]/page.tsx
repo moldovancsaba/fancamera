@@ -302,32 +302,26 @@ export default function EventCapturePage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-6">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-4 flex-shrink-0">
+        <div className="px-4">
           <div className="text-center">
             {event.partnerName && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                 {event.partnerName}
               </p>
             )}
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               {event.name}
             </h1>
             {event.eventDate && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 {new Date(event.eventDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
+                  month: 'short',
                   day: 'numeric',
+                  year: 'numeric',
                 })}
-              </p>
-            )}
-            {event.location && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                📍 {event.location}
               </p>
             )}
           </div>
@@ -335,45 +329,42 @@ export default function EventCapturePage({
       </div>
 
       {/* Progress Steps */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            📸 Take a Photo
-          </h2>
-          <div className="flex items-center justify-center gap-4 md:gap-8">
+      <div className="flex-shrink-0 px-4 py-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-center gap-3 md:gap-6">
             <div className="flex flex-col items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
                 step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
               }`}>
                 1
               </div>
-              <p className={`text-sm font-medium text-center ${
+              <p className={`text-xs font-medium text-center ${
                 step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 Select Frame
               </p>
             </div>
-            <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
+            <div className="w-6 h-1 bg-gray-300 dark:bg-gray-600"></div>
             <div className="flex flex-col items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
                 step === 'capture-photo' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
               }`}>
                 2
               </div>
-              <p className={`text-sm font-medium text-center ${
+              <p className={`text-xs font-medium text-center ${
                 step === 'capture-photo' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 Capture Photo
               </p>
             </div>
-            <div className="w-8 h-1 bg-gray-300 dark:bg-gray-600"></div>
+            <div className="w-6 h-1 bg-gray-300 dark:bg-gray-600"></div>
             <div className="flex flex-col items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
                 step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
               }`}>
                 3
               </div>
-              <p className={`text-sm font-medium text-center ${
+              <p className={`text-xs font-medium text-center ${
                 step === 'preview' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 Preview & Save
@@ -381,11 +372,14 @@ export default function EventCapturePage({
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Content Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {/* Step 1: Frame Selection */}
         {step === 'select-frame' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="grid grid-cols-2 gap-3">
               {frames.map((frame) => {
                 // Calculate aspect ratio from frame image
                 const frameImg = new window.Image();
@@ -395,7 +389,7 @@ export default function EventCapturePage({
                   <button
                     key={frame._id}
                     onClick={() => handleFrameSelect(frame)}
-                    className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
+                    className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all"
                   >
                     <div className="relative bg-white dark:bg-gray-800 rounded overflow-hidden mb-2">
                       <Image
@@ -419,12 +413,13 @@ export default function EventCapturePage({
 
         {/* Step 2: Photo Capture */}
         {step === 'capture-photo' && selectedFrame && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <div className="mb-6 flex items-center justify-end">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="mb-4 flex items-center justify-end">
               <button
                 onClick={() => setStep('select-frame')}
-                className="px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors font-medium"
+                className="px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm flex items-center gap-1"
               >
+                <span className="material-icons text-lg">refresh</span>
                 Change Frame
               </button>
             </div>
@@ -436,9 +431,9 @@ export default function EventCapturePage({
 
         {/* Step 3: Preview */}
         {step === 'preview' && compositeImage && selectedFrame && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-            <div className="max-w-2xl mx-auto">
-              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-6 mx-auto" style={{
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div>
+              <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4" style={{
                 maxWidth: '100%',
               }}>
                 <Image
@@ -450,62 +445,59 @@ export default function EventCapturePage({
                   unoptimized
                 />
               </div>
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving || !!shareUrl}
-                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
-                  >
-                    {shareUrl ? '✓ Saved!' : isSaving ? '💾 Saving...' : '💾 Save & Share'}
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    💾 Download
-                  </button>
-                </div>
+              <div className="space-y-3">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || !!shareUrl}
+                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <span className="material-icons">favorite</span>
+                  {shareUrl ? 'SAVED!' : isSaving ? 'SAVING...' : 'LOVE IT'}
+                </button>
                 {shareUrl && (
-                  <div className="border-t pt-4">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-3">Share Your Photo</h3>
-                    <div className="flex flex-col gap-3">
+                  <div className="border-t pt-3">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-sm flex items-center gap-1">
+                      <span className="material-icons text-lg">share</span>
+                      Share Your Photo
+                    </h3>
+                    <div className="flex flex-col gap-2">
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={shareUrl}
                           readOnly
-                          className="flex-1 px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
                         />
                         <button
                           onClick={handleCopyLink}
-                          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
                         >
-                          📋 Copy
+                          <span className="material-icons text-sm">content_copy</span>
+                          <span className="text-xs">Copy</span>
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => handleShareSocial('facebook')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs"
                         >
                           Facebook
                         </button>
                         <button
                           onClick={() => handleShareSocial('twitter')}
-                          className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-sm"
+                          className="px-3 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-xs"
                         >
                           Twitter
                         </button>
                         <button
                           onClick={() => handleShareSocial('linkedin')}
-                          className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-sm"
+                          className="px-3 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors text-xs"
                         >
                           LinkedIn
                         </button>
                         <button
                           onClick={() => handleShareSocial('whatsapp')}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                          className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs"
                         >
                           WhatsApp
                         </button>
@@ -515,27 +507,29 @@ export default function EventCapturePage({
                 )}
                 <button
                   onClick={handleReset}
-                  className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  className="w-full px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  📸 Take Another Photo
+                  <span className="material-icons">refresh</span>
+                  TRY AGAIN
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Processing Overlay */}
-        {isProcessing && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-              <div className="text-6xl mb-4 animate-pulse">✨</div>
-              <p className="text-gray-900 dark:text-white font-medium">
-                Applying frame...
-              </p>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Processing Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+            <span className="material-icons text-6xl mb-4 animate-spin text-blue-600">autorenew</span>
+            <p className="text-gray-900 dark:text-white font-medium">
+              Applying frame...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
