@@ -11,7 +11,6 @@
 import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import CameraCapture from '@/components/camera/CameraCapture';
-import FileUpload from '@/components/camera/FileUpload';
 
 interface Frame {
   _id: string;
@@ -385,15 +384,8 @@ export default function EventCapturePage({
                 Change Frame
               </button>
             </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Take Photo</h4>
-                <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Or Upload Image</h4>
-                <FileUpload onUpload={handlePhotoCapture} />
-              </div>
+            <div>
+              <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
             </div>
           </div>
         )}
