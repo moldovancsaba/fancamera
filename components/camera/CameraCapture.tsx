@@ -237,37 +237,37 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
   }, []);
 
   return (
-    <div className={`flex flex-col items-center justify-center w-full h-full ${className}`}>
-      {/* Video Preview or Captured Image */}
+    <div className={`flex items-center justify-center w-full h-full p-4 ${className}`}>
+      {/* Video Preview or Captured Image - Always fit within screen */}
       <div 
-        className="relative w-full h-full max-w-full max-h-full bg-gray-900 rounded-lg overflow-hidden shadow-xl flex items-center justify-center"
+        className="relative bg-gray-900 rounded-lg overflow-hidden shadow-xl"
+        style={{
+          aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9',
+          width: '100%',
+          height: '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+        }}
       >
-        <div
-          className="relative w-full h-full flex items-center justify-center"
-          style={{
-            aspectRatio: frameImage ? `${frameImage.width} / ${frameImage.height}` : '16 / 9',
-            maxWidth: '100%',
-            maxHeight: '100%',
-          }}
-        >
         {!capturedImage ? (
           <>
-            {/* Live Video Stream */}
+            {/* Live Video Stream - Cover the frame area */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-cover"
             />
 
-            {/* Frame Overlay */}
+            {/* Frame Overlay - Always on top */}
             {frameImage && (
-              <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 pointer-events-none z-10">
                 <img
                   src={frameOverlay}
                   alt="Frame overlay"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
@@ -353,7 +353,7 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
             <img
               src={capturedImage}
               alt="Captured photo"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-cover"
             />
 
             {/* Retake Button */}
@@ -367,7 +367,6 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
             </div>
           </>
         )}
-        </div>
       </div>
 
       {/* Hidden Canvas for Image Capture */}
