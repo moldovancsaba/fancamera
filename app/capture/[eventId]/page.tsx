@@ -8,7 +8,7 @@
 
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import Image from 'next/image';
 import CameraCapture from '@/components/camera/CameraCapture';
 
@@ -367,36 +367,22 @@ export default function EventCapturePage({
 
       {/* Content Area - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 landscape:overflow-x-auto landscape:overflow-y-hidden">
-        {/* Step 1: Frame Selection */}
+        {/* Step 1: Frame Selection - Fit to screen keeping aspect ratio */}
         {step === 'select-frame' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
-            <div className="grid grid-cols-2 landscape:grid-cols-4 gap-2">
+          <div className="p-4">
+            <div className="flex flex-wrap gap-4 justify-center items-center">
               {frames.map((frame) => (
-                <button
+                <img
                   key={frame._id}
+                  src={frame.imageUrl}
+                  alt={frame.name}
                   onClick={() => handleFrameSelect(frame)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 border-2 border-transparent hover:border-blue-500 focus:border-blue-600 transition-all flex flex-col"
-                >
-                  <div 
-                    className="w-full mb-2 overflow-hidden"
-                    style={{
-                      aspectRatio: `${frame.width} / ${frame.height}`,
-                      maxHeight: '200px',
-                    }}
-                  >
-                    <img
-                      src={frame.thumbnailUrl || frame.imageUrl}
-                      alt={frame.name}
-                      className="w-full h-full object-cover"
-                      style={{
-                        aspectRatio: `${frame.width} / ${frame.height}`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs font-medium text-gray-900 dark:text-white text-center">
-                    {frame.name}
-                  </p>
-                </button>
+                  className="cursor-pointer border-2 border-gray-300 hover:border-blue-500"
+                  style={{ 
+                    maxHeight: '80vh',
+                    maxWidth: '80vw'
+                  }}
+                />
               ))}
             </div>
           </div>
@@ -415,7 +401,7 @@ export default function EventCapturePage({
                 Change
               </button>
             </div>
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4 min-h-0">
               <CameraCapture 
                 onCapture={handlePhotoCapture} 
                 frameOverlay={selectedFrame.imageUrl}

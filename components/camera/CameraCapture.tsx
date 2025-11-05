@@ -238,35 +238,35 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
     const calculateSize = () => {
       if (!containerRef.current) return;
       
-      const container = containerRef.current.parentElement;
-      if (!container) return;
+      const parent = containerRef.current.parentElement;
+      if (!parent) return;
       
-      // Account for padding/margins and UI elements (change button, controls)
-      const padding = 32; // 16px padding on each side
-      const availableWidth = Math.max(container.clientWidth - padding, 200);
-      const availableHeight = Math.max(container.clientHeight - padding, 200);
+      const availableWidth = parent.clientWidth;
+      const availableHeight = parent.clientHeight;
       
-      // Use frame dimensions or fallback
+      // Calculate frame aspect ratio
       const frameAspectRatio = (frameWidth && frameHeight) 
         ? frameWidth / frameHeight
         : frameImage
           ? frameImage.width / frameImage.height
           : 9 / 16;
       
-      // Calculate which dimension is the constraint
-      const widthConstrained = availableWidth / availableHeight < frameAspectRatio;
+      // Determine if width or height is the constraint
+      const containerAspectRatio = availableWidth / availableHeight;
       
-      if (widthConstrained) {
-        // Width is the limiting factor
-        const width = availableWidth;
-        const height = width / frameAspectRatio;
-        setContainerSize({ width, height });
+      let width, height;
+      
+      if (containerAspectRatio > frameAspectRatio) {
+        // Height is the constraint
+        height = availableHeight;
+        width = height * frameAspectRatio;
       } else {
-        // Height is the limiting factor
-        const height = availableHeight;
-        const width = height * frameAspectRatio;
-        setContainerSize({ width, height });
+        // Width is the constraint
+        width = availableWidth;
+        height = width / frameAspectRatio;
       }
+      
+      setContainerSize({ width, height });
     };
     
     calculateSize();
@@ -290,7 +290,7 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
 
   return (
     <div ref={containerRef} className={`flex items-center justify-center w-full h-full ${className}`}>
-      {/* Video Preview - Calculated to fit within viewport */}
+      {/* Camera view with calculated dimensions to fit viewport */}
       <div 
         className="relative bg-gray-900 overflow-hidden"
         style={{

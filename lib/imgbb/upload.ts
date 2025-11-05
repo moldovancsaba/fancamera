@@ -173,10 +173,18 @@ export async function uploadImage(
       // Successful upload
       if (response.data.success) {
         console.log('✓ imgbb upload successful:', response.data.data.id);
+        console.log('imgbb ALL URLs:');
+        console.log('  url:', response.data.data.url);
+        console.log('  display_url:', response.data.data.display_url);
+        console.log('  image.url:', response.data.data.image.url);
+        console.log('  url_viewer:', response.data.data.url_viewer);
+        if (response.data.data.medium) {
+          console.log('  medium.url:', response.data.data.medium.url);
+        }
         
         return {
           success: true,
-          imageUrl: response.data.data.image.url,
+          imageUrl: response.data.data.url, // Direct link to full-size original image
           thumbnailUrl: response.data.data.thumb.url,
           deleteUrl: response.data.data.delete_url,
           imageId: response.data.data.id,
@@ -208,7 +216,7 @@ export async function uploadImage(
         const status = error.response.status;
         if (status >= 400 && status < 500 && status !== 429) {
           console.error('Client error detected, not retrying');
-          break;
+          throw lastError;
         }
       }
 
