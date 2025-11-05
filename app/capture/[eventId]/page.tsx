@@ -267,11 +267,11 @@ export default function EventCapturePage({
   };
 
   const handleReset = () => {
-    setSelectedFrame(null);
+    // Keep selected frame and go back to capture step
     setCapturedImage(null);
     setCompositeImage(null);
     setShareUrl(null);
-    setStep('select-frame');
+    setStep('capture-photo');
   };
 
   if (isLoading) {
@@ -328,10 +328,11 @@ export default function EventCapturePage({
         </div>
       </div>
 
-      {/* Progress Steps */}
-      <div className="flex-shrink-0 px-4 py-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-center gap-3 md:gap-6">
+      {/* Progress Steps - Hide after save */}
+      {!shareUrl && (
+        <div className="flex-shrink-0 px-4 py-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="flex items-center justify-center gap-3 md:gap-6">
             <div className="flex flex-col items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base mb-1 ${
                 step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
@@ -372,7 +373,8 @@ export default function EventCapturePage({
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Content Area - Scrollable */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -411,19 +413,20 @@ export default function EventCapturePage({
           </div>
         )}
 
-        {/* Step 2: Photo Capture */}
+        {/* Step 2: Photo Capture - Fullscreen */}
         {step === 'capture-photo' && selectedFrame && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div className="mb-4 flex items-center justify-end">
+          <div className="fixed inset-0 bg-black z-40 flex flex-col">
+            {/* Minimal header with change frame button */}
+            <div className="absolute top-4 right-4 z-50">
               <button
                 onClick={() => setStep('select-frame')}
-                className="px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm flex items-center gap-1"
+                className="px-3 py-2 bg-white/90 text-gray-900 rounded-lg font-medium text-sm flex items-center gap-1 shadow-lg"
               >
                 <span className="material-icons text-lg">refresh</span>
-                Change Frame
+                Change
               </button>
             </div>
-            <div>
+            <div className="flex-1 flex items-center justify-center">
               <CameraCapture onCapture={handlePhotoCapture} frameOverlay={selectedFrame.imageUrl} />
             </div>
           </div>
