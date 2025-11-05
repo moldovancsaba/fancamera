@@ -112,27 +112,190 @@ _No entries yet. Design learnings will be documented as UI/UX work begins._
 
 ## Backend
 
-_No entries yet. Backend learnings will be documented as API development progresses._
+### [BACK-001] imgbb URL Structure Crisis — 2025-11-05T18:47:41.000Z
 
-**Expected Topics**:
-- MongoDB schema optimization for submissions metadata
-- imgbb.com API rate limiting strategies
-- Session management with SSO token refresh
-- Canvas image composition on server vs client
-- Email delivery reliability and retry logic
+**Issue**: Frame images appeared distorted (square) despite uploading correct aspect ratio files (9:16, 16:9). Spent significant time trying to fix CSS aspect-ratio display when the actual problem was using wrong imgbb URL.
+
+**Context**:
+- Uploaded frames with correct aspect ratios (e.g., 1080x1920 for 9:16)
+- Images displayed as squares in all galleries
+- Initially believed it was a CSS/layout problem
+- Tried multiple approaches: grid layouts, flexbox, aspect-ratio property, JavaScript calculations
+- imgbb API returns multiple URL formats in response
+
+**Root Cause**:
+imgbb API response contains multiple URL fields:
+```javascript
+response.data.data = {
+  url: 'https://i.ibb.co/8gm6xDkm/...',          // ✅ CORRECT - Original full-size
+  display_url: 'https://i.ibb.co/4RFPSZkF/...', // ❌ WRONG - Distorted/processed
+  image: {
+    url: 'https://i.ibb.co/8gm6xDkm/...',      // ✅ CORRECT - Same as data.url
+  },
+  thumb: {
+    url: 'https://i.ibb.co/...',                 // ❌ SQUARE THUMBNAIL
+  },
+  medium: {
+    url: 'https://i.ibb.co/4RFPSZkF/...',      // ❌ WRONG - Distorted
+  }
+}
+```
+
+**Solution**:
+1. Changed upload code to use `response.data.data.url` (NOT `display_url` or `image.url`)
+2. Removed ALL usage of `thumbnailUrl` throughout codebase
+3. Use only `imageUrl` (original full-size) everywhere: admin, galleries, frame selectors, capture pages
+4. Deleted all old frames with bad URLs from database
+5. Re-uploaded frames with correct URL configuration
+
+**Code Changes**:
+```typescript
+// lib/imgbb/upload.ts
+return {
+  imageUrl: response.data.data.url, // MUST use data.url, not display_url
+  thumbnailUrl: response.data.data.thumb.url,
+  // ...
+};
+
+// All components
+<Image src={frame.imageUrl} /> // NEVER use thumbnailUrl
+```
+
+**Key Decisions**:
+- **NEVER** use `display_url` or `medium.url` from imgbb - they're distorted
+- **NEVER** use `thumbnailUrl` anywhere - thumbnails are square
+- **ALWAYS** use `imageUrl` (from `data.url`) for all displays
+- Original full-size images maintain correct aspect ratio
+- Slight performance cost acceptable for correct display
+
+**Lessons Learned**:
+1. **Verify data source FIRST** before fixing display logic
+2. imgbb API documentation unclear about URL differences
+3. "display_url" sounds correct but actually distorts images
+4. Thumbnails are auto-generated as squares by imgbb
+5. URL format `i.ibb.co/Sw6RmXS6/...` (7 chars) = distorted sample
+6. URL format `i.ibb.co/8gm6xDkm/...` (8 chars) = correct original
+7. Wasted time on CSS when problem was data layer
+
+**Debugging Path (Mistakes Made)**:
+1. ❌ Tried CSS `aspect-ratio` property fixes
+2. ❌ Tried JavaScript viewport calculations  
+3. ❌ Tried grid vs flexbox layouts
+4. ❌ Tried `object-fit: contain` vs `cover`
+5. ❌ Assumed `display_url` was correct URL
+6. ✅ Finally checked actual imgbb API response
+7. ✅ Tested all URL variations to find correct one
+
+**Impact**:
+- Critical bug affecting all frame displays
+- 2+ hours debugging wrong layer (CSS instead of data)
+- Required database cleanup (delete and re-upload all frames)
+- All galleries now show correct aspect ratios
+
+**Prevention**:
+- Log ALL imgbb response fields during upload
+- Document correct URL field in ARCHITECTURE.md
+- Add validation that checks image aspect ratio matches expected
+- Never assume external API field names are self-explanatory
 
 ---
 
 ## Frontend
 
-_No entries yet. Frontend learnings will be documented as component development progresses._
+### [FRONT-001] Camera Mirror Effect for Selfies — 2025-11-05T18:47:41.000Z
 
-**Expected Topics**:
-- getUserMedia API browser compatibility
-- Camera permissions handling (iOS Safari quirks)
-- Canvas API performance on mobile devices
-- Image upload progress feedback
-- Responsive design for camera interface
+**Issue**: Front-facing camera (user mode) shows non-mirrored view, making it hard for users to compose selfies naturally.
+
+**Context**:
+- Users expect front camera to act like a mirror
+- Standard camera stream shows true orientation (not mirrored)
+- Native camera apps flip front-facing preview
+
+**Solution**:
+Apply CSS transform and canvas flip for front camera:
+
+```typescript
+// Video preview (mirror for live view)
+<video
+  style={{
+    transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
+  }}
+/>
+
+// Captured image (flip canvas to match preview)
+if (facingMode === 'user') {
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+} else {
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+}
+```
+
+**Key Decisions**:
+- Mirror both preview AND captured image (consistent UX)
+- Only apply to `facingMode === 'user'` (front camera)
+- Back camera remains unmirrored (standard orientation)
+
+**Lessons Learned**:
+- Camera UX expectations differ from technical default
+- Both video stream and canvas capture need mirroring
+- Simple CSS transform for preview, canvas transform for capture
+
+**Impact**:
+- Natural selfie experience
+- Matches user expectations from native apps
+- No performance impact
+
+### [FRONT-002] Frame Selector Aspect Ratio Preservation — 2025-11-05T18:47:41.000Z
+
+**Issue**: Frame selector boxes must maintain database-defined aspect ratios (9:16, 16:9, 1:1) while fitting multiple frames on screen without overflow.
+
+**Context**:
+- Frames have different aspect ratios stored in database
+- Must show ALL frames within viewport
+- Grid layouts force uniform sizing (breaks aspect ratio)
+- Flexbox with `max-height`/`max-width` can overflow
+
+**Failed Approaches**:
+1. ❌ Grid with `aspect-ratio` CSS - grid forces column width
+2. ❌ Fixed height with `aspect-ratio` - doesn't scale responsively  
+3. ❌ JavaScript calculations - too complex, still had edge cases
+4. ❌ `max-height: 80vh, max-width: 80vw` - frames still overflowed
+
+**Solution**:
+Flexbox with viewport-based constraints:
+```html
+<div className="flex flex-wrap gap-4 justify-center">
+  {frames.map(frame => (
+    <img
+      src={frame.imageUrl}
+      className="cursor-pointer border-2 max-h-[60vh] max-w-[45vw]"
+    />
+  ))}
+</div>
+```
+
+**Key Decisions**:
+- Use native `<img>` (not CSS aspect-ratio on divs)
+- Browser handles aspect ratio automatically
+- Flexbox allows natural wrapping
+- `max-h-[60vh]` and `max-w-[45vw]` prevent overflow
+- Images scale down proportionally
+
+**Lessons Learned**:
+1. **Let browser handle aspect ratio** - don't fight it with CSS
+2. Native `<img>` tags preserve aspect ratio automatically
+3. Viewport units (vh/vw) better than pixel values for responsive
+4. Flexbox wrap handles variable sizes better than grid
+5. Keep it simple - complex JavaScript often unnecessary
+
+**Impact**:
+- All frames visible on screen
+- Correct aspect ratios maintained
+- Works across all screen sizes
+- No overflow or scrolling needed
 
 ---
 
@@ -296,15 +459,15 @@ _Use this template for new learnings:_
 
 ## Statistics
 
-**Total Learnings**: 6
+**Total Learnings**: 9
 - Development: 2
 - Design: 0
-- Backend: 0
-- Frontend: 0
+- Backend: 1
+- Frontend: 2
 - Process: 2
 - Other: 1
 
-**Last Updated**: 2025-11-03T18:31:18.000Z
+**Last Updated**: 2025-11-05T18:47:41.000Z
 
 ---
 
