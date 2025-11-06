@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * Slideshow Player with Rolling Buffer
- * Version: 2.0.0
+ * Slideshow Player Page
+ * Version: 1.0.0
  * 
- * Infinite smooth playback with continuous background refresh
- * - Rolling N-slide buffer (configurable)
- * - Fetch 1 candidate per transition (non-blocking)
- * - Image preloading for smooth transitions
- * - Resilient to network failures
- * - Supports 16:9, 1:1 (2x1 mosaic), 9:16 (3x1 mosaic)
+ * Public slideshow player for event submissions
+ * - 16:9 canvas at 1920x1080px (scales to fit screen)
+ * - Smart playlist with least-played algorithm
+ * - Mosaic layouts for 1:1 (2x1) and 9:16 (3x1) images
+ * - Auto-advance with fade transitions
+ * - Fullscreen support (YouTube/Netflix style)
  */
 
 import { useEffect, useState, useRef, use } from 'react';
@@ -27,17 +27,19 @@ interface Slide {
   submissions: Submission[];
 }
 
-interface SlideshowSettings {
-  _id: string;
-  name: string;
-  eventName: string;
-  transitionDurationMs: number;
-  fadeDurationMs: number;
-  bufferSize: number;
-  refreshStrategy: 'continuous' | 'batch';
+interface PlaylistData {
+  slideshow: {
+    _id: string;
+    name: string;
+    eventName: string;
+    transitionDurationMs: number;
+    fadeDurationMs: number;
+  };
+  playlist: Slide[];
+  totalSubmissions: number;
 }
 
-export default function SlideshowPlayerV2({
+export default function SlideshowPage({
   params,
 }: {
   params: Promise<{ slideshowId: string }>;
@@ -45,192 +47,83 @@ export default function SlideshowPlayerV2({
   const resolvedParams = use(params);
   const { slideshowId } = resolvedParams;
 
-  // Slideshow state
-  const [settings, setSettings] = useState<SlideshowSettings | null>(null);
-  const [buffer, setBuffer] = useState<Slide[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [playlistData, setPlaylistData] = useState<PlaylistData | null>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
-  
-  // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
-  const preloadedImages = useRef<Map<string, HTMLImageElement>>(new Map());
-  const isFetchingCandidate = useRef(false);
 
-  // Helper: Get all submission IDs from buffer
-  const getBufferSubmissionIds = (): string[] => {
-    const ids: string[] = [];
-    buffer.forEach(slide => {
-      slide.submissions.forEach(sub => ids.push(sub._id));
-    });
-    return ids;
-  };
-
-  // Helper: Preload image
-  const preloadImage = (url: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (preloadedImages.current.has(url)) {
-        resolve();
-        return;
-      }
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        preloadedImages.current.set(url, img);
-        resolve();
-      };
-      img.onerror = () => {
-        console.warn(`Failed to preload image: ${url}`);
-        reject();
-      };
-      img.src = url;
-    });
-  };
-
-  // Helper: Preload all images in a slide
-  const preloadSlide = async (slide: Slide): Promise<void> => {
-    const promises = slide.submissions.map(sub => 
-      preloadImage(sub.imageUrl).catch(() => {}) // Ignore failures
-    );
-    await Promise.all(promises);
-  };
-
-  // Initial load: Fetch buffer-sized playlist
-  const loadInitialBuffer = async () => {
+  // Fetch playlist
+  const fetchPlaylist = async () => {
     try {
-      console.log('Loading initial buffer for slideshow:', slideshowId);
-      
+      console.log('Fetching playlist for slideshow:', slideshowId);
       const response = await fetch(`/api/slideshows/${slideshowId}/playlist`);
+      console.log('Playlist response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`Failed to load slideshow: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Playlist fetch failed:', response.status, errorData);
+        throw new Error(errorData.error || `Failed to load slideshow: ${response.status}`);
       }
-
+      
       const data = await response.json();
-      console.log('Initial playlist loaded:', data.playlist.length, 'slides');
-
-      if (!data.slideshow || !data.playlist) {
-        throw new Error('Invalid slideshow data');
-      }
-
-      setSettings(data.slideshow);
-      setBuffer(data.playlist);
-
-      // Preload all images in buffer (parallel)
-      if (data.playlist.length > 0) {
-        console.log('Preloading', data.playlist.length, 'slides...');
-        await Promise.all(data.playlist.map(preloadSlide));
-        console.log('Preload complete');
-      }
-
+      console.log('Playlist data:', data);
+      setPlaylistData(data);
       setIsLoading(false);
     } catch (err) {
-      console.error('Failed to load initial buffer:', err);
+      console.error('Fetch playlist error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load slideshow');
       setIsLoading(false);
     }
   };
 
-  // Background refresh: Fetch next best candidate
-  const fetchNextCandidate = async () => {
-    if (isFetchingCandidate.current || buffer.length === 0) return;
-
-    isFetchingCandidate.current = true;
-
+  // Update play counts
+  const updatePlayCounts = async (submissionIds: string[]) => {
     try {
-      const excludeIds = getBufferSubmissionIds();
-      const response = await fetch(
-        `/api/slideshows/${slideshowId}/next-candidate?excludeIds=${excludeIds.join(',')}`
-      );
-
-      if (!response.ok) {
-        console.warn('Next candidate fetch failed:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-
-      if (data.candidate) {
-        console.log('New candidate fetched, preloading...');
-        
-        // Preload new candidate images
-        await preloadSlide(data.candidate).catch(() => {
-          console.warn('Failed to preload candidate');
-        });
-
-        // Add to buffer, remove oldest
-        setBuffer(prevBuffer => {
-          const newBuffer = [...prevBuffer];
-          newBuffer.push(data.candidate);
-          
-          // Keep buffer at configured size
-          if (settings && newBuffer.length > settings.bufferSize) {
-            newBuffer.shift(); // Remove oldest
-          }
-          
-          console.log('Buffer updated:', newBuffer.length, 'slides');
-          return newBuffer;
-        });
-      } else {
-        console.log('No new candidates available');
-      }
-    } catch (err) {
-      console.warn('Failed to fetch next candidate:', err);
-      // Silently fail - continue with existing buffer
-    } finally {
-      isFetchingCandidate.current = false;
-    }
-  };
-
-  // Update play counts for displayed slide
-  const updatePlayCounts = async (slide: Slide) => {
-    try {
-      const submissionIds = slide.submissions.map(s => s._id);
       await fetch(`/api/slideshows/${slideshowId}/played`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ submissionIds }),
       });
     } catch (err) {
-      console.warn('Failed to update play counts:', err);
+      console.error('Failed to update play counts:', err);
     }
   };
 
-  // Load initial buffer on mount
+  // Load initial playlist
   useEffect(() => {
-    loadInitialBuffer();
+    fetchPlaylist();
   }, [slideshowId]);
 
-  // Auto-advance slides with background refresh
+  // Auto-advance slides
   useEffect(() => {
-    if (!settings || !isPlaying || buffer.length === 0) return;
+    if (!playlistData || !isPlaying || playlistData.playlist.length === 0) return;
 
-    const timer = setTimeout(async () => {
-      const currentSlide = buffer[currentIndex];
-      
-      // Update play counts for current slide
+    const transitionDuration = playlistData.slideshow.transitionDurationMs || 5000;
+    
+    const timer = setTimeout(() => {
+      const currentSlide = playlistData.playlist[currentSlideIndex];
       if (currentSlide) {
-        updatePlayCounts(currentSlide);
+        const submissionIds = currentSlide.submissions.map(s => s._id);
+        updatePlayCounts(submissionIds);
       }
 
-      // Background fetch next candidate (non-blocking)
-      if (settings.refreshStrategy === 'continuous') {
-        fetchNextCandidate();
+      const nextIndex = (currentSlideIndex + 1) % playlistData.playlist.length;
+      
+      // If we completed the playlist, fetch new one
+      if (nextIndex === 0) {
+        fetchPlaylist();
       }
-
-      // Advance to next slide
-      const nextIndex = (currentIndex + 1) % buffer.length;
-      setCurrentIndex(nextIndex);
-    }, settings.transitionDurationMs);
+      
+      setCurrentSlideIndex(nextIndex);
+    }, transitionDuration);
 
     return () => clearTimeout(timer);
-  }, [settings, buffer, currentIndex, isPlaying]);
+  }, [playlistData, currentSlideIndex, isPlaying]);
 
   // Fullscreen handling
   const toggleFullscreen = () => {
@@ -275,18 +168,17 @@ export default function SlideshowPlayerV2({
       } else if (e.key === ' ') {
         e.preventDefault();
         setIsPlaying(prev => !prev);
-      } else if (e.key === 'ArrowRight' && buffer.length > 0) {
-        setCurrentIndex((prev) => (prev + 1) % buffer.length);
-      } else if (e.key === 'ArrowLeft' && buffer.length > 0) {
-        setCurrentIndex((prev) => (prev - 1 + buffer.length) % buffer.length);
+      } else if (e.key === 'ArrowRight' && playlistData) {
+        setCurrentSlideIndex((prev) => (prev + 1) % playlistData.playlist.length);
+      } else if (e.key === 'ArrowLeft' && playlistData) {
+        setCurrentSlideIndex((prev) => (prev - 1 + playlistData.playlist.length) % playlistData.playlist.length);
       }
     };
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [buffer]);
+  }, [playlistData]);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black">
@@ -295,8 +187,7 @@ export default function SlideshowPlayerV2({
     );
   }
 
-  // Error state
-  if (error || !settings) {
+  if (error || !playlistData) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black">
         <div className="text-red-500 text-2xl">{error || 'Slideshow not found'}</div>
@@ -304,20 +195,19 @@ export default function SlideshowPlayerV2({
     );
   }
 
-  // Empty buffer state
-  if (buffer.length === 0) {
+  if (playlistData.playlist.length === 0) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black">
         <div className="text-white text-center">
           <div className="text-4xl mb-4">📸</div>
-          <div className="text-2xl">{settings.name}</div>
+          <div className="text-2xl">{playlistData.slideshow.name}</div>
           <div className="text-gray-400 mt-2">No submissions yet</div>
         </div>
       </div>
     );
   }
 
-  const currentSlide = buffer[currentIndex];
+  const currentSlide = playlistData.playlist[currentSlideIndex];
 
   return (
     <div
@@ -391,8 +281,8 @@ export default function SlideshowPlayerV2({
             <div className="max-w-7xl mx-auto">
               {/* Title */}
               <div className="mb-4">
-                <h1 className="text-white text-2xl font-bold">{settings.name}</h1>
-                <p className="text-gray-300 text-sm">{settings.eventName}</p>
+                <h1 className="text-white text-2xl font-bold">{playlistData.slideshow.name}</h1>
+                <p className="text-gray-300 text-sm">{playlistData.slideshow.eventName}</p>
               </div>
 
               {/* Controls */}
@@ -416,7 +306,7 @@ export default function SlideshowPlayerV2({
 
                 {/* Progress */}
                 <div className="flex-1 text-white text-sm">
-                  Slide {currentIndex + 1} of {buffer.length} • Buffer: {settings.bufferSize}
+                  Slide {currentSlideIndex + 1} of {playlistData.playlist.length}
                 </div>
 
                 {/* Fullscreen */}
