@@ -1,6 +1,6 @@
 {
   "name": "camera",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Professional web application for capturing photos with graphical frames, social sharing, event slideshows, and user profile management",
   "type": "module",
   "private": true,
