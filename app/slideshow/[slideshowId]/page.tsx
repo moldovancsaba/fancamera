@@ -477,94 +477,63 @@ export default function SlideshowPlayerV2({
     } else if (slide.aspectRatio === '1:1') {
       // SQUARE 1:1 MOSAIC SPECIFICATION:
       // - 16:9 container fragmented into 6 equal parts: 3 columns (1/3 horizontal each) x 2 rows (1/2 vertical each)
-      // - Each image fits to maximum within its cell, aspect ratio preserved (objectFit: contain)
-      // - Alignment:
-      //   * Top-left: aligned to TOP and LEFT
-      //   * Top-center: aligned to TOP and CENTER
-      //   * Top-right: aligned to TOP and RIGHT
-      //   * Bottom-left: aligned to BOTTOM and LEFT
-      //   * Bottom-center: aligned to BOTTOM and CENTER
-      //   * Bottom-right: aligned to BOTTOM and RIGHT
-      // - NO margin, NO padding, NO gap between grid cells
+      // - Absolute positioning for EXACT pixel control
+      // - Each image: objectFit: contain preserves aspect ratio
+      // - NO margin, NO padding, NO gap
       return (
-        <div 
-          style={{ 
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr', // 3 equal columns
-            gridTemplateRows: '1fr 1fr', // 2 equal rows
-            width: '100%',
-            height: '100%',
-            gap: 0,
-            padding: 0,
-            margin: 0
-          }}
-        >
-          {/* Top Left - align top left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[0].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          {/* Top Left */}
+          <div style={{ position: 'absolute', left: '0%', top: '0%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'hidden' }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Top Center - align top center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[1].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Top Center */}
+          <div style={{ position: 'absolute', left: '33.333%', top: '0%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Top Right - align top right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[2].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Top Right */}
+          <div style={{ position: 'absolute', left: '66.666%', top: '0%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', overflow: 'hidden' }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Bottom Left - align bottom left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[3].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Bottom Left */}
+          <div style={{ position: 'absolute', left: '0%', top: '50%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', overflow: 'hidden' }}>
+            <img src={slide.submissions[3].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Bottom Center - align bottom center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[4].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Bottom Center */}
+          <div style={{ position: 'absolute', left: '33.333%', top: '50%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src={slide.submissions[4].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Bottom Right - align bottom right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[5].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Bottom Right */}
+          <div style={{ position: 'absolute', left: '66.666%', top: '50%', width: '33.333%', height: '50%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', overflow: 'hidden' }}>
+            <img src={slide.submissions[5].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
         </div>
       );
     } else {
       // PORTRAIT 9:16 MOSAIC SPECIFICATION:
-      // - 16:9 container fragmented into 3 equal horizontal parts (1/3 each), single row full height
-      // - Each portrait image fits to maximum within its cell, aspect ratio preserved (objectFit: contain)
-      // - Alignment:
-      //   * Left image: aligned to LEFT
-      //   * Center image: aligned to CENTER
-      //   * Right image: aligned to RIGHT
-      // - NO margin, NO padding, NO gap between columns
+      // - 16:9 container fragmented into 3 equal horizontal parts (1/3 each), full height
+      // - Absolute positioning for EXACT pixel control
+      // - Each image: objectFit: contain preserves aspect ratio
+      // - NO margin, NO padding, NO gap
       return (
-        <div 
-          style={{ 
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr', // 3 equal columns
-            gridTemplateRows: '1fr', // Single row full height
-            width: '100%',
-            height: '100%',
-            gap: 0,
-            padding: 0,
-            margin: 0
-          }}
-        >
-          {/* Left image - align left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[0].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          {/* Left image */}
+          <div style={{ position: 'absolute', left: '0%', top: '0%', width: '33.333%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Center image - align center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[1].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Center image */}
+          <div style={{ position: 'absolute', left: '33.333%', top: '0%', width: '33.333%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
           
-          {/* Right image - align right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
-            <img src={slide.submissions[2].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          {/* Right image */}
+          <div style={{ position: 'absolute', left: '66.666%', top: '0%', width: '33.333%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', overflow: 'hidden' }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
           </div>
         </div>
       );
@@ -574,20 +543,32 @@ export default function SlideshowPlayerV2({
   return (
     <div
       ref={containerRef}
-      className="w-screen h-screen bg-black flex items-center justify-center overflow-hidden"
+      className="w-screen h-screen bg-black overflow-hidden"
       onMouseMove={handleMouseMove}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      {/* Slideshow Canvas - 16:9 aspect ratio */}
-      <div className="relative w-full h-full flex items-center justify-center">
+      {/* Slideshow Canvas - 16:9 aspect ratio box that fits screen */}
+      <div 
+        className="relative"
+        style={{
+          width: '100%',
+          height: '100%',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          aspectRatio: '16/9',
+          backgroundColor: 'black',
+        }}
+      >
         {/* Slide Content - instant cuts, no transitions */}
         <div
           key={currentSlideKey}
-          className="relative bg-black"
           style={{
             width: '100%',
             height: '100%',
-            aspectRatio: '16/9',
-            display: 'block',
             position: 'relative',
           }}
         >
