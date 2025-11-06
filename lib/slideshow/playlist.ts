@@ -84,10 +84,12 @@ export function generatePlaylist(submissions: any[]): Slide[] {
     if (processedIds.has(submission._id.toString())) continue;
     
     // Detect aspect ratio from metadata
-    const width = submission.metadata?.finalWidth || submission.metadata?.originalWidth || 0;
-    const height = submission.metadata?.finalHeight || submission.metadata?.originalHeight || 0;
+    // Fallback to 16:9 (1920x1080) for old submissions without dimensions
+    const width = submission.metadata?.finalWidth || submission.metadata?.originalWidth || 1920;
+    const height = submission.metadata?.finalHeight || submission.metadata?.originalHeight || 1080;
     
-    if (width === 0 || height === 0) continue; // Skip if dimensions unavailable
+    // Note: We use 16:9 as default aspect ratio for submissions without metadata
+    // This ensures old submissions still appear in slideshows
     
     const aspectRatio = detectAspectRatio(width, height);
     
