@@ -19,13 +19,13 @@ import { COLLECTIONS, generateTimestamp } from '@/lib/db/schemas';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ partnerId: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { partnerId } = await params;
 
     // Validate MongoDB ObjectId format
-    if (!ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(partnerId)) {
       return NextResponse.json(
         { error: 'Invalid partner ID' },
         { status: 400 }
@@ -37,7 +37,7 @@ export async function GET(
     // Get partner document
     const partner = await db
       .collection(COLLECTIONS.PARTNERS)
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: new ObjectId(partnerId) });
 
     if (!partner) {
       return NextResponse.json(
@@ -86,7 +86,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ partnerId: string }> }
 ) {
   try {
     // Check authentication and authorization
@@ -99,10 +99,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { partnerId } = await params;
 
     // Validate MongoDB ObjectId format
-    if (!ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(partnerId)) {
       return NextResponse.json(
         { error: 'Invalid partner ID' },
         { status: 400 }
@@ -154,7 +154,7 @@ export async function PATCH(
     const result = await db
       .collection(COLLECTIONS.PARTNERS)
       .findOneAndUpdate(
-        { _id: new ObjectId(id) },
+        { _id: new ObjectId(partnerId) },
         { $set: updates },
         { returnDocument: 'after' }
       );
@@ -188,7 +188,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ partnerId: string }> }
 ) {
   try {
     // Check authentication and authorization
@@ -201,10 +201,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { partnerId } = await params;
 
     // Validate MongoDB ObjectId format
-    if (!ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(partnerId)) {
       return NextResponse.json(
         { error: 'Invalid partner ID' },
         { status: 400 }
@@ -216,7 +216,7 @@ export async function DELETE(
     // Get partner to check existence and get partnerId
     const partner = await db
       .collection(COLLECTIONS.PARTNERS)
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: new ObjectId(partnerId) });
 
     if (!partner) {
       return NextResponse.json(
@@ -244,7 +244,7 @@ export async function DELETE(
     // Delete partner
     await db
       .collection(COLLECTIONS.PARTNERS)
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: new ObjectId(partnerId) });
 
     return NextResponse.json({
       success: true,

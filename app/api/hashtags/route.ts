@@ -1,13 +1,14 @@
 /**
  * Hashtags API
- * Version: 1.1.0
+ * Version: 1.7.1
  * 
- * GET: Get all unique hashtags or search for hashtags
+ * GET: Get all unique hashtags from frames (for filtering)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { COLLECTIONS } from '@/lib/db/schemas';
+import { withErrorHandler, apiSuccess } from '@/lib/api';
 
 /**
  * GET /api/hashtags
@@ -19,8 +20,7 @@ import { COLLECTIONS } from '@/lib/db/schemas';
  * 
  * Returns array of unique hashtag strings sorted alphabetically
  */
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
     const query = searchParams.get('q');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -61,15 +61,8 @@ export async function GET(request: NextRequest) {
     // Extract hashtag strings from _id field
     const hashtags = results.map((result) => result._id);
 
-    return NextResponse.json({
-      hashtags,
-      count: hashtags.length,
-    });
-  } catch (error) {
-    console.error('Error fetching hashtags:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch hashtags' },
-      { status: 500 }
-    );
-  }
-}
+  return apiSuccess({
+    hashtags,
+    count: hashtags.length,
+  });
+});

@@ -44,8 +44,12 @@ export async function GET(
     // Determine how many slides to generate
     const limit = limitParam ? parseInt(limitParam) : (slideshow.bufferSize || 10);
 
-    // Build match filter: event + exclude IDs in other playlists
-    const matchFilter: any = { eventId: slideshow.eventId };
+    // Build match filter: event + exclude IDs in other playlists + archived/hidden check
+    const matchFilter: any = {
+      eventIds: { $in: [slideshow.eventId] },        // NEW: Check if eventId exists in array
+      isArchived: false,                              // NEW: Exclude archived submissions
+      hiddenFromEvents: { $nin: [slideshow.eventId] } // NEW: Not hidden from this event
+    };
     if (excludeIds.length > 0) {
       // Convert string IDs to ObjectId for MongoDB comparison
       const { ObjectId } = await import('mongodb');

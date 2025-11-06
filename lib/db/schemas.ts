@@ -289,8 +289,8 @@ export interface Submission {
   // Partner/Event context for gallery organization
   partnerId: string | null;          // Partner ID if submission is from event capture, null for general
   partnerName: string | null;        // Cached partner name for display
-  eventId: string | null;            // Event ID if submission is from event capture, null for general
-  eventName: string | null;          // Cached event name for display
+  eventIds: string[];                // Array of event IDs where this submission appears (supports reusability)
+  eventName: string | null;          // Cached event name for display (primary event)
   
   // Image URLs (all hosted on imgbb.com)
   originalImageUrl: string;          // User's original photo
@@ -341,9 +341,13 @@ export interface Submission {
   downloadCount: number;             // Number of times downloaded
   lastSharedAt?: string;             // ISO 8601 timestamp
   
-  // Soft delete support
-  isDeleted: boolean;                // Soft delete flag
-  deletedAt?: string;                // ISO 8601 timestamp
+  // Archive and visibility control (replaces soft delete)
+  isArchived: boolean;               // Admin-level archive flag (hidden from all views except archived page)
+  archivedAt?: string;               // ISO 8601 timestamp when archived
+  archivedBy?: string;               // Admin user ID who archived this submission
+  
+  hiddenFromPartner: boolean;        // Hidden from partner-level views (but not deleted)
+  hiddenFromEvents: string[];        // Array of event IDs where this submission is hidden
   
   // Slideshow tracking for playlist generation
   // Tracks how many times this submission has been displayed in each slideshow

@@ -103,9 +103,12 @@ export default async function EventsPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <Link
+                          href={`/admin/events/${event._id}`}
+                          className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
                           {event.name}
-                        </div>
+                        </Link>
                         {event.description && (
                           <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                             {event.description}

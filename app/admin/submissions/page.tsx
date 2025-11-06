@@ -15,9 +15,10 @@ export default async function AdminSubmissionsPage() {
 
   try {
     const db = await connectToDatabase();
+    // NEW: Exclude archived submissions from main view
     submissions = await db
       .collection('submissions')
-      .find({})
+      .find({ isArchived: false })
       .sort({ createdAt: -1 })
       .limit(100)
       .toArray();

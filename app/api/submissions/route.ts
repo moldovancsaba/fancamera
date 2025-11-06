@@ -1,36 +1,42 @@
 /**
  * Submissions API
- * Version: 1.3.0
+ * Version: 1.7.1
  * 
  * POST: Save photo submission with frame to imgbb and MongoDB
  * GET: List user's submissions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/lib/db/mongodb';
-import { getSession } from '@/lib/auth/session';
 import { uploadImage } from '@/lib/imgbb/upload';
+import {
+  withErrorHandler,
+  requireAuth,
+  optionalAuth,
+  parsePaginationParams,
+  validateRequiredFields,
+  apiSuccess,
+  apiCreated,
+  apiNotFound,
+  apiBadRequest,
+} from '@/lib/api';
 
 /**
  * POST /api/submissions
  * Save a new photo submission
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Check authentication (optional for event submissions)
-    const session = await getSession();
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Check authentication (optional for event submissions)
+  const session = await optionalAuth();
 
     // Parse request body
     const body = await request.json();
     const { imageData, frameId, eventId, eventName, partnerId, partnerName, imageWidth, imageHeight } = body;
 
-    if (!imageData || !frameId) {
-      return NextResponse.json(
-        { error: 'Image data and frame ID are required' },
-        { status: 400 }
-      );
-    }
+  if (!imageData || !frameId) {
+    throw apiBadRequest('Image data and frame ID are required');
+  }
 
     // Convert base64 to buffer and upload to imgbb
     const base64Data = imageData.split(',')[1]; // Remove data:image/png;base64, prefix
@@ -42,9 +48,9 @@ export async function POST(request: NextRequest) {
     const db = await connectToDatabase();
     const frame = await db.collection('frames').findOne({ _id: new ObjectId(frameId) });
 
-    if (!frame) {
-      return NextResponse.json({ error: 'Frame not found' }, { status: 404 });
-    }
+  if (!frame) {
+    throw apiNotFound('Frame');
+  }
 
     // Save submission to database
     const submission = {
@@ -77,37 +83,24 @@ export async function POST(request: NextRequest) {
 
     const result = await db.collection('submissions').insertOne(submission);
 
-    return NextResponse.json({
-      success: true,
-      submission: {
-        _id: result.insertedId,
-        ...submission,
-      },
-    });
-  } catch (error) {
-    console.error('Error creating submission:', error);
-    return NextResponse.json(
-      { error: 'Failed to save submission' },
-      { status: 500 }
-    );
-  }
-}
+  return apiCreated({
+    submission: {
+      _id: result.insertedId,
+      ...submission,
+    },
+  });
+});
 
 /**
  * GET /api/submissions
  * Get user's submissions with pagination
  */
-export async function GET(request: NextRequest) {
-  try {
-    // Check authentication
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const GET = withErrorHandler(async (request: NextRequest) => {
+  // Check authentication
+  const session = await requireAuth();
 
-    const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+  const { searchParams } = request.nextUrl;
+  const { page, limit } = parsePaginationParams(searchParams);
 
     const db = await connectToDatabase();
 
@@ -125,20 +118,13 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
 
-    return NextResponse.json({
-      submissions,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching submissions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch submissions' },
-      { status: 500 }
-    );
-  }
-}
+  return apiSuccess({
+    submissions,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+});

@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
     console.log('✓ Session created, redirecting to homepage');
 
     // Redirect to homepage
-    // TODO: Consider redirecting to /profile or a "where you left off" page
+    // Note: Future enhancement - redirect to /profile or "where you left off" page
+    // See ROADMAP.md Q1 2026 - User Experience Improvements
     return NextResponse.redirect(new URL('/', request.url));
     
   } catch (error) {

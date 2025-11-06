@@ -375,16 +375,16 @@ export default function EventCapturePage({
         {/* Step 1: Frame Selection - Fit to screen keeping aspect ratio */}
         {step === 'select-frame' && (
           <div className="h-full flex items-center justify-center p-4">
-            <div className="flex flex-wrap gap-4 justify-center items-center max-w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl">
               {frames.map((frame) => (
-                <img
-                  key={frame._id}
-                  src={frame.imageUrl}
-                  alt={frame.name}
-                  onClick={() => handleFrameSelect(frame)}
-                  className="cursor-pointer border-2 border-gray-300 hover:border-blue-500 object-contain"
-                  style={{ maxHeight: 'calc(100vh - 200px)', maxWidth: 'calc(100vw - 100px)' }}
-                />
+                <div key={frame._id} className="flex items-center justify-center">
+                  <img
+                    src={frame.imageUrl}
+                    alt={frame.name}
+                    onClick={() => handleFrameSelect(frame)}
+                    className="cursor-pointer border-2 border-gray-300 hover:border-blue-500 object-contain w-full h-auto max-h-[60vh] rounded-lg transition-all"
+                  />
+                </div>
               ))}
             </div>
           </div>

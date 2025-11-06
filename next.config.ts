@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 /**
  * Next.js configuration for Camera webapp
- * Version: 1.0.0
+ * Version: 1.7.1
  * 
  * Key configurations:
  * - Image domains for imgbb.com CDN
- * - Security headers for production
+ * - Security headers (HSTS, CSP, X-Frame-Options)
+ * - Performance optimizations (compression, caching)
  * - TypeScript strict mode enforcement
  */
 const nextConfig: NextConfig = {
@@ -32,31 +33,82 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
 
-  // Security headers for production
+  // Security and Performance headers
   async headers() {
     return [
       {
+        // Apply to all routes
         source: '/:path*',
         headers: [
+          // DNS prefetching
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'
           },
+          // HSTS - Force HTTPS for 2 years
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload'
           },
+          // Prevent clickjacking
           {
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN'
           },
+          // Prevent MIME sniffing
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff'
           },
+          // Control referrer information
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
+          },
+          // XSS Protection (legacy browsers)
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          // Permissions Policy (formerly Feature-Policy)
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-inline/eval
+              "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+              "img-src 'self' data: https://i.ibb.co https://imgbb.com blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://sso.doneisbetter.com https://api.imgbb.com",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self' https://sso.doneisbetter.com",
+            ].join('; ')
+          },
+        ],
+      },
+      {
+        // Cache static assets (images, fonts, etc.)
+        source: '/(.*)\\.(ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          },
+        ],
+      },
+      {
+        // Cache API responses (shorter duration)
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate' // Don't cache API responses by default
           },
         ],
       },

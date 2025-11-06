@@ -21,7 +21,7 @@ import { COLLECTIONS, generateTimestamp } from '@/lib/db/schemas';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ partnerId: string }> }
 ) {
   try {
     // Check authentication and authorization
@@ -34,10 +34,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { partnerId } = await params;
 
     // Validate MongoDB ObjectId format
-    if (!ObjectId.isValid(id)) {
+    if (!ObjectId.isValid(partnerId)) {
       return NextResponse.json(
         { error: 'Invalid partner ID' },
         { status: 400 }
@@ -49,7 +49,7 @@ export async function PATCH(
     // Get current partner to toggle its isActive state
     const partner = await db
       .collection(COLLECTIONS.PARTNERS)
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: new ObjectId(partnerId) });
 
     if (!partner) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function PATCH(
     const result = await db
       .collection(COLLECTIONS.PARTNERS)
       .findOneAndUpdate(
-        { _id: new ObjectId(id) },
+        { _id: new ObjectId(partnerId) },
         { 
           $set: { 
             isActive: newIsActive,

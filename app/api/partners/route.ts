@@ -1,15 +1,22 @@
 /**
  * Partners API - List and Create
- * Version: 1.1.0
+ * Version: 1.7.1
  * 
- * GET: List all partners with pagination and search
+ * GET: List all partners with pagination, search, and filtering
  * POST: Create new partner (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
-import { getSession } from '@/lib/auth/session';
 import { COLLECTIONS, generateId, generateTimestamp } from '@/lib/db/schemas';
+import {
+  withErrorHandler,
+  requireAdmin,
+  parsePaginationParams,
+  validateRequiredFields,
+  apiSuccess,
+  apiCreated,
+} from '@/lib/api';
 
 /**
  * GET /api/partners
@@ -21,15 +28,13 @@ import { COLLECTIONS, generateId, generateTimestamp } from '@/lib/db/schemas';
  * - search: Search by partner name
  * - active: Filter by active status (true/false)
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search');
-    const active = searchParams.get('active');
+export const GET = withErrorHandler(async (request: NextRequest) => {
+  const { searchParams } = request.nextUrl;
+  const { page, limit } = parsePaginationParams(searchParams);
+  const search = searchParams.get('search');
+  const active = searchParams.get('active');
 
-    const db = await connectToDatabase();
+  const db = await connectToDatabase();
     
     // Build query
     // Query filters are used to narrow down the result set based on user input
@@ -57,23 +62,16 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
 
-    return NextResponse.json({
-      partners,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching partners:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch partners' },
-      { status: 500 }
-    );
-  }
-}
+  return apiSuccess({
+    partners,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+});
 
 /**
  * POST /api/partners
@@ -89,65 +87,43 @@ export async function GET(request: NextRequest) {
  * - logoUrl: Partner logo URL
  * - isActive: Active status (default: true)
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Check authentication and authorization
-    // Only admin users can create partners
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Check authentication and authorization - only admin users can create partners
+  const session = await requireAdmin();
 
-    if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+  // Parse request body
+  const body = await request.json();
+  const { name, description, contactEmail, contactName, logoUrl, isActive } = body;
 
-    // Parse request body
-    const body = await request.json();
-    const { name, description, contactEmail, contactName, logoUrl, isActive } = body;
+  // Validate required fields
+  validateRequiredFields(body, ['name']);
 
-    // Validate required fields
-    if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { error: 'Partner name is required' },
-        { status: 400 }
-      );
-    }
+  // Create partner document
+  // partnerId is a UUID for consistent identification across systems
+  // Timestamps are in ISO 8601 format with milliseconds UTC
+  const db = await connectToDatabase();
+  const now = generateTimestamp();
+  const partner = {
+    partnerId: generateId(),
+    name: name.trim(),
+    description: description?.trim() || undefined,
+    contactEmail: contactEmail?.trim() || undefined,
+    contactName: contactName?.trim() || undefined,
+    logoUrl: logoUrl?.trim() || undefined,
+    isActive: isActive !== undefined ? Boolean(isActive) : true,
+    eventCount: 0,
+    frameCount: 0,
+    createdBy: session.user.id,
+    createdAt: now,
+    updatedAt: now,
+  };
 
-    // Create partner document
-    // partnerId is a UUID for consistent identification across systems
-    // Timestamps are in ISO 8601 format with milliseconds UTC
-    const db = await connectToDatabase();
-    const now = generateTimestamp();
-    const partner = {
-      partnerId: generateId(),
-      name: name.trim(),
-      description: description?.trim() || undefined,
-      contactEmail: contactEmail?.trim() || undefined,
-      contactName: contactName?.trim() || undefined,
-      logoUrl: logoUrl?.trim() || undefined,
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
-      eventCount: 0,
-      frameCount: 0,
-      createdBy: session.user.id,
-      createdAt: now,
-      updatedAt: now,
-    };
+  const result = await db.collection(COLLECTIONS.PARTNERS).insertOne(partner);
 
-    const result = await db.collection(COLLECTIONS.PARTNERS).insertOne(partner);
-
-    return NextResponse.json({
-      success: true,
-      partner: {
-        _id: result.insertedId,
-        ...partner,
-      },
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating partner:', error);
-    return NextResponse.json(
-      { error: 'Failed to create partner' },
-      { status: 500 }
-    );
-  }
-}
+  return apiCreated({
+    partner: {
+      _id: result.insertedId,
+      ...partner,
+    },
+  });
+});

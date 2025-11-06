@@ -49,9 +49,14 @@ export default async function PartnerDetailPage({
       .toArray();
 
     // Get submissions for all events under this partner (limit to most recent 50)
+    // NEW: Updated query for new schema with archive and hidden checks
     submissions = await db
       .collection(COLLECTIONS.SUBMISSIONS)
-      .find({ partnerId: partner.partnerId })
+      .find({
+        partnerId: partner.partnerId,
+        isArchived: false,              // NEW: Exclude archived submissions
+        hiddenFromPartner: false        // NEW: Exclude hidden from partner
+      })
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();

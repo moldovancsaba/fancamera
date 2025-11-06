@@ -1,15 +1,24 @@
 /**
  * Events API - List and Create
- * Version: 1.1.0
+ * Version: 1.7.1
  * 
  * GET: List all events with pagination, search, and partner filtering
  * POST: Create new event (admin only, requires partnerId)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
-import { getSession } from '@/lib/auth/session';
 import { COLLECTIONS, generateId, generateTimestamp } from '@/lib/db/schemas';
+import {
+  withErrorHandler,
+  requireAdmin,
+  parsePaginationParams,
+  validateRequiredFields,
+  apiSuccess,
+  apiCreated,
+  apiNotFound,
+  apiBadRequest,
+} from '@/lib/api';
 
 /**
  * GET /api/events
@@ -22,16 +31,14 @@ import { COLLECTIONS, generateId, generateTimestamp } from '@/lib/db/schemas';
  * - partnerId: Filter by partner
  * - active: Filter by active status (true/false)
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search');
-    const partnerId = searchParams.get('partnerId');
-    const active = searchParams.get('active');
+export const GET = withErrorHandler(async (request: NextRequest) => {
+  const { searchParams } = request.nextUrl;
+  const { page, limit } = parsePaginationParams(searchParams);
+  const search = searchParams.get('search');
+  const partnerId = searchParams.get('partnerId');
+  const active = searchParams.get('active');
 
-    const db = await connectToDatabase();
+  const db = await connectToDatabase();
     
     // Build query
     // Query filters narrow down events based on partner, name, or status
@@ -64,23 +71,16 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
 
-    return NextResponse.json({
-      events,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch events' },
-      { status: 500 }
-    );
-  }
-}
+  return apiSuccess({
+    events,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+});
 
 /**
  * POST /api/events
@@ -96,88 +96,56 @@ export async function GET(request: NextRequest) {
  * - location: Event location
  * - isActive: Active status (default: true)
  */
-export async function POST(request: NextRequest) {
-  try {
-    // Check authentication and authorization
-    // Only admin users can create events
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Check authentication and authorization - only admin users can create events
+  const session = await requireAdmin();
 
-    if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+  // Parse request body
+  const body = await request.json();
+  const { name, partnerId, description, eventDate, location, isActive } = body;
 
-    // Parse request body
-    const body = await request.json();
-    const { name, partnerId, description, eventDate, location, isActive } = body;
+  // Validate required fields
+  validateRequiredFields(body, ['name', 'partnerId']);
 
-    // Validate required fields
-    if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { error: 'Event name is required' },
-        { status: 400 }
-      );
-    }
+  const db = await connectToDatabase();
 
-    if (!partnerId || partnerId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Partner ID is required' },
-        { status: 400 }
-      );
-    }
+  // Verify partner exists and get partner name
+  // This ensures referential integrity and caches partner name for display
+  const partner = await db
+    .collection(COLLECTIONS.PARTNERS)
+    .findOne({ partnerId: partnerId.trim() });
 
-    const db = await connectToDatabase();
-
-    // Verify partner exists and get partner name
-    // This ensures referential integrity and caches partner name for display
-    const partner = await db
-      .collection(COLLECTIONS.PARTNERS)
-      .findOne({ partnerId: partnerId.trim() });
-
-    if (!partner) {
-      return NextResponse.json(
-        { error: 'Partner not found' },
-        { status: 404 }
-      );
-    }
-
-    // Create event document
-    // eventId is a UUID for consistent identification
-    // partnerName is cached for efficient queries and display
-    // frames array starts empty - frames are assigned separately
-    const now = generateTimestamp();
-    const event = {
-      eventId: generateId(),
-      name: name.trim(),
-      description: description?.trim() || undefined,
-      partnerId: partner.partnerId,
-      partnerName: partner.name,
-      eventDate: eventDate?.trim() || undefined,
-      location: location?.trim() || undefined,
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
-      frames: [],
-      submissionCount: 0,
-      createdBy: session.user.id,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const result = await db.collection(COLLECTIONS.EVENTS).insertOne(event);
-
-    return NextResponse.json({
-      success: true,
-      event: {
-        _id: result.insertedId,
-        ...event,
-      },
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating event:', error);
-    return NextResponse.json(
-      { error: 'Failed to create event' },
-      { status: 500 }
-    );
+  if (!partner) {
+    throw apiNotFound('Partner');
   }
-}
+
+  // Create event document
+  // eventId is a UUID for consistent identification
+  // partnerName is cached for efficient queries and display
+  // frames array starts empty - frames are assigned separately
+  const now = generateTimestamp();
+  const event = {
+    eventId: generateId(),
+    name: name.trim(),
+    description: description?.trim() || undefined,
+    partnerId: partner.partnerId,
+    partnerName: partner.name,
+    eventDate: eventDate?.trim() || undefined,
+    location: location?.trim() || undefined,
+    isActive: isActive !== undefined ? Boolean(isActive) : true,
+    frames: [],
+    submissionCount: 0,
+    createdBy: session.user.id,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const result = await db.collection(COLLECTIONS.EVENTS).insertOne(event);
+
+  return apiCreated({
+    event: {
+      _id: result.insertedId,
+      ...event,
+    },
+  });
+});

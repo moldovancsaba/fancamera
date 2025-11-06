@@ -53,7 +53,8 @@ export default function EventFramesPage({
         setAssignedFrames(eventData.event.frames || []);
 
         // Fetch available frames (all active frames for now)
-        // TODO: Filter by global + partner-specific frames
+        // Note: Future enhancement - filter by global + partner-specific frames
+        // See ROADMAP.md Q1 2026 - Advanced Frame Features (Frame Categories)
         const framesResponse = await fetch('/api/frames?active=true&limit=100');
         const framesData = await framesResponse.json();
         
