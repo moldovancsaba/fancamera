@@ -570,8 +570,6 @@ export default function SlideshowPlayerV2({
           style={{
             width: '100%',
             height: '100%',
-            maxWidth: '1920px',
-            maxHeight: '1080px',
             aspectRatio: '16/9',
           }}
         >
