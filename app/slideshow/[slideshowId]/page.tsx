@@ -95,12 +95,28 @@ export default function SlideshowPlayerV2({
     });
   };
 
-  // Helper: Preload all images in a slide
+// Helper: Preload all images in a slide
   const preloadSlide = async (slide: Slide): Promise<void> => {
-    const promises = slide.submissions.map(sub => 
-      preloadImage(sub.imageUrl).catch(() => {}) // Ignore failures
+    console.log(`[Preload] Preloading ${slide.type === 'mosaic' ? slide.aspectRatio : 'single'} slide with ${slide.submissions.length} images`);
+    
+    const results = await Promise.allSettled(
+      slide.submissions.map(async (sub) => {
+        try {
+          await preloadImage(sub.imageUrl);
+          return { success: true, subId: sub._id };
+        } catch (error) {
+          console.warn(`[Preload] Failed to preload ${sub._id}: ${error}`);
+          return { success: false, subId: sub._id };
+        }
+      })
     );
-    await Promise.all(promises);
+    
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.warn(`[Preload] ${failed.length} images failed to preload, mosaic may flicker`);
+    } else {
+      console.log(`[Preload] All ${results.length} images preloaded successfully`);
+    }
   };
 
   // Initial load: Fetch buffer-sized playlist
@@ -160,9 +176,9 @@ export default function SlideshowPlayerV2({
       if (data.candidate) {
         console.log('New candidate fetched, preloading...');
         
-        // Preload new candidate images
+        // IMPORTANT: Wait for preloading to complete before adding to buffer
         await preloadSlide(data.candidate).catch(() => {
-          console.warn('Failed to preload candidate');
+          console.warn('Failed to preload candidate, will add anyway - may flicker');
         });
 
         // Add to buffer, remove oldest
