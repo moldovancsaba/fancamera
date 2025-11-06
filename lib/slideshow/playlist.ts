@@ -74,27 +74,20 @@ export function detectAspectRatio(width: number, height: number): AspectRatio {
  */
 export function generatePlaylist(submissions: any[], limit: number = 10): Slide[] {
   const playlist: Slide[] = [];
-  const processedIds = new Set<string>();
   
-  // Group submissions by aspect ratio
+  // CRITICAL: Group by aspect ratio FIRST, then sort each group by playCount
+  // This ensures we can find enough images of same aspect ratio to create mosaics
+  
   const landscape: any[] = [];
   const square: any[] = [];
   const portrait: any[] = [];
   
+  // First pass: Categorize by aspect ratio
   for (const submission of submissions) {
-    if (processedIds.has(submission._id.toString())) continue;
-    
-    // Detect aspect ratio from metadata
-    // Fallback to 16:9 (1920x1080) for old submissions without dimensions
     const width = submission.metadata?.finalWidth || submission.metadata?.originalWidth || 1920;
     const height = submission.metadata?.finalHeight || submission.metadata?.originalHeight || 1080;
-    
-    // Note: We use 16:9 as default aspect ratio for submissions without metadata
-    // This ensures old submissions still appear in slideshows
-    
     const aspectRatio = detectAspectRatio(width, height);
     
-    // Debug: Log aspect ratio detection
     console.log(`[Playlist] ${submission._id}: ${width}x${height} → ${aspectRatio} (ratio: ${(width/height).toFixed(3)})`);
     
     switch (aspectRatio) {
@@ -108,11 +101,22 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
         portrait.push(submission);
         break;
       default:
-        // Skip unknown aspect ratios
         console.warn(`[Playlist] Skipping submission ${submission._id}: unknown aspect ratio ${aspectRatio}`);
         break;
     }
   }
+  
+  // Sort each group by playCount (least played first), then createdAt (oldest first)
+  const sortByPlayCount = (a: any, b: any) => {
+    const aCount = a.playCount || 0;
+    const bCount = b.playCount || 0;
+    if (aCount !== bCount) return aCount - bCount;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  };
+  
+  landscape.sort(sortByPlayCount);
+  square.sort(sortByPlayCount);
+  portrait.sort(sortByPlayCount);
   
   // Build playlist: prioritize 16:9, then mosaics
   // Generate up to limit slides
@@ -149,7 +153,6 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
           height: sub.metadata?.finalHeight || sub.metadata?.originalHeight || 1080,
         }],
       });
-      processedIds.add(sub._id.toString());
       landscapeIdx++;
       slideCount++;
       added = true;
@@ -185,9 +188,6 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
           },
         ],
       });
-      processedIds.add(sub1._id.toString());
-      processedIds.add(sub2._id.toString());
-      processedIds.add(sub3._id.toString());
       portraitIdx += 3;
       slideCount++;
       added = true;
@@ -216,8 +216,6 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
           },
         ],
       });
-      processedIds.add(sub1._id.toString());
-      processedIds.add(sub2._id.toString());
       squareIdx += 2;
       slideCount++;
       added = true;
