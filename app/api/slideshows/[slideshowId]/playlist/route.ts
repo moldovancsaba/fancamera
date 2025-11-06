@@ -71,6 +71,8 @@ export async function GET(
         eventName: slideshow.eventName,
         transitionDurationMs: slideshow.transitionDurationMs,
         fadeDurationMs: slideshow.fadeDurationMs,
+        bufferSize: slideshow.bufferSize || 10,
+        refreshStrategy: slideshow.refreshStrategy || 'continuous',
       },
       playlist,
       totalSubmissions: submissions.length,

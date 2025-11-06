@@ -94,6 +94,9 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     
     const aspectRatio = detectAspectRatio(width, height);
     
+    // Debug: Log aspect ratio detection
+    console.log(`[Playlist] ${submission._id}: ${width}x${height} → ${aspectRatio} (ratio: ${(width/height).toFixed(3)})`);
+    
     switch (aspectRatio) {
       case AspectRatio.LANDSCAPE:
         landscape.push(submission);
@@ -106,12 +109,15 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
         break;
       default:
         // Skip unknown aspect ratios
+        console.warn(`[Playlist] Skipping submission ${submission._id}: unknown aspect ratio ${aspectRatio}`);
         break;
     }
   }
   
   // Build playlist: prioritize 16:9, then mosaics
   // Generate up to limit slides
+  console.log(`[Playlist] Building playlist from: ${landscape.length} landscape, ${square.length} square, ${portrait.length} portrait`);
+  
   let slideCount = 0;
   let landscapeIdx = 0;
   let squareIdx = 0;
@@ -140,6 +146,7 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     }
     
     // Try to add 1:1 mosaic (2 images side-by-side)
+    // Need at least 2 squares available (squareIdx and squareIdx+1)
     if (slideCount < limit && squareIdx + 1 < square.length) {
       const sub1 = square[squareIdx];
       const sub2 = square[squareIdx + 1];
@@ -169,6 +176,7 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     }
     
     // Try to add 9:16 mosaic (3 images side-by-side)
+    // Need at least 3 portraits available (portraitIdx, portraitIdx+1, portraitIdx+2)
     if (slideCount < limit && portraitIdx + 2 < portrait.length) {
       const sub1 = portrait[portraitIdx];
       const sub2 = portrait[portraitIdx + 1];

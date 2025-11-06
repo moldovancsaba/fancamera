@@ -1,10 +1,50 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 1.4.0
-**Last Updated**: 2025-04-27T10:45:18.000Z
+**Current Version**: 1.4.1
+**Last Updated**: 2025-04-27T11:12:45.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v1.4.1] — 2025-04-27T11:12:45.000Z
+
+### Bugfix — Slideshow Rolling Buffer and Aspect Ratio Detection
+
+**Status**: Complete
+**Release Type**: Patch
+
+#### Fixed
+- ✅ Playlist API now returns complete settings (bufferSize, refreshStrategy)
+- ✅ Frontend now receives buffer configuration for rolling refresh
+- ✅ Added debug logging for aspect ratio detection
+- ✅ Logs show dimension → aspect ratio mapping for troubleshooting
+
+#### Issues Addressed
+1. **Rolling buffer not refreshing**: API wasn't returning `bufferSize` and `refreshStrategy` to frontend
+2. **No mosaics appearing**: Added logging to diagnose aspect ratio detection
+
+#### Debug Output
+Server logs now show:
+```
+[Playlist] 507f1f77bcf86cd799439011: 1080x1920 → 9:16 (ratio: 0.562)
+[Playlist] Building playlist from: 15 landscape, 4 square, 6 portrait
+```
+
+#### Files Modified
+- `app/api/slideshows/[slideshowId]/playlist/route.ts` — Return bufferSize/refreshStrategy
+- `lib/slideshow/playlist.ts` — Add debug logging for aspect ratio detection
+- `package.json` — Version 1.4.0 → 1.4.1
+- `RELEASE_NOTES.md` — Added this release entry
+
+#### Next Steps for User
+Check server logs when slideshow loads to see:
+1. What dimensions are being detected for each image
+2. What aspect ratios they're classified as
+3. How many of each type are available for mosaics
+
+If no mosaics appear, logs will show if there are insufficient square (need 2) or portrait (need 3) images.
 
 ---
 
@@ -339,6 +379,7 @@ Example: 2025-11-03T18:31:18.000Z
 
 | Version | Date | Type | Description |
 |---------|------|------|-------------|
+| 1.4.1 | 2025-04-27T11:12:45.000Z | Patch | Fixed rolling buffer refresh and added aspect ratio debug logging |
 | 1.4.0 | 2025-04-27T10:45:18.000Z | Minor | Slideshow play count display in galleries |
 | 1.3.1 | 2025-04-27T10:15:32.000Z | Patch | Fixed JSX syntax error in SlideshowManager settings UI |
 | 1.3.0 | 2025-04-27T09:30:00.000Z | Minor | Rolling buffer slideshow system with settings UI |
