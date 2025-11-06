@@ -348,10 +348,23 @@ export default async function EventDetailPage({
                         <p className="text-white/80 text-xs">
                           {new Date(submission.createdAt).toLocaleDateString()}
                         </p>
-                        {typeof submission.playCount === 'number' && submission.playCount > 0 && (
-                          <p className="text-white/90 text-xs font-semibold mt-1">
-                            🎬 Played {submission.playCount} {submission.playCount === 1 ? 'time' : 'times'}
-                          </p>
+                        {submission.slideshowPlays && Object.keys(submission.slideshowPlays).length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {slideshows.map((slideshow: any) => {
+                              const plays = submission.slideshowPlays?.[slideshow.slideshowId];
+                              if (!plays || plays.count === 0) return null;
+                              return (
+                                <p key={slideshow.slideshowId} className="text-white/90 text-xs font-semibold">
+                                  🎬 {slideshow.name}: {plays.count}× 
+                                </p>
+                              );
+                            })}
+                            {typeof submission.playCount === 'number' && submission.playCount > 0 && (
+                              <p className="text-white/80 text-xs">
+                                Total: {submission.playCount}×
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

@@ -1,10 +1,77 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 1.4.1
-**Last Updated**: 2025-04-27T11:12:45.000Z
+**Current Version**: 1.5.0
+**Last Updated**: 2025-04-27T11:35:20.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v1.5.0] — 2025-04-27T11:35:20.000Z
+
+### Feature — Per-Slideshow Play Tracking and Fixed Mosaic Generation
+
+**Status**: Complete
+**Release Type**: Minor
+
+#### Added
+- ✅ Per-slideshow play count tracking (not just global)
+- ✅ Event gallery shows play counts for each specific slideshow
+- ✅ Fixed mosaic generation to properly interleave portrait/square mosaics with landscape
+- ✅ Fixed flashing issue - smooth fade transitions instead of instant cuts
+- ✅ Stabilized timer to prevent buffer updates from causing rapid transitions
+
+#### Schema Changes
+**New field**: `submissions.slideshowPlays`
+```typescript
+slideshowPlays?: Record<string, {
+  count: number;
+  lastPlayedAt: string;
+}>;
+```
+
+#### Play Count Display
+**Event Gallery** hover now shows:
+```
+🎬 Main Screen: 15×
+🎬 VIP Lounge: 8×
+Total: 23×
+```
+
+#### Mosaic Generation Fix
+Changed from sequential (all landscape → all mosaics) to round-robin:
+1. Add 1 landscape slide (if available)
+2. Add 1 portrait mosaic (if 3 available)
+3. Add 1 square mosaic (if 2 available)
+4. Repeat until buffer full
+
+This ensures mosaics are properly distributed instead of appearing individually.
+
+#### Slideshow Timing Fix
+**Problem**: Buffer updates triggered timer reset, causing images to flash rapidly
+**Solution**: 
+- Removed `buffer` from useEffect dependency array
+- Implemented proper fade transitions using opacity + CSS transitions
+- Fade starts (transitionDuration - fadeDuration) before slide change
+- Timer now stable regardless of background buffer updates
+
+#### Files Modified
+- `lib/db/schemas.ts` — Added slideshowPlays field
+- `app/api/slideshows/[slideshowId]/played/route.ts` — Track per-slideshow plays
+- `lib/slideshow/playlist.ts` — Fixed mosaic interleaving with round-robin
+- `app/slideshow/[slideshowId]/page.tsx` — Fixed timing and added fade transitions
+- `app/admin/events/[id]/page.tsx` — Display per-slideshow play counts
+- `package.json` — Version 1.4.1 → 1.5.0
+- `RELEASE_NOTES.md` — Added this release entry
+
+#### Debug Improvements
+Added logging:
+```
+[Playlist] Added landscape slide (1/10)
+[Playlist] Added portrait mosaic (2/10)
+[Playlist] Added square mosaic (3/10)
+```
 
 ---
 
@@ -379,6 +446,7 @@ Example: 2025-11-03T18:31:18.000Z
 
 | Version | Date | Type | Description |
 |---------|------|------|-------------|
+| 1.5.0 | 2025-04-27T11:35:20.000Z | Minor | Per-slideshow tracking, fixed mosaics, smooth fade transitions |
 | 1.4.1 | 2025-04-27T11:12:45.000Z | Patch | Fixed rolling buffer refresh and added aspect ratio debug logging |
 | 1.4.0 | 2025-04-27T10:45:18.000Z | Minor | Slideshow play count display in galleries |
 | 1.3.1 | 2025-04-27T10:15:32.000Z | Patch | Fixed JSX syntax error in SlideshowManager settings UI |

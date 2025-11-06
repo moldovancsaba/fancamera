@@ -346,9 +346,16 @@ export interface Submission {
   deletedAt?: string;                // ISO 8601 timestamp
   
   // Slideshow tracking for playlist generation
-  // Tracks how many times this submission has been displayed in slideshows
-  playCount?: number;                // Number of times shown in slideshow (default: 0)
-  lastPlayedAt?: string;             // ISO 8601 timestamp of last slideshow display
+  // Tracks how many times this submission has been displayed in each slideshow
+  // Key = slideshowId, Value = { count, lastPlayedAt }
+  slideshowPlays?: Record<string, {
+    count: number;                   // Number of times shown in this specific slideshow
+    lastPlayedAt: string;            // ISO 8601 timestamp of last play in this slideshow
+  }>;
+  
+  // Global aggregates (computed from slideshowPlays for backward compatibility)
+  playCount?: number;                // Total plays across all slideshows (default: 0)
+  lastPlayedAt?: string;             // ISO 8601 timestamp of most recent play
   
   // Timestamps
   createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC

@@ -123,11 +123,21 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
   let squareIdx = 0;
   let portraitIdx = 0;
   
+  // Build playlist by Round-robin: prioritize least-played regardless of aspect ratio
+  // This ensures mosaics are properly interleaved with landscape images
   while (slideCount < limit) {
     let added = false;
     
-    // Try to add 16:9 landscape image (full screen)
-    if (landscapeIdx < landscape.length) {
+    // Determine what types are still available
+    const hasLandscape = landscapeIdx < landscape.length;
+    const hasSquareMosaic = squareIdx + 1 < square.length;
+    const hasPortraitMosaic = portraitIdx + 2 < portrait.length;
+    
+    // Strategy: Add one of each type in rotation, skipping unavailable types
+    // This ensures fair distribution and proper mosaic creation
+    
+    // 1. Try landscape first (if available)
+    if (hasLandscape && slideCount < limit) {
       const sub = landscape[landscapeIdx];
       playlist.push({
         type: 'single',
@@ -143,41 +153,11 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
       landscapeIdx++;
       slideCount++;
       added = true;
+      console.log(`[Playlist] Added landscape slide (${slideCount}/${limit})`);
     }
     
-    // Try to add 1:1 mosaic (2 images side-by-side)
-    // Need at least 2 squares available (squareIdx and squareIdx+1)
-    if (slideCount < limit && squareIdx + 1 < square.length) {
-      const sub1 = square[squareIdx];
-      const sub2 = square[squareIdx + 1];
-      playlist.push({
-        type: 'mosaic',
-        aspectRatio: AspectRatio.SQUARE,
-        submissions: [
-          {
-            _id: sub1._id.toString(),
-            imageUrl: sub1.imageUrl || sub1.finalImageUrl,
-            width: sub1.metadata?.finalWidth || sub1.metadata?.originalWidth || 800,
-            height: sub1.metadata?.finalHeight || sub1.metadata?.originalHeight || 800,
-          },
-          {
-            _id: sub2._id.toString(),
-            imageUrl: sub2.imageUrl || sub2.finalImageUrl,
-            width: sub2.metadata?.finalWidth || sub2.metadata?.originalWidth || 800,
-            height: sub2.metadata?.finalHeight || sub2.metadata?.originalHeight || 800,
-          },
-        ],
-      });
-      processedIds.add(sub1._id.toString());
-      processedIds.add(sub2._id.toString());
-      squareIdx += 2;
-      slideCount++;
-      added = true;
-    }
-    
-    // Try to add 9:16 mosaic (3 images side-by-side)
-    // Need at least 3 portraits available (portraitIdx, portraitIdx+1, portraitIdx+2)
-    if (slideCount < limit && portraitIdx + 2 < portrait.length) {
+    // 2. Try portrait mosaic (if available and space remaining)
+    if (hasPortraitMosaic && slideCount < limit) {
       const sub1 = portrait[portraitIdx];
       const sub2 = portrait[portraitIdx + 1];
       const sub3 = portrait[portraitIdx + 2];
@@ -211,10 +191,44 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
       portraitIdx += 3;
       slideCount++;
       added = true;
+      console.log(`[Playlist] Added portrait mosaic (${slideCount}/${limit})`);
     }
     
-    // If nothing was added, we've exhausted all options
-    if (!added) break;
+    // 3. Try square mosaic (if available and space remaining)
+    if (hasSquareMosaic && slideCount < limit) {
+      const sub1 = square[squareIdx];
+      const sub2 = square[squareIdx + 1];
+      playlist.push({
+        type: 'mosaic',
+        aspectRatio: AspectRatio.SQUARE,
+        submissions: [
+          {
+            _id: sub1._id.toString(),
+            imageUrl: sub1.imageUrl || sub1.finalImageUrl,
+            width: sub1.metadata?.finalWidth || sub1.metadata?.originalWidth || 800,
+            height: sub1.metadata?.finalHeight || sub1.metadata?.originalHeight || 800,
+          },
+          {
+            _id: sub2._id.toString(),
+            imageUrl: sub2.imageUrl || sub2.finalImageUrl,
+            width: sub2.metadata?.finalWidth || sub2.metadata?.originalWidth || 800,
+            height: sub2.metadata?.finalHeight || sub2.metadata?.originalHeight || 800,
+          },
+        ],
+      });
+      processedIds.add(sub1._id.toString());
+      processedIds.add(sub2._id.toString());
+      squareIdx += 2;
+      slideCount++;
+      added = true;
+      console.log(`[Playlist] Added square mosaic (${slideCount}/${limit})`);
+    }
+    
+    // If nothing was added this iteration, we've exhausted all options
+    if (!added) {
+      console.log(`[Playlist] No more slides available, stopping at ${slideCount}/${limit}`);
+      break;
+    }
   }
   
   return playlist;

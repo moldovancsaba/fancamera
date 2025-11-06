@@ -56,6 +56,7 @@ export default function SlideshowPlayerV2({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
   
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -211,7 +212,13 @@ export default function SlideshowPlayerV2({
   useEffect(() => {
     if (!settings || !isPlaying || buffer.length === 0) return;
 
-    const timer = setTimeout(async () => {
+    // Start fade out before transition
+    const fadeTimer = setTimeout(() => {
+      setFadeOut(true);
+    }, settings.transitionDurationMs - settings.fadeDurationMs);
+
+    // Advance to next slide after fade completes
+    const advanceTimer = setTimeout(async () => {
       const currentSlide = buffer[currentIndex];
       
       // Update play counts for current slide
@@ -227,10 +234,14 @@ export default function SlideshowPlayerV2({
       // Advance to next slide
       const nextIndex = (currentIndex + 1) % buffer.length;
       setCurrentIndex(nextIndex);
+      setFadeOut(false); // Reset fade for next slide
     }, settings.transitionDurationMs);
 
-    return () => clearTimeout(timer);
-  }, [settings, buffer, currentIndex, isPlaying]);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(advanceTimer);
+    };
+  }, [settings, currentIndex, isPlaying]); // Removed buffer dependency to prevent timer reset
 
   // Fullscreen handling
   const toggleFullscreen = () => {
@@ -344,17 +355,21 @@ export default function SlideshowPlayerV2({
               key={currentSlide.submissions[0]._id}
               src={currentSlide.submissions[0].imageUrl}
               alt="Slideshow image"
-              className="w-full h-full object-contain animate-fade-in"
+              className="w-full h-full object-contain transition-opacity duration-1000"
+              style={{ opacity: fadeOut ? 0 : 1 }}
             />
           ) : currentSlide.aspectRatio === '1:1' ? (
             // 1:1 Mosaic - 2 images side by side (800x800 each)
-            <div className="flex items-center justify-center gap-8 w-full h-full px-8">
+            <div 
+              className="flex items-center justify-center gap-8 w-full h-full px-8 transition-opacity duration-1000"
+              style={{ opacity: fadeOut ? 0 : 1 }}
+            >
               {currentSlide.submissions.map((sub) => (
                 <img
                   key={sub._id}
                   src={sub.imageUrl}
                   alt="Mosaic image"
-                  className="object-contain animate-fade-in"
+                  className="object-contain"
                   style={{
                     maxWidth: '800px',
                     maxHeight: '800px',
@@ -366,13 +381,16 @@ export default function SlideshowPlayerV2({
             </div>
           ) : (
             // 9:16 Mosaic - 3 images side by side (540x960 each)
-            <div className="flex items-center justify-center gap-6 w-full h-full px-6">
+            <div 
+              className="flex items-center justify-center gap-6 w-full h-full px-6 transition-opacity duration-1000"
+              style={{ opacity: fadeOut ? 0 : 1 }}
+            >
               {currentSlide.submissions.map((sub) => (
                 <img
                   key={sub._id}
                   src={sub.imageUrl}
                   alt="Mosaic image"
-                  className="object-contain animate-fade-in"
+                  className="object-contain"
                   style={{
                     maxWidth: '540px',
                     maxHeight: '960px',
@@ -441,15 +459,6 @@ export default function SlideshowPlayerV2({
         )}
       </div>
 
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fade-in {
-          animation: fade-in 1s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }

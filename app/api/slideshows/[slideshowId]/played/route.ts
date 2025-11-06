@@ -56,14 +56,23 @@ export async function POST(
       );
     }
 
+    const now = generateTimestamp();
+    
     // Update play counts for all displayed submissions
+    // Track both per-slideshow and global counts
     const result = await db
       .collection(COLLECTIONS.SUBMISSIONS)
       .updateMany(
         { _id: { $in: objectIds } },
         {
-          $inc: { playCount: 1 },
-          $set: { lastPlayedAt: generateTimestamp() },
+          $inc: { 
+            playCount: 1,
+            [`slideshowPlays.${slideshowId}.count`]: 1,
+          },
+          $set: { 
+            lastPlayedAt: now,
+            [`slideshowPlays.${slideshowId}.lastPlayedAt`]: now,
+          },
         }
       );
 
