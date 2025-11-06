@@ -45,18 +45,31 @@ export default function SlideshowPlayerV2({
   const resolvedParams = use(params);
   const { slideshowId } = resolvedParams;
 
-  // Slideshow state
+  // Slideshow state with 3-playlist rotation
   const [settings, setSettings] = useState<SlideshowSettings | null>(null);
-  const [buffer, setBuffer] = useState<Slide[]>([]);
+  const [playlistA, setPlaylistA] = useState<Slide[]>([]);
+  const [playlistB, setPlaylistB] = useState<Slide[]>([]);
+  const [playlistC, setPlaylistC] = useState<Slide[]>([]);
+  const [activePlaylist, setActivePlaylist] = useState<'A' | 'B' | 'C'>('A');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get the currently active playlist
+  const getCurrentPlaylist = () => {
+    switch (activePlaylist) {
+      case 'A': return playlistA;
+      case 'B': return playlistB;
+      case 'C': return playlistC;
+    }
+  };
+  
+  const buffer = getCurrentPlaylist();
   
   // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
   
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -137,13 +150,42 @@ export default function SlideshowPlayerV2({
       }
 
       setSettings(data.slideshow);
-      setBuffer(data.playlist);
-
-      // Preload all images in buffer (parallel)
+      
+      // STARTUP: Build A, B, C with proper exclusion
+      // Images in A cannot be in B, images in A+B cannot be in C
       if (data.playlist.length > 0) {
-        console.log('Preloading', data.playlist.length, 'slides...');
+        console.log('[Startup] Building Playlist A (10 least-played):', data.playlist.length, 'slides...');
         await Promise.all(data.playlist.map(preloadSlide));
-        console.log('Preload complete');
+        setPlaylistA(data.playlist);
+        
+        // Get IDs in A to exclude from B
+        const idsInA: string[] = [];
+        data.playlist.forEach((slide: Slide) => {
+          slide.submissions.forEach(sub => idsInA.push(sub._id));
+        });
+        console.log(`[Startup] Playlist A has ${idsInA.length} images, excluding them from B`);
+        
+        // Build Playlist B (exclude images in A)
+        console.log('[Startup] Building Playlist B (excluding A)...');
+        const playlistBData = await fetchAndBuildPlaylistWithExclusions('B', idsInA);
+        console.log('[Startup] Playlist B ready');
+        
+        // Get IDs in B to exclude from C (along with A)
+        const idsInB: string[] = [];
+        playlistBData.forEach((slide: Slide) => {
+          slide.submissions.forEach(sub => idsInB.push(sub._id));
+        });
+        const excludeForC = [...idsInA, ...idsInB];
+        console.log(`[Startup] Playlist B has ${idsInB.length} images, excluding ${excludeForC.length} total from C`);
+        
+        // Build Playlist C (exclude images in A and B)
+        console.log('[Startup] Building Playlist C (excluding A+B)...');
+        await fetchAndBuildPlaylistWithExclusions('C', excludeForC);
+        console.log('[Startup] Playlist C ready');
+        
+        // Start playing A
+        setActivePlaylist('A');
+        console.log('[Startup] Starting playback - A, B, C all have DIFFERENT images');
       }
 
       setIsLoading(false);
@@ -154,68 +196,88 @@ export default function SlideshowPlayerV2({
     }
   };
 
-  // Background refresh: Fetch next best candidate
-  const fetchNextCandidate = async () => {
-    if (isFetchingCandidate.current || buffer.length === 0) return;
-
+  // Fetch and build a complete playlist with exclusions
+  // excludeIds: images currently locked in other playlists
+  const fetchAndBuildPlaylistWithExclusions = async (targetPlaylist: 'A' | 'B' | 'C', excludeIds: string[] = []): Promise<Slide[]> => {
+    if (isFetchingCandidate.current) return [];
+    
     isFetchingCandidate.current = true;
-
+    
     try {
-      const excludeIds = getBufferSubmissionIds();
-      const response = await fetch(
-        `/api/slideshows/${slideshowId}/next-candidate?excludeIds=${excludeIds.join(',')}`
-      );
-
+      console.log(`[Playlist] Building Playlist ${targetPlaylist}...`);
+      
+      // Build URL with exclusions
+      const url = excludeIds.length > 0
+        ? `/api/slideshows/${slideshowId}/playlist?exclude=${excludeIds.join(',')}`
+        : `/api/slideshows/${slideshowId}/playlist`;
+      
+      // Fetch fresh playlist from API (recalculated with current play counts + exclusions)
+      const response = await fetch(url);
       if (!response.ok) {
-        console.warn('Next candidate fetch failed:', response.status);
-        return;
+        console.warn(`Failed to fetch playlist ${targetPlaylist}:`, response.status);
+        return [];
       }
-
+      
       const data = await response.json();
-
-      if (data.candidate) {
-        console.log('New candidate fetched, preloading...');
-        
-        // IMPORTANT: Wait for preloading to complete before adding to buffer
-        await preloadSlide(data.candidate).catch(() => {
-          console.warn('Failed to preload candidate, will add anyway - may flicker');
-        });
-
-        // Add to buffer, remove oldest
-        setBuffer(prevBuffer => {
-          const newBuffer = [...prevBuffer];
-          newBuffer.push(data.candidate);
-          
-          // Keep buffer at configured size
-          if (settings && newBuffer.length > settings.bufferSize) {
-            newBuffer.shift(); // Remove oldest
-          }
-          
-          console.log('Buffer updated:', newBuffer.length, 'slides');
-          return newBuffer;
-        });
-      } else {
-        console.log('No new candidates available');
+      if (!data.playlist || data.playlist.length === 0) {
+        console.warn(`No playlist data returned for ${targetPlaylist}`);
+        return [];
       }
+      
+      console.log(`[Playlist] Preloading ${data.playlist.length} slides for Playlist ${targetPlaylist}...`);
+      
+      // Preload all images
+      await Promise.all(data.playlist.map(preloadSlide));
+      
+      // Set the target playlist
+      switch (targetPlaylist) {
+        case 'A':
+          setPlaylistA(data.playlist);
+          break;
+        case 'B':
+          setPlaylistB(data.playlist);
+          break;
+        case 'C':
+          setPlaylistC(data.playlist);
+          break;
+      }
+      
+      return data.playlist;
     } catch (err) {
-      console.warn('Failed to fetch next candidate:', err);
-      // Silently fail - continue with existing buffer
+      console.error(`Error building playlist ${targetPlaylist}:`, err);
+      return [];
     } finally {
       isFetchingCandidate.current = false;
     }
   };
+  
+  // Backwards compatibility wrapper
+  const fetchAndBuildPlaylist = async (targetPlaylist: 'A' | 'B' | 'C'): Promise<Slide[]> => {
+    return fetchAndBuildPlaylistWithExclusions(targetPlaylist, []);
+  };
 
   // Update play counts for displayed slide
+  // CRITICAL: This must NOT block slideshow advancement, fire-and-forget
   const updatePlayCounts = async (slide: Slide) => {
     try {
       const submissionIds = slide.submissions.map(s => s._id);
-      await fetch(`/api/slideshows/${slideshowId}/played`, {
+      console.log(`[PlayCount] Sending increment request for ${submissionIds.length} images...`);
+      
+      const response = await fetch(`/api/slideshows/${slideshowId}/played`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ submissionIds }),
       });
+      
+      if (!response.ok) {
+        console.warn(`[PlayCount] API returned ${response.status}`);
+      } else {
+        const data = await response.json();
+        console.log(`[PlayCount] ✓ ${data.updatedCount} images incremented`);
+      }
     } catch (err) {
-      console.warn('Failed to update play counts:', err);
+      console.error('[PlayCount] ERROR:', err);
+      // Do NOT throw - slideshow must continue even if play count fails
     }
   };
 
@@ -224,45 +286,83 @@ export default function SlideshowPlayerV2({
     loadInitialBuffer();
   }, [slideshowId]);
 
-  // Auto-advance slides with background refresh
+  // Auto-advance slides with background refresh - instant cuts, no fade
   useEffect(() => {
     if (!settings || !isPlaying || buffer.length === 0) return;
 
-    console.log(`[Slideshow] Starting slide ${currentIndex + 1}/${buffer.length}, type: ${buffer[currentIndex]?.type}, aspect: ${buffer[currentIndex]?.aspectRatio}`);
-    console.log(`[Slideshow] Timing: Display ${settings.transitionDurationMs}ms, Fade ${settings.fadeDurationMs}ms, FadeStart @${settings.transitionDurationMs - settings.fadeDurationMs}ms`);
+    const currentSlide = buffer[currentIndex];
+    console.log(`[Slideshow] Starting slide ${currentIndex + 1}/${buffer.length}, type: ${currentSlide?.type}, aspect: ${currentSlide?.aspectRatio}`);
+    console.log(`[Slideshow] Display duration: ${settings.transitionDurationMs}ms`);
 
-    // Start fade out before transition
-    const fadeTimer = setTimeout(() => {
-      console.log(`[Slideshow] Starting fade out for slide ${currentIndex + 1}`);
-      setFadeOut(true);
-    }, settings.transitionDurationMs - settings.fadeDurationMs);
+    // COUNT PLAY IMMEDIATELY when slide appears on screen
+    if (currentSlide) {
+      updatePlayCounts(currentSlide);
+      console.log(`[PlayCount] Counted ${currentSlide.submissions.length} images now on screen`);
+    }
 
-    // Advance to next slide after fade completes
-    const advanceTimer = setTimeout(async () => {
-      const currentSlide = buffer[currentIndex];
+    // Instant cut to next slide after duration
+    const advanceTimer = setTimeout(() => {
+
+      // Check if we've reached the end of current playlist
+      const nextIndex = currentIndex + 1;
       
-      // Update play counts for current slide
-      if (currentSlide) {
-        updatePlayCounts(currentSlide);
+      if (nextIndex >= buffer.length) {
+        // End of playlist - rotate to next
+        console.log(`[Slideshow] End of Playlist ${activePlaylist}, rotating...`);
+        
+        // Determine next playlist and rebuild the one that just finished
+        // A finishes → play B, rebuild A
+        // B finishes → play C, rebuild B
+        // C finishes → play A, rebuild C
+        let nextPlaylist: 'A' | 'B' | 'C';
+        let playlistToRebuild: 'A' | 'B' | 'C';
+        
+        switch (activePlaylist) {
+          case 'A':
+            nextPlaylist = 'B';
+            playlistToRebuild = 'A'; // Rebuild A while B plays
+            break;
+          case 'B':
+            nextPlaylist = 'C';
+            playlistToRebuild = 'B'; // Rebuild B while C plays
+            break;
+          case 'C':
+            nextPlaylist = 'A';
+            playlistToRebuild = 'C'; // Rebuild C while A plays
+            break;
+        }
+        
+        setActivePlaylist(nextPlaylist);
+        setCurrentIndex(0);
+        console.log(`[Slideshow] Now playing Playlist ${nextPlaylist}, rebuilding Playlist ${playlistToRebuild}`);
+        
+        // Start building the next playlist in background, excluding images in the two active playlists
+        if (settings.refreshStrategy === 'continuous') {
+          // Get IDs from the two playlists that are NOT being rebuilt
+          const excludeIds: string[] = [];
+          
+          // Get IDs from both remaining playlists
+          const remainingPlaylists = ['A', 'B', 'C'].filter(p => p !== playlistToRebuild) as ('A' | 'B' | 'C')[];
+          remainingPlaylists.forEach(p => {
+            const playlist = p === 'A' ? playlistA : p === 'B' ? playlistB : playlistC;
+            playlist.forEach(slide => {
+              slide.submissions.forEach(sub => excludeIds.push(sub._id));
+            });
+          });
+          
+          console.log(`[Slideshow] Rebuilding ${playlistToRebuild}, excluding ${excludeIds.length} images from ${remainingPlaylists.join('+')}}`);
+          fetchAndBuildPlaylistWithExclusions(playlistToRebuild, excludeIds);
+        }
+      } else {
+        // Continue within current playlist
+        setCurrentIndex(nextIndex);
       }
-
-      // Background fetch next candidate (non-blocking)
-      if (settings.refreshStrategy === 'continuous') {
-        fetchNextCandidate();
-      }
-
-      // Advance to next slide
-      const nextIndex = (currentIndex + 1) % buffer.length;
-      console.log(`[Slideshow] Advancing ${currentIndex + 1} → ${nextIndex + 1}`);
-      setCurrentIndex(nextIndex);
-      setFadeOut(false); // Reset fade for next slide
     }, settings.transitionDurationMs);
 
     return () => {
-      clearTimeout(fadeTimer);
       clearTimeout(advanceTimer);
     };
-  }, [settings, currentIndex, isPlaying]); // Removed buffer dependency to prevent timer reset
+  }, [settings, currentIndex, isPlaying, buffer, activePlaylist, playlistA, playlistB, playlistC, slideshowId]);
 
   // Fullscreen handling
   const toggleFullscreen = () => {
@@ -350,6 +450,110 @@ export default function SlideshowPlayerV2({
   }
 
   const currentSlide = buffer[currentIndex];
+  
+  // Generate stable key for current slide to prevent unnecessary re-renders
+  const currentSlideKey = currentSlide ? currentSlide.submissions.map(s => s._id).join('-') : 'loading';
+
+  // Helper function to render slide content
+  const renderSlide = (slide: Slide) => {
+    if (slide.type === 'single') {
+      // Single 16:9 landscape image - fills entire 16:9 box
+      return (
+        <img
+          src={slide.submissions[0].imageUrl}
+          alt="Slideshow image"
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'contain',
+            padding: 0,
+            margin: 0
+          }}
+        />
+      );
+    } else if (slide.aspectRatio === '1:1') {
+      // 1:1 Square Mosaic - 3x2 grid (6 images)
+      // Grid: 3 columns (1/3 each) x 2 rows (1/2 each)
+      // Each image aligned to its corner/edge
+      return (
+        <div 
+          style={{ 
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr', // 3 equal columns
+            gridTemplateRows: '1fr 1fr', // 2 equal rows
+            width: '100%',
+            height: '100%',
+            gap: 0,
+            padding: 0,
+            margin: 0
+          }}
+        >
+          {/* Top Left - align top left */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Top Center - align top center */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Top Right - align top right */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Bottom Left - align bottom left */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[3].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Bottom Center - align bottom center */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[4].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Bottom Right - align bottom right */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[5].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+        </div>
+      );
+    } else {
+      // 9:16 Portrait Mosaic - 3 images side by side
+      // Grid: 3 equal columns (1/3 each), single row
+      // Left aligned left, center aligned center, right aligned right
+      return (
+        <div 
+          style={{ 
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr', // 3 equal columns
+            gridTemplateRows: '1fr', // Single row full height
+            width: '100%',
+            height: '100%',
+            gap: 0,
+            padding: 0,
+            margin: 0
+          }}
+        >
+          {/* Left image - align left */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Center image - align center */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+          
+          {/* Right image - align right */}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div
@@ -359,8 +563,9 @@ export default function SlideshowPlayerV2({
     >
       {/* Slideshow Canvas - 16:9 aspect ratio */}
       <div className="relative w-full h-full flex items-center justify-center">
-        {/* Slide Content */}
+        {/* Slide Content - instant cuts, no transitions */}
         <div
+          key={currentSlideKey}
           className="relative bg-black flex items-center justify-center"
           style={{
             width: '100%',
@@ -370,66 +575,7 @@ export default function SlideshowPlayerV2({
             aspectRatio: '16/9',
           }}
         >
-          {currentSlide.type === 'single' ? (
-            // Single 16:9 image (full screen)
-            <img
-              src={currentSlide.submissions[0].imageUrl}
-              alt="Slideshow image"
-              className="w-full h-full object-contain transition-opacity"
-              style={{ 
-                opacity: fadeOut ? 0 : 1,
-                transitionDuration: `${settings.fadeDurationMs}ms`,
-              }}
-            />
-          ) : currentSlide.aspectRatio === '1:1' ? (
-            // 1:1 Mosaic - 2 images side by side (800x800 each)
-            <div 
-              className="flex items-center justify-center gap-8 w-full h-full px-8 transition-opacity"
-              style={{ 
-                opacity: fadeOut ? 0 : 1,
-                transitionDuration: `${settings.fadeDurationMs}ms`,
-              }}
-            >
-              {currentSlide.submissions.map((sub) => (
-                <img
-                  key={sub._id}
-                  src={sub.imageUrl}
-                  alt="Mosaic image"
-                  className="object-contain"
-                  style={{
-                    maxWidth: '800px',
-                    maxHeight: '800px',
-                    width: 'auto',
-                    height: 'auto',
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            // 9:16 Mosaic - 3 images side by side (540x960 each)
-            <div 
-              className="flex items-center justify-center gap-6 w-full h-full px-6 transition-opacity"
-              style={{ 
-                opacity: fadeOut ? 0 : 1,
-                transitionDuration: `${settings.fadeDurationMs}ms`,
-              }}
-            >
-              {currentSlide.submissions.map((sub) => (
-                <img
-                  key={sub._id}
-                  src={sub.imageUrl}
-                  alt="Mosaic image"
-                  className="object-contain"
-                  style={{
-                    maxWidth: '540px',
-                    maxHeight: '960px',
-                    width: 'auto',
-                    height: 'auto',
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          {renderSlide(currentSlide)}
         </div>
 
         {/* Controls Overlay - YouTube/Netflix style */}

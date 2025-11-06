@@ -48,6 +48,7 @@ export default async function EventDetailPage({
       .findOne({ partnerId: event.partnerId });
 
     // Get submissions for this event (limit to most recent 50)
+    // Include playCount and slideshowPlays fields for display
     submissions = await db
       .collection(COLLECTIONS.SUBMISSIONS)
       .find({ eventId: id })
@@ -340,6 +341,15 @@ export default async function EventDetailPage({
                       alt={`Photo by ${submission.userName || submission.userEmail}`}
                       className="w-full h-auto"
                     />
+                    
+                    {/* Play Count Badge - Always Visible */}
+                    {(typeof submission.playCount === 'number' && submission.playCount > 0) && (
+                      <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-full">
+                        <span className="text-white text-xs font-bold">▶ {submission.playCount}×</span>
+                      </div>
+                    )}
+                    
+                    {/* Hover Overlay with Details */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white text-xs font-medium truncate">
@@ -359,13 +369,6 @@ export default async function EventDetailPage({
                                 </p>
                               );
                             })}
-                        {(typeof submission.playCount === 'number' && submission.playCount > 0) || (
-                          submission.slideshowPlays && Object.keys(submission.slideshowPlays).length > 0
-                        ) && (
-                        <p className="text-white/80 text-xs">
-                          Total: {submission.playCount || 0}× (DEBUG)
-                        </p>
-                        )}
                           </div>
                         )}
                       </div>

@@ -382,7 +382,8 @@ export default function EventCapturePage({
                   src={frame.imageUrl}
                   alt={frame.name}
                   onClick={() => handleFrameSelect(frame)}
-                  className="cursor-pointer border-2 border-gray-300 hover:border-blue-500 max-h-[60vh] max-w-[45vw]"
+                  className="cursor-pointer border-2 border-gray-300 hover:border-blue-500 object-contain"
+                  style={{ maxHeight: 'calc(100vh - 200px)', maxWidth: 'calc(100vw - 100px)' }}
                 />
               ))}
             </div>

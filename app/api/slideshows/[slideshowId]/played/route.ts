@@ -58,6 +58,11 @@ export async function POST(
 
     const now = generateTimestamp();
     
+    console.log(`[PlayCount] Incrementing playCount for ${objectIds.length} images...`);
+    objectIds.forEach((id, i) => {
+      console.log(`  ${i+1}. ${id.toString().slice(-6)}`);
+    });
+    
     // Update play counts for all displayed submissions
     // Track both per-slideshow and global counts
     const result = await db
@@ -75,6 +80,8 @@ export async function POST(
           },
         }
       );
+
+    console.log(`[PlayCount] ✓ Updated ${result.modifiedCount} images`);
 
     return NextResponse.json({
       success: true,

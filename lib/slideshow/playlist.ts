@@ -41,28 +41,37 @@ export interface Slide {
 
 /**
  * Detect aspect ratio from image dimensions
- * Uses tolerance for floating point comparison
+ * Uses WIDE tolerance to accept more images as valid
+ * 
+ * CRITICAL: Many images have slightly non-standard aspect ratios (e.g. 2160x1440 = 1.5)
+ * We must accept these as landscape to ensure ALL images can be displayed
+ * Otherwise, images get skipped and the same few images play repeatedly
  */
 export function detectAspectRatio(width: number, height: number): AspectRatio {
   const ratio = width / height;
-  const tolerance = 0.1; // 10% tolerance for aspect ratio detection
   
-  // 16:9 = 1.777...
-  if (Math.abs(ratio - 16/9) < tolerance) {
-    return AspectRatio.LANDSCAPE;
-  }
-  
-  // 1:1 = 1.0
-  if (Math.abs(ratio - 1.0) < tolerance) {
-    return AspectRatio.SQUARE;
-  }
-  
-  // 9:16 = 0.5625
-  if (Math.abs(ratio - 9/16) < tolerance) {
+  // Portrait: ratio < 0.7 (anything narrower than portrait-ish)
+  // 9:16 = 0.5625, so accept 0.4 to 0.7 as portrait
+  if (ratio >= 0.4 && ratio <= 0.7) {
     return AspectRatio.PORTRAIT;
   }
   
-  return AspectRatio.UNKNOWN;
+  // Square: ratio between 0.8 and 1.2 (roughly square-ish)
+  // 1:1 = 1.0, so accept 0.8 to 1.2 as square
+  if (ratio >= 0.8 && ratio <= 1.2) {
+    return AspectRatio.SQUARE;
+  }
+  
+  // Landscape: ratio > 1.2 (anything wider than square)
+  // 16:9 = 1.777, 3:2 = 1.5, 4:3 = 1.333 - ALL should be landscape
+  // This includes 2160x1440 (1.5), 2048x1365 (1.5), 1920x1080 (1.777)
+  if (ratio > 1.2) {
+    return AspectRatio.LANDSCAPE;
+  }
+  
+  // Fallback: If somehow outside all ranges, treat as landscape
+  // This ensures NO images are skipped
+  return AspectRatio.LANDSCAPE;
 }
 
 /**
@@ -106,12 +115,13 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     }
   }
   
-  // Sort each group by playCount (least played first), then createdAt (oldest first)
+  // Sort each group by playCount (least played first), then createdAt (OLDEST first)
+  // CRITICAL: This must match the API sorting to maintain consistency
   const sortByPlayCount = (a: any, b: any) => {
     const aCount = a.playCount || 0;
     const bCount = b.playCount || 0;
-    if (aCount !== bCount) return aCount - bCount;
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (aCount !== bCount) return aCount - bCount; // Ascending playCount (0, 1, 2, ... lowest first)
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Ascending createdAt (oldest first)
   };
   
   landscape.sort(sortByPlayCount);
@@ -134,7 +144,7 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     
     // Determine what types are still available
     const hasLandscape = landscapeIdx < landscape.length;
-    const hasSquareMosaic = squareIdx + 1 < square.length;
+    const hasSquareMosaic = squareIdx + 5 < square.length; // Need 6 images for 3×2 grid
     const hasPortraitMosaic = portraitIdx + 2 < portrait.length;
     
     // Strategy: Add one of each type in rotation, skipping unavailable types
@@ -196,30 +206,27 @@ export function generatePlaylist(submissions: any[], limit: number = 10): Slide[
     
     // 3. Try square mosaic (if available and space remaining)
     if (hasSquareMosaic && slideCount < limit) {
-      const sub1 = square[squareIdx];
-      const sub2 = square[squareIdx + 1];
+      // 3×2 grid requires 6 square images
+      const submissions = [];
+      for (let i = 0; i < 6; i++) {
+        const sub = square[squareIdx + i];
+        submissions.push({
+          _id: sub._id.toString(),
+          imageUrl: sub.imageUrl || sub.finalImageUrl,
+          width: sub.metadata?.finalWidth || sub.metadata?.originalWidth || 540,
+          height: sub.metadata?.finalHeight || sub.metadata?.originalHeight || 540,
+        });
+      }
+      
       playlist.push({
         type: 'mosaic',
         aspectRatio: AspectRatio.SQUARE,
-        submissions: [
-          {
-            _id: sub1._id.toString(),
-            imageUrl: sub1.imageUrl || sub1.finalImageUrl,
-            width: sub1.metadata?.finalWidth || sub1.metadata?.originalWidth || 800,
-            height: sub1.metadata?.finalHeight || sub1.metadata?.originalHeight || 800,
-          },
-          {
-            _id: sub2._id.toString(),
-            imageUrl: sub2.imageUrl || sub2.finalImageUrl,
-            width: sub2.metadata?.finalWidth || sub2.metadata?.originalWidth || 800,
-            height: sub2.metadata?.finalHeight || sub2.metadata?.originalHeight || 800,
-          },
-        ],
+        submissions,
       });
-      squareIdx += 2;
+      squareIdx += 6;
       slideCount++;
       added = true;
-      console.log(`[Playlist] Added square mosaic (${slideCount}/${limit})`);
+      console.log(`[Playlist] Added square mosaic 3×2 (${slideCount}/${limit})`);
     }
     
     // If nothing was added this iteration, we've exhausted all options

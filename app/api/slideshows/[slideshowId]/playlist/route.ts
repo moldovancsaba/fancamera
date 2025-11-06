@@ -12,11 +12,12 @@ import { COLLECTIONS } from '@/lib/db/schemas';
 import { generatePlaylist } from '@/lib/slideshow/playlist';
 
 /**
- * GET /api/slideshows/[slideshowId]/playlist?limit=N
+ * GET /api/slideshows/[slideshowId]/playlist?limit=N&exclude=id1,id2,id3
  * Generate slides with least-played logic
  * 
  * Query params:
  * - limit: Number of slides to return (default: slideshow.bufferSize or 10)
+ * - exclude: Comma-separated list of submission IDs to exclude (images in other active playlists)
  */
 export async function GET(
   request: NextRequest,
@@ -26,6 +27,8 @@ export async function GET(
     const { slideshowId } = await params;
     const { searchParams } = request.nextUrl;
     const limitParam = searchParams.get('limit');
+    const excludeParam = searchParams.get('exclude');
+    const excludeIds = excludeParam ? excludeParam.split(',').filter(id => id.trim()) : [];
 
     const db = await connectToDatabase();
 
@@ -41,13 +44,47 @@ export async function GET(
     // Determine how many slides to generate
     const limit = limitParam ? parseInt(limitParam) : (slideshow.bufferSize || 10);
 
+    // Build match filter: event + exclude IDs in other playlists
+    const matchFilter: any = { eventId: slideshow.eventId };
+    if (excludeIds.length > 0) {
+      // Convert string IDs to ObjectId for MongoDB comparison
+      const { ObjectId } = await import('mongodb');
+      const excludeObjectIds = excludeIds
+        .filter(id => ObjectId.isValid(id))
+        .map(id => new ObjectId(id));
+      
+      if (excludeObjectIds.length > 0) {
+        matchFilter._id = { $nin: excludeObjectIds };
+        console.log(`[Playlist] Excluding ${excludeObjectIds.length} images currently in other playlists`);
+      }
+    }
+    
     // Get submissions for the event, sorted by playCount (least played first)
-    // Then by createdAt (oldest first) for tie-breaking
+    // CRITICAL: Handle undefined/null playCount by treating as 0
+    // Then by createdAt (OLDEST first) to ensure fair rotation - older images get priority
     const submissions = await db
       .collection(COLLECTIONS.SUBMISSIONS)
-      .find({ eventId: slideshow.eventId })
-      .sort({ playCount: 1, createdAt: 1 })
+      .aggregate([
+        { $match: matchFilter },
+        {
+          $addFields: {
+            // Ensure playCount is always a number (default 0 if undefined/null)
+            normalizedPlayCount: { $ifNull: ['$playCount', 0] }
+          }
+        },
+        { $sort: { normalizedPlayCount: 1, createdAt: 1 } } // ASCENDING for both (lowest first, oldest first)
+      ])
       .toArray();
+    
+    // DEBUG: Log first 15 submissions with their play counts AND dimensions
+    console.log(`[Playlist] Total submissions available: ${submissions.length}`);
+    console.log('[Playlist] First 15 submissions by playCount (least played first):');
+    submissions.slice(0, 15).forEach((sub, i) => {
+      const width = sub.metadata?.finalWidth || sub.metadata?.originalWidth || '?';
+      const height = sub.metadata?.finalHeight || sub.metadata?.originalHeight || '?';
+      const ratio = (width !== '?' && height !== '?') ? (width / height).toFixed(3) : '?';
+      console.log(`  ${i+1}. ${sub._id.toString().slice(-6)} - playCount: ${sub.playCount || 0}, ${width}x${height} (${ratio})`);
+    });
 
     if (submissions.length === 0) {
       return NextResponse.json({
