@@ -26,7 +26,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { eventId, name, transitionDurationMs = 5000, fadeDurationMs = 1000 } = body;
+    const { 
+      eventId, 
+      name, 
+      transitionDurationMs = 5000, 
+      fadeDurationMs = 1000,
+      bufferSize = 10,
+      refreshStrategy = 'continuous'
+    } = body;
 
     if (!eventId || !name) {
       return NextResponse.json(
@@ -55,6 +62,8 @@ export async function POST(request: NextRequest) {
       isActive: true,
       transitionDurationMs,
       fadeDurationMs,
+      bufferSize,
+      refreshStrategy,
       createdBy: session.user.id,
       createdAt: generateTimestamp(),
       updatedAt: generateTimestamp(),

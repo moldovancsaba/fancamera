@@ -12,8 +12,11 @@ import { COLLECTIONS } from '@/lib/db/schemas';
 import { generatePlaylist } from '@/lib/slideshow/playlist';
 
 /**
- * GET /api/slideshows/[slideshowId]/playlist
- * Generate next 5 slides with least-played logic
+ * GET /api/slideshows/[slideshowId]/playlist?limit=N
+ * Generate slides with least-played logic
+ * 
+ * Query params:
+ * - limit: Number of slides to return (default: slideshow.bufferSize or 10)
  */
 export async function GET(
   request: NextRequest,
@@ -21,6 +24,8 @@ export async function GET(
 ) {
   try {
     const { slideshowId } = await params;
+    const { searchParams } = request.nextUrl;
+    const limitParam = searchParams.get('limit');
 
     const db = await connectToDatabase();
 
@@ -32,6 +37,9 @@ export async function GET(
     if (!slideshow) {
       return NextResponse.json({ error: 'Slideshow not found' }, { status: 404 });
     }
+
+    // Determine how many slides to generate
+    const limit = limitParam ? parseInt(limitParam) : (slideshow.bufferSize || 10);
 
     // Get submissions for the event, sorted by playCount (least played first)
     // Then by createdAt (oldest first) for tie-breaking
@@ -54,7 +62,7 @@ export async function GET(
     }
 
     // Generate playlist with mosaic logic
-    const playlist = generatePlaylist(submissions);
+    const playlist = generatePlaylist(submissions, limit);
 
     return NextResponse.json({
       slideshow: {

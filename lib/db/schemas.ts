@@ -392,6 +392,10 @@ export interface Slideshow {
   transitionDurationMs: number;      // Duration each slide is displayed (milliseconds, default: 5000)
   fadeDurationMs: number;            // Duration of fade transition (milliseconds, default: 1000)
   
+  // Rolling buffer settings for infinite smooth playback
+  bufferSize: number;                // Number of slides to maintain in buffer (default: 10)
+  refreshStrategy: 'continuous' | 'batch'; // How to refresh playlist (default: 'continuous')
+  
   // Admin tracking
   createdBy: string;                 // Admin user ID from SSO who created this slideshow
   createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC

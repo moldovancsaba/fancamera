@@ -66,12 +66,13 @@ export function detectAspectRatio(width: number, height: number): AspectRatio {
 }
 
 /**
- * Generate playlist of next 5 slides from submissions
+ * Generate playlist of next N slides from submissions
  * 
  * @param submissions - Array of submissions sorted by playCount ASC, createdAt ASC
+ * @param limit - Maximum number of slides to generate (default: 10)
  * @returns Array of Slide objects ready for display
  */
-export function generatePlaylist(submissions: any[]): Slide[] {
+export function generatePlaylist(submissions: any[], limit: number = 10): Slide[] {
   const playlist: Slide[] = [];
   const processedIds = new Set<string>();
   
@@ -110,13 +111,13 @@ export function generatePlaylist(submissions: any[]): Slide[] {
   }
   
   // Build playlist: prioritize 16:9, then mosaics
-  // Generate up to 5 slides
+  // Generate up to limit slides
   let slideCount = 0;
   let landscapeIdx = 0;
   let squareIdx = 0;
   let portraitIdx = 0;
   
-  while (slideCount < 5) {
+  while (slideCount < limit) {
     let added = false;
     
     // Try to add 16:9 landscape image (full screen)
@@ -139,7 +140,7 @@ export function generatePlaylist(submissions: any[]): Slide[] {
     }
     
     // Try to add 1:1 mosaic (2 images side-by-side)
-    if (slideCount < 5 && squareIdx + 1 < square.length) {
+    if (slideCount < limit && squareIdx + 1 < square.length) {
       const sub1 = square[squareIdx];
       const sub2 = square[squareIdx + 1];
       playlist.push({
@@ -168,7 +169,7 @@ export function generatePlaylist(submissions: any[]): Slide[] {
     }
     
     // Try to add 9:16 mosaic (3 images side-by-side)
-    if (slideCount < 5 && portraitIdx + 2 < portrait.length) {
+    if (slideCount < limit && portraitIdx + 2 < portrait.length) {
       const sub1 = portrait[portraitIdx];
       const sub2 = portrait[portraitIdx + 1];
       const sub3 = portrait[portraitIdx + 2];
