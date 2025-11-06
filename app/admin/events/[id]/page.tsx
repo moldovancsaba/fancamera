@@ -348,6 +348,11 @@ export default async function EventDetailPage({
                         <p className="text-white/80 text-xs">
                           {new Date(submission.createdAt).toLocaleDateString()}
                         </p>
+                        {typeof submission.playCount === 'number' && submission.playCount > 0 && (
+                          <p className="text-white/90 text-xs font-semibold mt-1">
+                            🎬 Played {submission.playCount} {submission.playCount === 1 ? 'time' : 'times'}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Link>

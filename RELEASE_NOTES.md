@@ -1,10 +1,169 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 1.0.0
-**Last Updated**: 2025-11-03T18:31:18.000Z
+**Current Version**: 1.4.0
+**Last Updated**: 2025-04-27T10:45:18.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v1.4.0] — 2025-04-27T10:45:18.000Z
+
+### Feature — Slideshow Play Count Display
+
+**Status**: Complete
+**Release Type**: Minor
+
+#### Added
+- ✅ Play count display in event gallery (hover overlay)
+- ✅ Play count badge in admin submissions page
+- ✅ Shows "🎬 Played X times" for images used in slideshows
+- ✅ Only displays when playCount > 0
+
+#### User Experience
+**Event Gallery** (`/admin/events/[id]`):
+- Hover over any submission to see play count in the overlay
+- Displays below the date in white text
+
+**Admin Submissions** (`/admin/submissions`):
+- Purple badge showing slideshow play count
+- Positioned prominently above action buttons
+
+#### Technical Details
+- Play counts are automatically tracked by the `/api/slideshows/[id]/played` endpoint
+- Incremented each time an image is displayed in a slideshow
+- Stored in `submissions.playCount` field
+- Conditional rendering ensures clean UI when playCount is 0 or undefined
+
+#### Files Modified
+- `app/admin/events/[id]/page.tsx` — Added play count to gallery hover overlay
+- `app/admin/submissions/page.tsx` — Added play count badge
+- `package.json` — Version 1.3.1 → 1.4.0
+- `RELEASE_NOTES.md` — Added this release entry
+
+#### Slideshow Settings Location
+Slideshow settings (⚙️ button) are located in:
+- Admin → Events → [Event Details] page
+- In the "Event Slideshows" section
+- Each slideshow card has a ⚙️ button next to the delete button
+- Opens dialog with: Name, Buffer Size, Slide Duration, Fade Duration, Refresh Strategy
+
+---
+
+## [v1.3.1] — 2025-04-27T10:15:32.000Z
+
+### Bugfix — Slideshow Settings UI Build Error
+
+**Status**: Complete
+**Release Type**: Patch
+
+#### Fixed
+- ✅ JSX syntax error in `components/admin/SlideshowManager.tsx` at line 201
+- ✅ Incorrect closing brace structure in ternary conditional rendering
+- ✅ Build now succeeds without errors
+
+#### Technical Details
+- Changed line 201 from `)}` to `</div>` to properly close the `<div className="p-6">` container
+- Moved ternary closing `)}` to line 202 where it correctly closes the conditional expression
+- Settings dialog functionality verified: edit button (⚙️), form fields, Save/Cancel actions
+
+#### Files Modified
+- `components/admin/SlideshowManager.tsx` — Fixed JSX structure
+- `package.json` — Version 1.3.0 → 1.3.1
+- `RELEASE_NOTES.md` — Added this release entry
+
+---
+
+## [v1.3.0] — 2025-04-27T09:30:00.000Z
+
+### Feature — Rolling Buffer Slideshow System
+
+**Status**: Complete
+**Release Type**: Minor
+
+#### Added
+- ✅ Complete rolling buffer slideshow architecture for infinite smooth playback
+- ✅ Backend APIs: playlist, next-candidate, played tracking, slideshow CRUD
+- ✅ Settings UI with configurable buffer size, timing, refresh strategy
+- ✅ Image preloading system with background refresh
+- ✅ Resilient to network failures — continues with existing buffer
+- ✅ Fullscreen support with keyboard controls (F, Space, Arrows)
+
+#### Technical Implementation
+**Schema Updates**:
+- Added `bufferSize` (default 10), `refreshStrategy` ('continuous' | 'batch') to Slideshow
+- Added `playCount`, `lastPlayedAt` to Submission for least-played tracking
+
+**APIs Created**:
+- `GET /api/slideshows/[id]/playlist?limit=N` — Returns initial buffer
+- `GET /api/slideshows/[id]/next-candidate?excludeIds=...` — Returns single best slide
+- `POST /api/slideshows/[id]/played` — Updates play counts
+- `PATCH /api/slideshows?id=...` — Updates slideshow settings
+
+**Player Features**:
+- N-slide buffer in memory (configurable 1-50)
+- Fetches 1 candidate per transition (background, non-blocking)
+- Buffer rotation: push new, shift oldest
+- Displays "Slide X of Y • Buffer: N" in controls
+
+**Settings UI**:
+- Name, Buffer Size (1-50 slides)
+- Slide Duration (1-60 seconds)
+- Fade Duration (0-5 seconds)
+- Refresh Strategy (continuous/batch)
+- ⚙️ button next to delete button for each slideshow
+
+#### Files Modified
+- `lib/db/schemas.ts` — Added bufferSize, refreshStrategy, playCount, lastPlayedAt
+- `lib/slideshow/playlist.ts` — Configurable limit parameter
+- `app/api/slideshows/route.ts` — Added PATCH endpoint
+- `app/api/slideshows/[slideshowId]/next-candidate/route.ts` — NEW
+- `app/slideshow/[slideshowId]/page.tsx` — Complete rewrite with rolling buffer
+- `components/admin/SlideshowManager.tsx` — Added settings dialog
+
+---
+
+## [v1.2.1] — 2025-04-27T08:45:00.000Z
+
+### Bugfix — Legacy Submission Dimensions
+
+**Status**: Complete
+**Release Type**: Patch
+
+#### Fixed
+- ✅ Slideshow playlist generator now uses fallback dimensions (1920x1080) for old submissions without imageWidth/imageHeight
+- ✅ All images now display correctly in slideshows
+
+#### Files Modified
+- `lib/slideshow/playlist.ts` — Added fallback dimension logic
+
+---
+
+## [v1.2.0] — 2025-04-27T08:30:00.000Z
+
+### Documentation — MongoDB Reference Conventions
+
+**Status**: Complete
+**Release Type**: Minor
+
+#### Added
+- ✅ Comprehensive MongoDB reference conventions documentation
+- ✅ Added image dimensions to submissions API for aspect ratio detection
+- ✅ Updated capture page to send canvas dimensions
+
+#### Files Created
+- `docs/MONGODB_CONVENTIONS.md` — Complete reference guide
+
+#### Convention Rules
+- URLs: use MongoDB `_id` as string
+- Same-collection queries: `{ _id: new ObjectId(id) }`
+- Foreign key storage: `_id.toString()` stored as string
+- Display IDs (UUID): Only for external APIs and obfuscation
+
+#### Files Modified
+- `app/api/submissions/route.ts` — Added imageWidth/Height params
+- `app/capture/[eventId]/page.tsx` — Sends canvas dimensions
 
 ---
 
@@ -180,6 +339,11 @@ Example: 2025-11-03T18:31:18.000Z
 
 | Version | Date | Type | Description |
 |---------|------|------|-------------|
+| 1.4.0 | 2025-04-27T10:45:18.000Z | Minor | Slideshow play count display in galleries |
+| 1.3.1 | 2025-04-27T10:15:32.000Z | Patch | Fixed JSX syntax error in SlideshowManager settings UI |
+| 1.3.0 | 2025-04-27T09:30:00.000Z | Minor | Rolling buffer slideshow system with settings UI |
+| 1.2.1 | 2025-04-27T08:45:00.000Z | Patch | Image dimension fallback for legacy submissions |
+| 1.2.0 | 2025-04-27T08:30:00.000Z | Minor | MongoDB conventions documentation |
 | 1.0.0 | 2025-11-03T18:31:18.000Z | Initial | Project planning and documentation setup |
 
 ---

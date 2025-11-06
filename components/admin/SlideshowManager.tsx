@@ -16,6 +16,10 @@ interface Slideshow {
   name: string;
   isActive: boolean;
   createdAt: string;
+  bufferSize?: number;
+  transitionDurationMs?: number;
+  fadeDurationMs?: number;
+  refreshStrategy?: 'continuous' | 'batch';
 }
 
 interface Props {
@@ -26,6 +30,7 @@ interface Props {
 export default function SlideshowManager({ eventId, initialSlideshows }: Props) {
   const [slideshows, setSlideshows] = useState<Slideshow[]>(initialSlideshows);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingSlideshow, setEditingSlideshow] = useState<Slideshow | null>(null);
 
   const handleCreateSlideshow = async () => {
     const name = prompt('Enter slideshow name (e.g., "Main Screen", "VIP Lounge"):');
@@ -74,6 +79,32 @@ export default function SlideshowManager({ eventId, initialSlideshows }: Props) 
     const url = `${window.location.origin}/slideshow/${slideshowId}`;
     navigator.clipboard.writeText(url);
     alert('Slideshow URL copied to clipboard!');
+  };
+
+  const handleEditSlideshow = async (updated: Slideshow) => {
+    try {
+      const response = await fetch(`/api/slideshows?id=${updated._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: updated.name,
+          bufferSize: updated.bufferSize,
+          transitionDurationMs: updated.transitionDurationMs,
+          fadeDurationMs: updated.fadeDurationMs,
+          refreshStrategy: updated.refreshStrategy,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSlideshows(slideshows.map(s => s._id === updated._id ? data.slideshow : s));
+        setEditingSlideshow(null);
+      } else {
+        alert('Failed to update slideshow');
+      }
+    } catch (err) {
+      alert('Failed to update slideshow');
+    }
   };
 
   return (
@@ -129,12 +160,22 @@ export default function SlideshowManager({ eventId, initialSlideshows }: Props) 
                       {slideshow.isActive ? '● Active' : '○ Inactive'}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleDeleteSlideshow(slideshow._id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    🗑️
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingSlideshow(slideshow)}
+                      className="text-blue-500 hover:text-blue-700 text-sm"
+                      title="Settings"
+                    >
+                      ⚙️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSlideshow(slideshow._id)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -156,6 +197,112 @@ export default function SlideshowManager({ eventId, initialSlideshows }: Props) 
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Dialog */}
+      {editingSlideshow && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Slideshow Settings
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editingSlideshow.name}
+                  onChange={(e) => setEditingSlideshow({ ...editingSlideshow, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* Buffer Size */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Buffer Size (slides in memory)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={editingSlideshow.bufferSize || 10}
+                  onChange={(e) => setEditingSlideshow({ ...editingSlideshow, bufferSize: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Higher = more memory, lower = faster refresh
+                </p>
+              </div>
+
+              {/* Transition Duration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Slide Duration (seconds)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={(editingSlideshow.transitionDurationMs || 5000) / 1000}
+                  onChange={(e) => setEditingSlideshow({ ...editingSlideshow, transitionDurationMs: parseInt(e.target.value) * 1000 })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* Fade Duration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Fade Duration (seconds)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={(editingSlideshow.fadeDurationMs || 1000) / 1000}
+                  onChange={(e) => setEditingSlideshow({ ...editingSlideshow, fadeDurationMs: parseFloat(e.target.value) * 1000 })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* Refresh Strategy */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Refresh Strategy
+                </label>
+                <select
+                  value={editingSlideshow.refreshStrategy || 'continuous'}
+                  onChange={(e) => setEditingSlideshow({ ...editingSlideshow, refreshStrategy: e.target.value as 'continuous' | 'batch' })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="continuous">Continuous (background refresh)</option>
+                  <option value="batch">Batch (reload all at once)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => handleEditSlideshow(editingSlideshow)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => setEditingSlideshow(null)}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

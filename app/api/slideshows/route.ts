@@ -122,6 +122,64 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * PATCH /api/slideshows?id=...
+ * Update slideshow settings
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = request.nextUrl;
+    const id = searchParams.get('id');
+
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json({ error: 'Valid slideshow ID is required' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { name, bufferSize, transitionDurationMs, fadeDurationMs, refreshStrategy, isActive } = body;
+
+    // Build update object
+    const updates: any = {
+      updatedAt: generateTimestamp(),
+    };
+
+    if (name !== undefined) updates.name = name;
+    if (bufferSize !== undefined) updates.bufferSize = Math.max(1, Math.min(50, parseInt(bufferSize)));
+    if (transitionDurationMs !== undefined) updates.transitionDurationMs = Math.max(1000, parseInt(transitionDurationMs));
+    if (fadeDurationMs !== undefined) updates.fadeDurationMs = Math.max(0, parseInt(fadeDurationMs));
+    if (refreshStrategy !== undefined) updates.refreshStrategy = refreshStrategy;
+    if (isActive !== undefined) updates.isActive = Boolean(isActive);
+
+    const db = await connectToDatabase();
+
+    const result = await db
+      .collection(COLLECTIONS.SLIDESHOWS)
+      .findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $set: updates },
+        { returnDocument: 'after' }
+      );
+
+    if (!result) {
+      return NextResponse.json({ error: 'Slideshow not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, slideshow: result });
+  } catch (error) {
+    console.error('Error updating slideshow:', error);
+    return NextResponse.json(
+      { error: 'Failed to update slideshow' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * DELETE /api/slideshows?id=...
  * Delete a slideshow
  */

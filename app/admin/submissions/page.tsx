@@ -81,6 +81,11 @@ export default async function AdminSubmissionsPage() {
                     <span className="capitalize">{submission.frameName}</span>
                     <span>{new Date(submission.createdAt).toLocaleDateString()}</span>
                   </div>
+                  {typeof submission.playCount === 'number' && submission.playCount > 0 && (
+                    <div className="mb-3 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded text-xs text-purple-700 dark:text-purple-300 font-semibold text-center">
+                      🎬 Slideshow plays: {submission.playCount}
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Link
                       href={`/share/${submission._id}`}
