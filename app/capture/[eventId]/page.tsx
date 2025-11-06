@@ -46,6 +46,7 @@ export default function EventCapturePage({
   const [isSaving, setIsSaving] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [step, setStep] = useState<'select-frame' | 'capture-photo' | 'preview'>('select-frame');
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
   // Fetch event and frames
   useEffect(() => {
@@ -129,6 +130,9 @@ export default function EventCapturePage({
 
       canvas.width = targetWidth;
       canvas.height = targetHeight;
+      
+      // Store dimensions for submission
+      setImageDimensions({ width: targetWidth, height: targetHeight });
 
       const photoImg = new window.Image();
       photoImg.crossOrigin = 'anonymous';
@@ -195,6 +199,8 @@ export default function EventCapturePage({
           eventName: event.name,
           partnerId: event.partnerId,
           partnerName: event.partnerName,
+          imageWidth: imageDimensions?.width || selectedFrame.width,
+          imageHeight: imageDimensions?.height || selectedFrame.height,
         }),
       });
 

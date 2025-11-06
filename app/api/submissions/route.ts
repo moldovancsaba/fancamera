@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { imageData, frameId, eventId, eventName, partnerId, partnerName } = body;
+    const { imageData, frameId, eventId, eventName, partnerId, partnerName, imageWidth, imageHeight } = body;
 
     if (!imageData || !frameId) {
       return NextResponse.json(
@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
         device: request.headers.get('user-agent'),
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         finalFileSize: uploadResult.fileSize,
+        // Image dimensions for slideshow aspect ratio detection
+        finalWidth: imageWidth || frame.width || 1920,
+        finalHeight: imageHeight || frame.height || 1080,
       },
       createdAt: new Date().toISOString(),
     };
