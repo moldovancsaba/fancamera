@@ -489,33 +489,33 @@ export default function SlideshowPlayerV2({
           }}
         >
           {/* Top Left - align top left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Top Center - align top center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Top Right - align top right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Bottom Left - align bottom left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[3].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[3].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Bottom Center - align bottom center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[4].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[4].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Bottom Right - align bottom right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[5].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[5].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
       );
@@ -537,18 +537,18 @@ export default function SlideshowPlayerV2({
           }}
         >
           {/* Left image - align left */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[0].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[0].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Center image - align center */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[1].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[1].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           
           {/* Right image - align right */}
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: 0, margin: 0 }}>
-            <img src={slide.submissions[2].imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: 0, margin: 0, overflow: 'hidden' }}>
+            <img src={slide.submissions[2].imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
       );
