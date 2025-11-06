@@ -60,12 +60,22 @@ export default function SlideshowPage({
   // Fetch playlist
   const fetchPlaylist = async () => {
     try {
+      console.log('Fetching playlist for slideshow:', slideshowId);
       const response = await fetch(`/api/slideshows/${slideshowId}/playlist`);
-      if (!response.ok) throw new Error('Failed to load slideshow');
+      console.log('Playlist response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Playlist fetch failed:', response.status, errorData);
+        throw new Error(errorData.error || `Failed to load slideshow: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Playlist data:', data);
       setPlaylistData(data);
       setIsLoading(false);
     } catch (err) {
+      console.error('Fetch playlist error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load slideshow');
       setIsLoading(false);
     }
