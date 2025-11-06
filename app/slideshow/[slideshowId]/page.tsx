@@ -212,8 +212,12 @@ export default function SlideshowPlayerV2({
   useEffect(() => {
     if (!settings || !isPlaying || buffer.length === 0) return;
 
+    console.log(`[Slideshow] Starting slide ${currentIndex + 1}/${buffer.length}, type: ${buffer[currentIndex]?.type}, aspect: ${buffer[currentIndex]?.aspectRatio}`);
+    console.log(`[Slideshow] Timing: Display ${settings.transitionDurationMs}ms, Fade ${settings.fadeDurationMs}ms, FadeStart @${settings.transitionDurationMs - settings.fadeDurationMs}ms`);
+
     // Start fade out before transition
     const fadeTimer = setTimeout(() => {
+      console.log(`[Slideshow] Starting fade out for slide ${currentIndex + 1}`);
       setFadeOut(true);
     }, settings.transitionDurationMs - settings.fadeDurationMs);
 
@@ -233,6 +237,7 @@ export default function SlideshowPlayerV2({
 
       // Advance to next slide
       const nextIndex = (currentIndex + 1) % buffer.length;
+      console.log(`[Slideshow] Advancing ${currentIndex + 1} → ${nextIndex + 1}`);
       setCurrentIndex(nextIndex);
       setFadeOut(false); // Reset fade for next slide
     }, settings.transitionDurationMs);
@@ -352,17 +357,22 @@ export default function SlideshowPlayerV2({
           {currentSlide.type === 'single' ? (
             // Single 16:9 image (full screen)
             <img
-              key={currentSlide.submissions[0]._id}
               src={currentSlide.submissions[0].imageUrl}
               alt="Slideshow image"
-              className="w-full h-full object-contain transition-opacity duration-1000"
-              style={{ opacity: fadeOut ? 0 : 1 }}
+              className="w-full h-full object-contain transition-opacity"
+              style={{ 
+                opacity: fadeOut ? 0 : 1,
+                transitionDuration: `${settings.fadeDurationMs}ms`,
+              }}
             />
           ) : currentSlide.aspectRatio === '1:1' ? (
             // 1:1 Mosaic - 2 images side by side (800x800 each)
             <div 
-              className="flex items-center justify-center gap-8 w-full h-full px-8 transition-opacity duration-1000"
-              style={{ opacity: fadeOut ? 0 : 1 }}
+              className="flex items-center justify-center gap-8 w-full h-full px-8 transition-opacity"
+              style={{ 
+                opacity: fadeOut ? 0 : 1,
+                transitionDuration: `${settings.fadeDurationMs}ms`,
+              }}
             >
               {currentSlide.submissions.map((sub) => (
                 <img
@@ -382,8 +392,11 @@ export default function SlideshowPlayerV2({
           ) : (
             // 9:16 Mosaic - 3 images side by side (540x960 each)
             <div 
-              className="flex items-center justify-center gap-6 w-full h-full px-6 transition-opacity duration-1000"
-              style={{ opacity: fadeOut ? 0 : 1 }}
+              className="flex items-center justify-center gap-6 w-full h-full px-6 transition-opacity"
+              style={{ 
+                opacity: fadeOut ? 0 : 1,
+                transitionDuration: `${settings.fadeDurationMs}ms`,
+              }}
             >
               {currentSlide.submissions.map((sub) => (
                 <img
