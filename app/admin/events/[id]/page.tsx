@@ -1,8 +1,8 @@
 /**
  * Event Detail Page
- * Version: 1.1.0
+ * Version: 1.2.0
  * 
- * Display event details with partner info and assigned frames
+ * Display event details with partner info, assigned frames, and slideshows
  */
 
 import { connectToDatabase } from '@/lib/db/mongodb';
@@ -10,6 +10,7 @@ import { COLLECTIONS } from '@/lib/db/schemas';
 import { ObjectId } from 'mongodb';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import SlideshowManager from '@/components/admin/SlideshowManager';
 
 export default async function EventDetailPage({
   params,
@@ -26,6 +27,7 @@ export default async function EventDetailPage({
   let event: any = null;
   let partner: any = null;
   let submissions: any[] = [];
+  let slideshows: any[] = [];
   let dbError = null;
 
   try {
@@ -51,6 +53,13 @@ export default async function EventDetailPage({
       .find({ eventId: id })
       .sort({ createdAt: -1 })
       .limit(50)
+      .toArray();
+
+    // Get slideshows for this event
+    slideshows = await db
+      .collection(COLLECTIONS.SLIDESHOWS)
+      .find({ eventId: id })
+      .sort({ createdAt: -1 })
       .toArray();
 
   } catch (error) {
@@ -278,6 +287,14 @@ export default async function EventDetailPage({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Slideshows Section */}
+      <div id="slideshows" className="mt-8">
+        <SlideshowManager
+          eventId={id}
+          initialSlideshows={JSON.parse(JSON.stringify(slideshows))}
+        />
       </div>
 
       {/* Event Gallery Section */}

@@ -30,6 +30,7 @@ export const COLLECTIONS = {
   FRAMES: 'frames',
   SUBMISSIONS: 'submissions',
   USERS_CACHE: 'users_cache',
+  SLIDESHOWS: 'slideshows',
 } as const;
 
 // ============================================================================
@@ -344,7 +345,55 @@ export interface Submission {
   isDeleted: boolean;                // Soft delete flag
   deletedAt?: string;                // ISO 8601 timestamp
   
+  // Slideshow tracking for playlist generation
+  // Tracks how many times this submission has been displayed in slideshows
+  playCount?: number;                // Number of times shown in slideshow (default: 0)
+  lastPlayedAt?: string;             // ISO 8601 timestamp of last slideshow display
+  
   // Timestamps
+  createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC
+  updatedAt: string;                 // ISO 8601 timestamp with milliseconds UTC
+}
+
+// ============================================================================
+// SLIDESHOWS COLLECTION
+// ============================================================================
+
+/**
+ * Slideshow Document Interface
+ * Represents a 16:9 slideshow configuration for an event
+ * 
+ * Why slideshows:
+ * - Event organizers need to display submissions on screens during events
+ * - Smart playlist algorithm ensures all submissions get displayed fairly
+ * - Supports multiple slideshow instances per event for different screens
+ * 
+ * Playlist Logic:
+ * - Always selects the 5 least-played submissions (by playCount, then createdAt)
+ * - Groups submissions by aspect ratio: 16:9 (full screen), 1:1 (2x1 mosaic), 9:16 (3x1 mosaic)
+ * - Skips 1:1 and 9:16 images if not enough to create complete mosaics
+ * - Updates playCount and lastPlayedAt after each display
+ * 
+ * Display Format:
+ * - 16:9 canvas at 1920x1080px
+ * - 16:9 images: Full screen display
+ * - 1:1 images: 2 images side-by-side (800x800px each) with equal padding
+ * - 9:16 images: 3 images side-by-side (540x960px each) with equal padding
+ */
+export interface Slideshow {
+  _id?: ObjectId;                    // MongoDB document ID
+  slideshowId: string;               // Unique slideshow identifier (UUID)
+  eventId: string;                   // Reference to parent event
+  eventName: string;                 // Cached event name for display
+  name: string;                      // User-defined slideshow name (e.g., "Main Screen", "VIP Lounge")
+  
+  // Slideshow settings
+  isActive: boolean;                 // Whether slideshow is currently active
+  transitionDurationMs: number;      // Duration each slide is displayed (milliseconds, default: 5000)
+  fadeDurationMs: number;            // Duration of fade transition (milliseconds, default: 1000)
+  
+  // Admin tracking
+  createdBy: string;                 // Admin user ID from SSO who created this slideshow
   createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC
   updatedAt: string;                 // ISO 8601 timestamp with milliseconds UTC
 }
@@ -395,6 +444,7 @@ export type NewEvent = Omit<Event, '_id'>;
 export type NewFrame = Omit<Frame, '_id'>;
 export type NewSubmission = Omit<Submission, '_id'>;
 export type NewUserCache = Omit<UserCache, '_id'>;
+export type NewSlideshow = Omit<Slideshow, '_id'>;
 
 /**
  * Generate ISO 8601 timestamp with milliseconds in UTC
