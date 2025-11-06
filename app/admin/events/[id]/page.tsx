@@ -359,11 +359,13 @@ export default async function EventDetailPage({
                                 </p>
                               );
                             })}
-                            {typeof submission.playCount === 'number' && submission.playCount > 0 && (
-                              <p className="text-white/80 text-xs">
-                                Total: {submission.playCount}×
-                              </p>
-                            )}
+                        {(typeof submission.playCount === 'number' && submission.playCount > 0) || (
+                          submission.slideshowPlays && Object.keys(submission.slideshowPlays).length > 0
+                        ) && (
+                        <p className="text-white/80 text-xs">
+                          Total: {submission.playCount || 0}× (DEBUG)
+                        </p>
+                        )}
                           </div>
                         )}
                       </div>
