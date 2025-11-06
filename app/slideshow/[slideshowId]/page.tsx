@@ -455,9 +455,12 @@ export default function SlideshowPlayerV2({
   const currentSlideKey = currentSlide ? currentSlide.submissions.map(s => s._id).join('-') : 'loading';
 
   // Helper function to render slide content
+  // SPECIFICATION: All slides rendered in a 16:9 box that fits the screen maximum while maintaining aspect ratio
+  // NO MARGIN, NO PADDING anywhere in the layout
   const renderSlide = (slide: Slide) => {
     if (slide.type === 'single') {
-      // Single 16:9 landscape image - fills entire 16:9 box
+      // LANDSCAPE: Single 16:9 landscape image fills the entire 16:9 container
+      // Image fits to maximum size within container, aspect ratio preserved
       return (
         <img
           src={slide.submissions[0].imageUrl}
@@ -472,9 +475,17 @@ export default function SlideshowPlayerV2({
         />
       );
     } else if (slide.aspectRatio === '1:1') {
-      // 1:1 Square Mosaic - 3x2 grid (6 images)
-      // Grid: 3 columns (1/3 each) x 2 rows (1/2 each)
-      // Each image aligned to its corner/edge
+      // SQUARE 1:1 MOSAIC SPECIFICATION:
+      // - 16:9 container fragmented into 6 equal parts: 3 columns (1/3 horizontal each) x 2 rows (1/2 vertical each)
+      // - Each image fits to maximum within its cell, aspect ratio preserved (objectFit: contain)
+      // - Alignment:
+      //   * Top-left: aligned to TOP and LEFT
+      //   * Top-center: aligned to TOP and CENTER
+      //   * Top-right: aligned to TOP and RIGHT
+      //   * Bottom-left: aligned to BOTTOM and LEFT
+      //   * Bottom-center: aligned to BOTTOM and CENTER
+      //   * Bottom-right: aligned to BOTTOM and RIGHT
+      // - NO margin, NO padding, NO gap between grid cells
       return (
         <div 
           style={{ 
@@ -520,9 +531,14 @@ export default function SlideshowPlayerV2({
         </div>
       );
     } else {
-      // 9:16 Portrait Mosaic - 3 images side by side
-      // Grid: 3 equal columns (1/3 each), single row
-      // Left aligned left, center aligned center, right aligned right
+      // PORTRAIT 9:16 MOSAIC SPECIFICATION:
+      // - 16:9 container fragmented into 3 equal horizontal parts (1/3 each), single row full height
+      // - Each portrait image fits to maximum within its cell, aspect ratio preserved (objectFit: contain)
+      // - Alignment:
+      //   * Left image: aligned to LEFT
+      //   * Center image: aligned to CENTER
+      //   * Right image: aligned to RIGHT
+      // - NO margin, NO padding, NO gap between columns
       return (
         <div 
           style={{ 
@@ -566,11 +582,13 @@ export default function SlideshowPlayerV2({
         {/* Slide Content - instant cuts, no transitions */}
         <div
           key={currentSlideKey}
-          className="relative bg-black flex items-center justify-center"
+          className="relative bg-black"
           style={{
             width: '100%',
             height: '100%',
             aspectRatio: '16/9',
+            display: 'block',
+            position: 'relative',
           }}
         >
           {renderSlide(currentSlide)}
