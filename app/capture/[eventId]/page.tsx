@@ -13,7 +13,7 @@ import Image from 'next/image';
 import CameraCapture from '@/components/camera/CameraCapture';
 
 interface Frame {
-  _id: string;
+  frameId: string;
   name: string;
   imageUrl: string;
   width: number;
@@ -76,9 +76,9 @@ export default function EventCapturePage({
           const framesResponse = await fetch('/api/frames?active=true&limit=100');
           const framesData = await framesResponse.json();
           
-          // Filter to only frames assigned to this event
-          const eventFrames = (framesData.frames || []).filter((f: any) => 
-            frameIds.includes(f._id.toString())
+          // Filter to only frames assigned to this event (using frameId UUID)
+          const eventFrames = (framesData.data?.frames || []).filter((f: any) => 
+            frameIds.includes(f.frameId)
           );
           setFrames(eventFrames);
         }
@@ -194,8 +194,8 @@ export default function EventCapturePage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageData: compositeImage,
-          frameId: selectedFrame._id,
-          eventId: eventId,
+          frameId: selectedFrame.frameId,
+          eventId: event.eventId,  // Use event UUID, not URL parameter
           eventName: event.name,
           partnerId: event.partnerId,
           partnerName: event.partnerName,
@@ -212,7 +212,9 @@ export default function EventCapturePage({
 
       const data = await response.json();
       const origin = window.location.origin;
-      setShareUrl(`${origin}/share/${data.submission._id}`);
+      // Response is wrapped in { success: true, data: { submission: {...} } }
+      const submissionId = data.data?.submission?._id || data.submission?._id;
+      setShareUrl(`${origin}/share/${submissionId}`);
       
       alert('Photo saved successfully! You can now share it.');
     } catch (error: any) {
@@ -377,7 +379,7 @@ export default function EventCapturePage({
           <div className="h-full flex items-center justify-center p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl">
               {frames.map((frame) => (
-                <div key={frame._id} className="flex items-center justify-center">
+                <div key={frame.frameId} className="flex items-center justify-center">
                   <img
                     src={frame.imageUrl}
                     alt={frame.name}

@@ -47,8 +47,14 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       .limit(limit)
       .toArray();
 
+  // Serialize MongoDB ObjectId to string for JSON compatibility
+  const serializedFrames = frames.map(frame => ({
+    ...frame,
+    _id: frame._id.toString(),
+  }));
+
   return apiSuccess({
-    frames,
+    frames: serializedFrames,
     pagination: {
       page,
       limit,

@@ -551,15 +551,34 @@ export default function SlideshowPlayerV2({
         justifyContent: 'center',
       }}
     >
-      {/* Slideshow Canvas - 16:9 aspect ratio box that fits screen */}
+      {/* Slideshow Canvas - 16:9 aspect ratio box that fits screen
+          CRITICAL: Maintains strict 16:9 aspect ratio in ALL scenarios:
+          - Desktop window resize (any dimension)
+          - Mobile rotation (portrait/landscape)
+          - Tablet orientation changes
+          
+          How it works:
+          - width: 100vw and height: 56.25vw (9/16 = 0.5625) attempts to fill width first
+          - max-width: 177.78vh (16/9 = 1.7778) constrains width if viewport is taller than 16:9
+          - max-height: 100vh prevents overflow in any scenario
+          - Centering ensures letterbox (top/bottom) or pillarbox (left/right) as needed
+          
+          Why this approach:
+          - Previous code used width: 100% + height: 100% which OVERRIDES aspectRatio
+          - Using viewport units (vw/vh) with max constraints maintains the ratio
+          - Absolute positioning + transform centers the box perfectly
+      */}
       <div 
         className="relative"
         style={{
-          width: '100%',
-          height: '100%',
-          maxWidth: '100vw',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '100vw',
+          height: '56.25vw',  // 9/16 = 0.5625 (maintains 16:9 when width-constrained)
+          maxWidth: '177.78vh', // 16/9 = 1.7778 (maintains 16:9 when height-constrained)
           maxHeight: '100vh',
-          aspectRatio: '16/9',
           backgroundColor: 'black',
         }}
       >

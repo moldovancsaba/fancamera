@@ -49,14 +49,26 @@ export default async function EventDetailPage({
       .findOne({ partnerId: event.partnerId });
 
     // Get submissions for this event (limit to most recent 50)
-    // Include playCount and slideshowPlays fields for display
-    // NEW: Updated query for new schema with eventIds array and archive/hidden checks
+    // BACKWARD COMPATIBILITY: Support both eventId (singular, old data) and eventIds (array, new data)
+    // Also exclude submissions that are hidden from this specific event
     submissions = await db
       .collection(COLLECTIONS.SUBMISSIONS)
       .find({
-        eventIds: { $in: [id] },         // NEW: Check if id exists in eventIds array
-        isArchived: false,               // NEW: Exclude archived submissions
-        hiddenFromEvents: { $nin: [id] } // NEW: Not hidden from this event
+        $and: [
+          {
+            $or: [
+              { eventId: event.eventId },               // Old schema: singular eventId field
+              { eventIds: { $in: [event.eventId] } }    // New schema: eventIds array
+            ]
+          },
+          { isArchived: { $ne: true } },                // Exclude archived submissions
+          {
+            $or: [
+              { hiddenFromEvents: { $exists: false } },  // Field doesn't exist yet (old data)
+              { hiddenFromEvents: { $nin: [event.eventId] } } // Field exists and event not in it
+            ]
+          }
+        ]
       })
       .sort({ createdAt: -1 })
       .limit(50)

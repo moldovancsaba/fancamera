@@ -44,9 +44,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       name: `submission-${Date.now()}`,
     });
 
-    // Get frame details from database
+    // Get frame details from database (using frameId UUID)
     const db = await connectToDatabase();
-    const frame = await db.collection('frames').findOne({ _id: new ObjectId(frameId) });
+    const frame = await db.collection('frames').findOne({ frameId });
 
   if (!frame) {
     throw apiNotFound('Frame');
@@ -57,7 +57,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       userId: session?.user?.id || 'anonymous',
       userEmail: session?.user?.email || 'anonymous@event',
       userName: session?.user?.name || session?.user?.email || 'Event Guest',
-      frameId: frame._id,
+      frameId: frame.frameId,
       frameName: frame.name,
       frameCategory: frame.category,
       // Partner/Event context (for gallery filtering)

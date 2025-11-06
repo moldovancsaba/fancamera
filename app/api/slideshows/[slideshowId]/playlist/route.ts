@@ -44,21 +44,46 @@ export async function GET(
     // Determine how many slides to generate
     const limit = limitParam ? parseInt(limitParam) : (slideshow.bufferSize || 10);
 
+    // CRITICAL: slideshow.eventId is MongoDB _id, need to get event's UUID
+    const { ObjectId } = await import('mongodb');
+    const event = await db
+      .collection(COLLECTIONS.EVENTS)
+      .findOne({ _id: new ObjectId(slideshow.eventId) });
+    
+    if (!event) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+    
+    const eventUuid = event.eventId; // This is the UUID stored in submissions
+
     // Build match filter: event + exclude IDs in other playlists + archived/hidden check
+    // BACKWARD COMPATIBILITY: Support both eventId (singular) and eventIds (array)
     const matchFilter: any = {
-      eventIds: { $in: [slideshow.eventId] },        // NEW: Check if eventId exists in array
-      isArchived: false,                              // NEW: Exclude archived submissions
-      hiddenFromEvents: { $nin: [slideshow.eventId] } // NEW: Not hidden from this event
+      $and: [
+        {
+          $or: [
+            { eventId: eventUuid },              // OLD: singular eventId field
+            { eventIds: { $in: [eventUuid] } }   // NEW: eventIds array
+          ]
+        },
+        { isArchived: { $ne: true } },           // Exclude archived
+        {
+          $or: [
+            { hiddenFromEvents: { $exists: false } },     // Field doesn't exist (old data)
+            { hiddenFromEvents: { $nin: [eventUuid] } }  // Not hidden from this event
+          ]
+        }
+      ]
     };
     if (excludeIds.length > 0) {
       // Convert string IDs to ObjectId for MongoDB comparison
-      const { ObjectId } = await import('mongodb');
       const excludeObjectIds = excludeIds
         .filter(id => ObjectId.isValid(id))
         .map(id => new ObjectId(id));
       
       if (excludeObjectIds.length > 0) {
-        matchFilter._id = { $nin: excludeObjectIds };
+        // Add _id exclusion to the $and array
+        matchFilter.$and.push({ _id: { $nin: excludeObjectIds } });
         console.log(`[Playlist] Excluding ${excludeObjectIds.length} images currently in other playlists`);
       }
     }
