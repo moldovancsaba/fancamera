@@ -55,6 +55,7 @@ export async function GET(
     }
     
     const eventUuid = event.eventId; // This is the UUID stored in submissions
+    console.log(`[Playlist] Event UUID: ${eventUuid}, Event Name: ${event.name}`);
 
     // Build match filter: event + exclude IDs in other playlists + archived/hidden check
     // BACKWARD COMPATIBILITY: Support both eventId (singular) and eventIds (array)
@@ -106,13 +107,15 @@ export async function GET(
       .toArray();
     
     // DEBUG: Log first 15 submissions with their play counts AND dimensions
-    console.log(`[Playlist] Total submissions available: ${submissions.length}`);
+    console.log(`[Playlist] Total submissions available (after filtering): ${submissions.length}`);
+    console.log(`[Playlist] Match filter:`, JSON.stringify(matchFilter, null, 2));
     console.log('[Playlist] First 15 submissions by playCount (least played first):');
     submissions.slice(0, 15).forEach((sub, i) => {
       const width = sub.metadata?.finalWidth || sub.metadata?.originalWidth || '?';
       const height = sub.metadata?.finalHeight || sub.metadata?.originalHeight || '?';
       const ratio = (width !== '?' && height !== '?') ? (width / height).toFixed(3) : '?';
-      console.log(`  ${i+1}. ${sub._id.toString().slice(-6)} - playCount: ${sub.playCount || 0}, ${width}x${height} (${ratio})`);
+      const hidden = sub.hiddenFromEvents || [];
+      console.log(`  ${i+1}. ${sub._id.toString().slice(-6)} - playCount: ${sub.playCount || 0}, ${width}x${height} (${ratio}), hidden: ${hidden.length > 0 ? hidden.join(',') : 'none'}`);
     });
 
     if (submissions.length === 0) {
