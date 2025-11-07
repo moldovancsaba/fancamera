@@ -86,6 +86,7 @@ export default function EventCapturePage({
   const successMessage = takePhotoPage?.config.successMessage || 'Photo saved successfully! You can now share it.';
   const showSharePage = takePhotoPage?.config.showSharePage !== false;
   const skipShareMessage = takePhotoPage?.config.skipShareMessage || 'Thank you! Your photo has been saved.';
+  const showFrameOnCapture = takePhotoPage?.config.showFrameOnCapture !== false; // Default true
   const errorFrameMessage = takePhotoPage?.config.errorFrameMessage || 'Failed to apply frame. Please try again.';
   const errorSaveMessage = takePhotoPage?.config.errorSaveMessage || 'Failed to save photo: Please try again.';
   const linkCopiedMessage = takePhotoPage?.config.linkCopiedMessage || 'Link copied to clipboard!';
@@ -704,7 +705,7 @@ export default function EventCapturePage({
             <div className="flex-1 flex items-center justify-center p-4 min-h-0">
               <CameraCapture 
                 onCapture={handlePhotoCapture} 
-                frameOverlay={selectedFrame?.imageUrl}
+                frameOverlay={showFrameOnCapture ? selectedFrame?.imageUrl : undefined}
                 frameWidth={selectedFrame?.width}
                 frameHeight={selectedFrame?.height}
               />

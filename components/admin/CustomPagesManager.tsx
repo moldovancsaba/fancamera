@@ -370,6 +370,7 @@ function PageEditModal({
   const [successMessage, setSuccessMessage] = useState(page.config.successMessage || 'Photo saved successfully! You can now share it.');
   const [showSharePage, setShowSharePage] = useState(page.config.showSharePage !== false);
   const [skipShareMessage, setSkipShareMessage] = useState(page.config.skipShareMessage || 'Thank you! Your photo has been saved.');
+  const [showFrameOnCapture, setShowFrameOnCapture] = useState(page.config.showFrameOnCapture !== false); // Default true
   // Error and notification messages for take-photo
   const [errorFrameMessage, setErrorFrameMessage] = useState(page.config.errorFrameMessage || 'Failed to apply frame. Please try again.');
   const [errorSaveMessage, setErrorSaveMessage] = useState(page.config.errorSaveMessage || 'Failed to save photo: Please try again.');
@@ -409,6 +410,7 @@ function PageEditModal({
           successMessage,
           showSharePage,
           skipShareMessage,
+          showFrameOnCapture,
           errorFrameMessage,
           errorSaveMessage,
           linkCopiedMessage,
@@ -673,6 +675,22 @@ function PageEditModal({
                   />
                 </div>
               )}
+              
+              {/* Frame Overlay Toggle */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
+                  <input
+                    type="checkbox"
+                    checked={showFrameOnCapture}
+                    onChange={(e) => setShowFrameOnCapture(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  Show Frame During Live Capture
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  If checked, frame overlay is visible during live camera view. If unchecked, frame is only applied after capture.
+                </p>
+              </div>
               
               {/* Error and Notification Messages */}
               <div className="col-span-2">

@@ -139,6 +139,7 @@ export interface CustomPage {
     successMessage?: string;     // Message shown after successful save (e.g., "Photo saved successfully! You can now share it.")
     showSharePage?: boolean;     // If false, skip share page and show thank you message instead
     skipShareMessage?: string;   // Message shown when share page is skipped (e.g., "Thank you! Your photo has been saved.")
+    showFrameOnCapture?: boolean; // If true, show frame overlay during live capture; if false, frame only applied after capture (default: true)
     // Error and notification messages
     errorFrameMessage?: string;  // Error when frame fails to apply (e.g., "Failed to apply frame. Please try again.")
     errorSaveMessage?: string;   // Error when save fails (e.g., "Failed to save photo: Please try again.")
