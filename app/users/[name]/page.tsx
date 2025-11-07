@@ -22,13 +22,14 @@ function sanitizeUsername(name: string): string {
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     name: string;
-  };
+  }>;
 }
 
 export default async function UserProfilePage({ params }: PageProps) {
-  const sanitizedUrlName = params.name;  // Already sanitized in URL (spaces → underscores)
+  const { name } = await params;
+  const sanitizedUrlName = name;  // Already sanitized in URL (spaces → underscores)
   let user: any = null;
   let error = null;
 
