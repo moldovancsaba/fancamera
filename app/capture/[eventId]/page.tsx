@@ -154,6 +154,15 @@ export default function EventCapturePage({
             frameIds.includes(f.frameId)
           );
           setFrames(eventFrames);
+          
+          // Auto-select if only one frame
+          if (eventFrames.length === 1) {
+            setSelectedFrame(eventFrames[0]);
+            setStep('capture-photo');
+          }
+        } else {
+          // No frames - skip to capture without frame
+          setStep('capture-photo');
         }
       } catch (error) {
         console.error('Error fetching event data:', error);
@@ -165,10 +174,16 @@ export default function EventCapturePage({
     fetchData();
   }, [eventId]);
 
-  // Composite image with frame when photo is captured
+  // Composite image with frame when photo is captured (or just use photo if no frame)
   useEffect(() => {
-    if (capturedImage && selectedFrame) {
-      compositeImageWithFrame();
+    if (capturedImage) {
+      if (selectedFrame) {
+        compositeImageWithFrame();
+      } else {
+        // No frame - use captured image as-is
+        setCompositeImage(capturedImage);
+        setStep('preview');
+      }
     }
   }, [capturedImage, selectedFrame]);
 
@@ -257,7 +272,7 @@ export default function EventCapturePage({
   };
 
   const handleSave = async () => {
-    if (!compositeImage || !selectedFrame || !event) return;
+    if (!compositeImage || !event) return;
 
     setIsSaving(true);
 
@@ -265,13 +280,13 @@ export default function EventCapturePage({
       // v2.0.0: Include userInfo and consents in submission
       const submissionData: any = {
         imageData: compositeImage,
-        frameId: selectedFrame.frameId,
+        frameId: selectedFrame?.frameId || null,  // Optional frame
         eventId: event.eventId,  // Use event UUID, not URL parameter
         eventName: event.name,
         partnerId: event.partnerId,
         partnerName: event.partnerName,
-        imageWidth: imageDimensions?.width || selectedFrame.width,
-        imageHeight: imageDimensions?.height || selectedFrame.height,
+        imageWidth: imageDimensions?.width || selectedFrame?.width || 1920,
+        imageHeight: imageDimensions?.height || selectedFrame?.height || 1080,
       };
       
       // Add collected data from custom pages
@@ -569,16 +584,16 @@ export default function EventCapturePage({
     );
   }
 
-  if (!event || frames.length === 0) {
+  if (!event) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">🖼️</div>
+          <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            No Frames Available
+            Event Not Found
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            This event doesn't have any active frames yet.
+            This event could not be loaded.
           </p>
         </div>
       </div>
@@ -604,24 +619,29 @@ export default function EventCapturePage({
             </div>
             {/* Progress Steps - Hide in landscape for camera */}
             <div className="flex items-center justify-center gap-2 landscape:flex-col landscape:gap-4 landscape:hidden">
-              <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-                }`}>
-                  1
-                </div>
-                <p className={`text-[10px] font-medium text-center mt-1 ${
-                  step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  Select Frame
-                </p>
-              </div>
-              <div className="w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+              {/* Only show frame selection step if multiple frames */}
+              {frames.length > 1 && (
+                <>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      step === 'select-frame' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                    }`}>
+                      1
+                    </div>
+                    <p className={`text-[10px] font-medium text-center mt-1 ${
+                      step === 'select-frame' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      Select Frame
+                    </p>
+                  </div>
+                  <div className="w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                </>
+              )}
               <div className="flex flex-col items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   step === 'capture-photo' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                 }`}>
-                  2
+                  {frames.length > 1 ? '2' : '1'}
                 </div>
                 <p className={`text-[10px] font-medium text-center mt-1 ${
                   step === 'capture-photo' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
@@ -634,7 +654,7 @@ export default function EventCapturePage({
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                   step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                 }`}>
-                  3
+                  {frames.length > 1 ? '3' : '2'}
                 </div>
                 <p className={`text-[10px] font-medium text-center mt-1 ${
                   step === 'preview' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
@@ -668,30 +688,32 @@ export default function EventCapturePage({
         )}
 
         {/* Step 2: Photo Capture - Fullscreen */}
-        {step === 'capture-photo' && selectedFrame && (
+        {step === 'capture-photo' && (
           <div className="fixed inset-0 bg-black z-40 flex flex-col">
-            {/* Minimal header with change frame button */}
-            <div className="absolute top-4 right-4 z-50">
-              <button
-                onClick={() => setStep('select-frame')}
-                className="px-3 py-2 bg-white/90 text-gray-900 rounded-lg font-medium text-sm flex items-center gap-1 shadow-lg"
-              >
-                🔄 {changeButtonText}
-              </button>
-            </div>
+            {/* Minimal header with change frame button - only show if multiple frames */}
+            {frames.length > 1 && (
+              <div className="absolute top-4 right-4 z-50">
+                <button
+                  onClick={() => setStep('select-frame')}
+                  className="px-3 py-2 bg-white/90 text-gray-900 rounded-lg font-medium text-sm flex items-center gap-1 shadow-lg"
+                >
+                  🔄 {changeButtonText}
+                </button>
+              </div>
+            )}
             <div className="flex-1 flex items-center justify-center p-4 min-h-0">
               <CameraCapture 
                 onCapture={handlePhotoCapture} 
-                frameOverlay={selectedFrame.imageUrl}
-                frameWidth={selectedFrame.width}
-                frameHeight={selectedFrame.height}
+                frameOverlay={selectedFrame?.imageUrl}
+                frameWidth={selectedFrame?.width}
+                frameHeight={selectedFrame?.height}
               />
             </div>
           </div>
         )}
 
         {/* Step 3: Preview */}
-        {step === 'preview' && compositeImage && selectedFrame && (
+        {step === 'preview' && compositeImage && (
           <div className="h-full flex items-center justify-center p-4">
             {/* Image with overlay - Full screen with share overlay when saved */}
             <div className="relative max-w-full max-h-full">
