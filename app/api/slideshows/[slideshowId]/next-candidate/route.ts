@@ -44,11 +44,26 @@ export async function GET(
 
     // Get submissions for the event, sorted by playCount (least played first)
     // Exclude submissions already in buffer
+    // Only show submissions visible in Event Gallery (not hidden or archived)
     const submissions = await db
       .collection(COLLECTIONS.SUBMISSIONS)
       .find({ 
-        eventId: slideshow.eventId,
-        _id: { $nin: excludeIds.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id)) }
+        $and: [
+          {
+            $or: [
+              { eventId: slideshow.eventId },               // Old schema: singular eventId field
+              { eventIds: { $in: [slideshow.eventId] } }    // New schema: eventIds array
+            ]
+          },
+          { _id: { $nin: excludeIds.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id)) } },
+          { isArchived: { $ne: true } },                    // Exclude archived submissions
+          {
+            $or: [
+              { hiddenFromEvents: { $exists: false } },      // Field doesn't exist yet (old data)
+              { hiddenFromEvents: { $nin: [slideshow.eventId] } } // Field exists and event not in it
+            ]
+          }
+        ]
       })
       .sort({ playCount: 1, createdAt: 1 })
       .toArray();

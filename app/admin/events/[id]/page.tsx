@@ -324,7 +324,7 @@ export default async function EventDetailPage({
               📷 Event Gallery
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Photos captured at this event ({submissions.length})
+              Photos visible in Event Slideshows ({submissions.length})
             </p>
           </div>
 
