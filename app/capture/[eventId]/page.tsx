@@ -37,6 +37,7 @@ interface EventData {
   eventDate: string | null;
   location: string | null;
   customPages: CustomPage[];  // v2.0.0: Custom page flow
+  loadingText?: string;  // Customizable loading text
 }
 
 // v2.0.0: Collected data from custom pages
@@ -114,6 +115,7 @@ export default function EventCapturePage({
           eventDate: eventData.eventDate || null,
           location: eventData.location || null,
           customPages: eventData.customPages || [],
+          loadingText: eventData.loadingText,
         });
         
         // v2.0.0: Set up custom page flow
