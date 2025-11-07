@@ -143,6 +143,71 @@ export default function EditFramePage({ params }: { params: Promise<{ id: string
           </p>
         </div>
 
+        {/* Technical Details (Read-only) */}
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Technical Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">Frame ID:</span>
+              <p className="font-mono text-xs text-gray-900 dark:text-white break-all">{frame.frameId || 'Not assigned'}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">MongoDB ID:</span>
+              <p className="font-mono text-xs text-gray-900 dark:text-white break-all">{frame._id}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">Dimensions:</span>
+              <p className="text-gray-900 dark:text-white">{frame.width || 'N/A'} × {frame.height || 'N/A'} px</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">File Size:</span>
+              <p className="text-gray-900 dark:text-white">{frame.fileSize ? `${(frame.fileSize / 1024).toFixed(2)} KB` : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">MIME Type:</span>
+              <p className="text-gray-900 dark:text-white">{frame.mimeType || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">Created:</span>
+              <p className="text-gray-900 dark:text-white">{frame.createdAt ? new Date(frame.createdAt).toLocaleString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">Updated:</span>
+              <p className="text-gray-900 dark:text-white">{frame.updatedAt ? new Date(frame.updatedAt).toLocaleString() : 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 dark:text-gray-400">Created By:</span>
+              <p className="text-gray-900 dark:text-white">{frame.createdBy || 'N/A'}</p>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <span className="text-gray-600 dark:text-gray-400 text-sm">Image URL:</span>
+            <a 
+              href={frame.imageUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline break-all mt-1"
+            >
+              {frame.imageUrl}
+            </a>
+          </div>
+          
+          {frame.thumbnailUrl && (
+            <div className="mt-2">
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Thumbnail URL:</span>
+              <a 
+                href={frame.thumbnailUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline break-all mt-1"
+              >
+                {frame.thumbnailUrl}
+              </a>
+            </div>
+          )}
+        </div>
+
         {/* Frame Details */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <div>

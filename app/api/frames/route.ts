@@ -9,6 +9,7 @@
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { uploadImage } from '@/lib/imgbb/upload';
+import { generateId } from '@/lib/db/schemas';
 import {
   withErrorHandler,
   requireAdmin,
@@ -47,11 +48,24 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       .limit(limit)
       .toArray();
 
-  // Serialize MongoDB ObjectId to string for JSON compatibility
-  const serializedFrames = frames.map(frame => ({
-    ...frame,
-    _id: frame._id.toString(),
-  }));
+  // Serialize MongoDB ObjectId and ensure frameId exists
+  const serializedFrames = [];
+  for (const frame of frames) {
+    // Auto-migrate: add frameId if missing
+    if (!frame.frameId) {
+      const frameId = generateId();
+      await db.collection('frames').updateOne(
+        { _id: frame._id },
+        { $set: { frameId, updatedAt: new Date().toISOString() } }
+      );
+      frame.frameId = frameId;
+    }
+    
+    serializedFrames.push({
+      ...frame,
+      _id: frame._id.toString(),
+    });
+  }
 
   return apiSuccess({
     frames: serializedFrames,
@@ -120,6 +134,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // Save to database
   const db = await connectToDatabase();
   const frame = {
+    frameId: generateId(),
     name,
     description,
     category: category || 'general',

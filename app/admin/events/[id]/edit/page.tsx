@@ -1,8 +1,9 @@
 /**
  * Edit Event Page
- * Version: 1.1.0
+ * Version: 2.0.0
  * 
- * Form to edit event details
+ * Form to edit event details and manage custom page flows
+ * v2.0.0: Added custom pages management with reordering
  */
 
 'use client';
@@ -10,6 +11,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { type CustomPage } from '@/lib/db/schemas';
+import CustomPagesManager from '@/components/admin/CustomPagesManager';
 
 export default function EditEventPage({
   params,
@@ -22,6 +25,9 @@ export default function EditEventPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [event, setEvent] = useState<any>(null);
+  
+  // v2.0.0: Custom pages state
+  const [customPages, setCustomPages] = useState<CustomPage[]>([]);
 
   // Unwrap params
   useEffect(() => {
@@ -34,14 +40,24 @@ export default function EditEventPage({
 
     const fetchEvent = async () => {
       try {
+        console.log('Edit page - Fetching event:', eventId);
         const response = await fetch(`/api/events/${eventId}`);
+        console.log('Edit page - Response status:', response.status);
+        
         const data = await response.json();
+        console.log('Edit page - Response data:', data);
 
         if (!response.ok) {
+          console.error('Edit page - Response not OK:', data);
           throw new Error(data.error || 'Failed to load event');
         }
 
-        setEvent(data.event);
+        // apiSuccess wraps in { success: true, data: { event: {...} } }
+        const eventData = data.data?.event || data.event;  // Support both structures
+        console.log('Edit page - Loaded event data:', eventData);
+        setEvent(eventData);
+        // v2.0.0: Load custom pages
+        setCustomPages(eventData?.customPages || []);
         setIsLoading(false);
       } catch (err: any) {
         console.error('Fetch event error:', err);
@@ -61,11 +77,13 @@ export default function EditEventPage({
     const formData = new FormData(e.currentTarget);
     
     // Build request body from form data
+    // v2.0.0: customPages are saved separately via CustomPagesManager
     const data = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       eventDate: formData.get('eventDate') as string,
       location: formData.get('location') as string,
+      loadingText: formData.get('loadingText') as string,
       isActive: formData.get('isActive') === 'on',
     };
 
@@ -121,6 +139,8 @@ export default function EditEventPage({
       </div>
     );
   }
+
+  console.log('Edit page - Rendering with event:', event);
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -228,6 +248,28 @@ export default function EditEventPage({
           </div>
         </div>
 
+        {/* Customization */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customization</h2>
+          
+          <div>
+            <label htmlFor="loadingText" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Loading Text
+            </label>
+            <input
+              type="text"
+              id="loadingText"
+              name="loadingText"
+              defaultValue={event?.loadingText || 'Loading event...'}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., Loading event..."
+            />
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Text shown while the event is loading
+            </p>
+          </div>
+        </div>
+
         {/* Status */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center">
@@ -279,6 +321,41 @@ export default function EditEventPage({
           </Link>
         </div>
       </form>
+
+      {/* v2.0.0: Custom Pages Management - Outside form to have independent save */}
+      {/* Force re-render when pages change by using length as key */}
+      <CustomPagesManager
+        key={customPages.length}
+        eventId={eventId}
+        initialPages={customPages}
+        onSave={async (pages) => {
+          try {
+            const response = await fetch(`/api/events/${eventId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ customPages: pages }),
+            });
+            
+            if (!response.ok) {
+              const result = await response.json();
+              throw new Error(result.error || 'Failed to save pages');
+            }
+            
+            // Reload event data to get updated customPages from server
+            const updatedEventResponse = await fetch(`/api/events/${eventId}`);
+            const updatedEventData = await updatedEventResponse.json();
+            if (updatedEventResponse.ok) {
+              const eventData = updatedEventData.data?.event || updatedEventData.event;
+              setCustomPages(eventData?.customPages || []);
+              setEvent(eventData);
+            }
+            
+            alert('Pages saved successfully!');
+          } catch (err: any) {
+            throw new Error(err.message);
+          }
+        }}
+      />
     </div>
   );
 }

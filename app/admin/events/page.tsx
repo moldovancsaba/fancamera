@@ -105,12 +105,13 @@ export default async function EventsPage() {
                       <div>
                         <Link
                           href={`/admin/events/${event._id}`}
-                          className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          className="inline-flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-semibold hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                         >
+                          <span className="mr-1.5">🎯</span>
                           {event.name}
                         </Link>
                         {event.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-2">
                             {event.description}
                           </div>
                         )}

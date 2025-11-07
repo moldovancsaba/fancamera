@@ -1,8 +1,9 @@
 /**
  * Submissions API
- * Version: 1.7.1
+ * Version: 2.0.0
  * 
  * POST: Save photo submission with frame to imgbb and MongoDB
+ *       v2.0.0: Accepts userInfo and consents from custom event pages
  * GET: List user's submissions
  */
 
@@ -25,6 +26,10 @@ import {
 /**
  * POST /api/submissions
  * Save a new photo submission
+ * 
+ * v2.0.0 additions:
+ * - userInfo: {name, email} collected from 'who-are-you' pages
+ * - consents: Array of {pageId, pageType, checkboxText, accepted, acceptedAt} from 'accept'/'cta' pages
  */
 export const POST = withErrorHandler(async (request: NextRequest) => {
   // Check authentication (optional for event submissions)
@@ -32,7 +37,19 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     // Parse request body
     const body = await request.json();
-    const { imageData, frameId, eventId, eventName, partnerId, partnerName, imageWidth, imageHeight } = body;
+    const { 
+      imageData, 
+      frameId, 
+      eventId, 
+      eventName, 
+      partnerId, 
+      partnerName, 
+      imageWidth, 
+      imageHeight,
+      // v2.0.0: Custom page data
+      userInfo,
+      consents,
+    } = body;
 
   if (!imageData || !frameId) {
     throw apiBadRequest('Image data and frame ID are required');
@@ -52,6 +69,45 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     throw apiNotFound('Frame');
   }
 
+    // Validate userInfo if provided (v2.0.0)
+    // If userInfo is provided from 'who-are-you' page, validate structure
+    let validatedUserInfo = undefined;
+    if (userInfo) {
+      if (!userInfo.name || !userInfo.email) {
+        throw apiBadRequest('userInfo must include both name and email');
+      }
+      validatedUserInfo = {
+        name: userInfo.name.trim(),
+        email: userInfo.email.trim(),
+        collectedAt: new Date().toISOString(),
+      };
+    }
+
+    // Validate consents if provided (v2.0.0)
+    // Each consent must have: pageId, pageType, checkboxText, accepted, acceptedAt
+    let validatedConsents = [];
+    if (consents && Array.isArray(consents)) {
+      for (const consent of consents) {
+        validateRequiredFields(consent, ['pageId', 'pageType', 'checkboxText', 'accepted']);
+        
+        if (consent.pageType !== 'accept' && consent.pageType !== 'cta') {
+          throw apiBadRequest('consent pageType must be "accept" or "cta"');
+        }
+        
+        if (consent.accepted !== true) {
+          throw apiBadRequest('All consents must have accepted=true');
+        }
+
+        validatedConsents.push({
+          pageId: consent.pageId,
+          pageType: consent.pageType,
+          checkboxText: consent.checkboxText,
+          accepted: true,
+          acceptedAt: consent.acceptedAt || new Date().toISOString(),
+        });
+      }
+    }
+
     // Save submission to database
     const submission = {
       userId: session?.user?.id || 'anonymous',
@@ -70,6 +126,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       imageId: uploadResult.imageId,
       fileSize: uploadResult.fileSize,
       mimeType: uploadResult.mimeType,
+      // v2.0.0: User info from onboarding pages (optional)
+      ...(validatedUserInfo && { userInfo: validatedUserInfo }),
+      // v2.0.0: Consent records from accept/CTA pages
+      consents: validatedConsents,
       metadata: {
         device: request.headers.get('user-agent'),
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),

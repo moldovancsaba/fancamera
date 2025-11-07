@@ -1,6 +1,6 @@
 /**
  * Error Handling Wrapper for API Routes
- * Version: 1.7.1
+ * Version: 2.0.0
  * 
  * Higher-order function that wraps API route handlers with consistent error handling.
  * 
@@ -29,10 +29,15 @@ import { apiError } from './responses';
  * Matches Next.js App Router route handler signature
  * 
  * Note: context param is optional because some routes don't have params
+ * Updated for Next.js 15: params are always wrapped in Promise
+ * 
+ * This type supports both cases:
+ * 1. Routes without params: context is optional
+ * 2. Routes with params: context is required and contains params Promise
  */
 type RouteHandler = (
   request: NextRequest,
-  context?: { params?: Promise<any> | any }
+  context?: any
 ) => Promise<NextResponse>;
 
 /**
@@ -74,7 +79,7 @@ type RouteHandler = (
  * ```
  */
 export function withErrorHandler(handler: RouteHandler): RouteHandler {
-  return async (request: NextRequest, context?: { params?: Promise<any> | any }) => {
+  return async (request: NextRequest, context?: any) => {
     try {
       // Execute the wrapped handler
       return await handler(request, context);

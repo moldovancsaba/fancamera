@@ -1,7 +1,25 @@
 # TASKLIST.md
 
-Current Version: 1.7.1
-Last Updated: 2025-11-06T18:52:18.000Z
+Current Version: 2.0.0
+Last Updated: 2025-11-07T00:00:00.000Z
+
+## Recently Completed
+
+### Custom Pages System Implementation (v2.0.0) - COMPLETE
+- **Completed**: 2025-11-07T00:00:00.000Z
+- **Type**: MAJOR release
+- **Status**: ✅ Complete
+- **Summary**: Implemented comprehensive custom pages system with onboarding/thank you pages
+- **Deliverables**:
+  - ✅ Database schemas extended (CustomPage, UserConsent types)
+  - ✅ API endpoints (PATCH /api/events/[eventId], updated POST endpoints)
+  - ✅ 4 new components (WhoAreYouPage, AcceptPage, CTAPage, CustomPagesManager)
+  - ✅ Capture flow refactored for multi-step navigation
+  - ✅ Admin UI integrated into event edit page
+  - ✅ Build verified (TypeScript 0 errors, all pages generated)
+  - ✅ Documentation updated to v2.0.0 across all files
+
+---
 
 ## Active Tasks
 

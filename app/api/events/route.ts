@@ -123,6 +123,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   // eventId is a UUID for consistent identification
   // partnerName is cached for efficient queries and display
   // frames array starts empty - frames are assigned separately
+  // customPages array starts empty - pages can be added via PATCH (v2.0.0)
   const now = generateTimestamp();
   const event = {
     eventId: generateId(),
@@ -134,6 +135,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     location: location?.trim() || undefined,
     isActive: isActive !== undefined ? Boolean(isActive) : true,
     frames: [],
+    customPages: [],  // v2.0.0: Empty array = default flow (straight to photo capture)
     submissionCount: 0,
     createdBy: session.user.id,
     createdAt: now,

@@ -1,10 +1,235 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 1.7.1
-**Last Updated**: 2025-11-06T18:52:18.000Z
+**Current Version**: 2.0.0
+**Last Updated**: 2025-11-07T00:00:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.0.0] — 2025-11-07T00:00:00.000Z
+
+### Feature — Custom Pages System for Events
+
+**Status**: Complete  
+**Release Type**: MAJOR (breaking changes to Event and Submission schemas)
+
+#### Summary
+Implemented a comprehensive custom pages system allowing event organizers to add onboarding pages (before photo capture) and thank you pages (after sharing). This enables data collection, terms acceptance, and call-to-action functionality in the photo capture flow.
+
+#### New Features
+
+**Custom Page Types**:
+1. **Who Are You** - User data collection (name + email)
+2. **Accept** - Terms/consent checkbox (blue theme)
+3. **CTA** - Call-to-action checkbox (purple theme)
+4. **Take Photo** - Existing capture flow as unified page type
+
+**Admin UI**:
+- ✅ CustomPagesManager component with modal-based page editor
+- ✅ Add/Edit/Delete page functionality
+- ✅ Reordering with ▲▼ buttons (no external drag-drop library)
+- ✅ Integrated into event edit page between "Event Details" and "Event is active"
+- ✅ Template-based page creation with pre-configured defaults
+
+**Capture Flow**:
+- ✅ Multi-step flow with state management (currentPageIndex, collectedData, consents)
+- ✅ Flow phases: Onboarding → Frame Select → Capture → Preview/Save → Sharing + NEXT → Thank You → Restart
+- ✅ NEXT button on sharing page proceeds to thank you pages
+- ✅ Required field validation (name/email before proceeding)
+- ✅ Checkbox validation (must check before enabling Next button)
+- ✅ Dark mode support throughout
+
+**Data & Compliance**:
+- ✅ User info stored in submission document (not separately)
+- ✅ Consent tracking with timestamps (acceptedAt in ISO 8601 format)
+- ✅ GDPR-compliant data structure
+- ✅ Single-query retrieval for all submission data
+
+#### Database Schema Changes
+
+**Event Interface** (`lib/db/schemas.ts`):
+```typescript
+// New field
+customPages: CustomPage[];
+
+// New types
+enum CustomPageType {
+  WHO_ARE_YOU = 'who-are-you',
+  ACCEPT = 'accept',
+  CTA = 'cta',
+  TAKE_PHOTO = 'take-photo'
+}
+
+interface CustomPage {
+  pageId: string;
+  pageType: CustomPageType;
+  order: number;
+  isActive: boolean;
+  config: {
+    title: string;
+    description: string;
+    buttonText: string;
+    nameLabel?: string;      // who-are-you only
+    emailLabel?: string;     // who-are-you only
+    checkboxText?: string;   // accept/cta only
+  };
+  createdAt: string;  // ISO 8601 with milliseconds UTC
+  updatedAt: string;
+}
+```
+
+**Submission Interface** (`lib/db/schemas.ts`):
+```typescript
+// New fields
+userInfo?: {
+  name?: string;
+  email?: string;
+  collectedAt: string;  // ISO 8601 with milliseconds UTC
+};
+
+consents: Array<{
+  pageId: string;
+  pageType: 'accept' | 'cta';
+  checkboxText: string;
+  accepted: boolean;
+  acceptedAt: string;  // ISO 8601 with milliseconds UTC
+}>;
+```
+
+#### API Enhancements
+
+**New Endpoint**:
+- `PATCH /api/events/[eventId]` - Update event including customPages array
+  - Admin authentication required
+  - Full validation of page structure and type-specific config
+  - Automatic timestamp management (createdAt/updatedAt)
+
+**Modified Endpoints**:
+- `POST /api/events` - Initialize empty customPages array
+- `POST /api/submissions` - Accept and validate userInfo and consents fields
+
+#### New Components
+
+**Capture Components** (`components/capture/`):
+1. `WhoAreYouPage.tsx` (214 lines)
+   - Name + email input fields with validation
+   - Accessibility: ARIA labels, keyboard navigation
+   - Dark mode support
+   - Next button disabled until both fields filled
+
+2. `AcceptPage.tsx` (154 lines)
+   - Checkbox consent UI (blue theme)
+   - Timestamp tracking on acceptance
+   - Accessibility features
+
+3. `CTAPage.tsx` (154 lines)
+   - Call-to-action checkbox UI (purple theme)
+   - Same structure as AcceptPage with different styling
+
+**Admin Components** (`components/admin/`):
+4. `CustomPagesManager.tsx` (468 lines)
+   - Page list with reordering controls
+   - Modal-based page editor
+   - Add page with type selection
+   - Type-specific config fields
+   - Delete confirmation
+   - Take Photo placeholder automatically added
+
+#### Files Modified
+
+**Database Layer**:
+- `lib/db/schemas.ts` - Extended Event and Submission interfaces, added CustomPageType enum, CustomPage and UserConsent interfaces (v2.0.0)
+
+**API Routes**:
+- `app/api/events/route.ts` - Initialize customPages in POST (v2.0.0)
+- `app/api/events/[eventId]/route.ts` - Added PATCH endpoint with validation (v2.0.0)
+- `app/api/submissions/route.ts` - Accept userInfo and consents (v2.0.0)
+
+**Frontend**:
+- `app/capture/[eventId]/page.tsx` - Complete refactor for multi-step flow (v2.0.0)
+- `app/admin/events/[id]/edit/page.tsx` - Integrated CustomPagesManager (v2.0.0)
+
+**Utilities**:
+- `lib/api/withErrorHandler.ts` - Fixed TypeScript types for Next.js 15 route handlers (v2.0.0)
+
+#### Files Created
+- `components/capture/WhoAreYouPage.tsx`
+- `components/capture/AcceptPage.tsx`
+- `components/capture/CTAPage.tsx`
+- `components/admin/CustomPagesManager.tsx`
+
+#### Breaking Changes
+
+1. **Event Schema**: Added required `customPages` field (initialized as empty array)
+2. **Submission Schema**: Added `consents` field (required, defaults to empty array)
+3. **API Route Types**: Updated withErrorHandler for Next.js 15 compatibility
+
+#### Migration Notes
+
+**Existing Events**:
+- No migration script required
+- POST /api/events automatically initializes customPages: []
+- Existing events without customPages will use standard flow
+
+**Existing Submissions**:
+- No migration required
+- New submissions will include consents array
+- Old submissions remain valid (userInfo optional, consents defaults to [])
+
+#### Technical Decisions
+
+**Why store userInfo/consents IN submission?**
+- GDPR compliance: single document = single deletion
+- Performance: single query retrieves all data
+- Data integrity: atomic updates
+
+**Why use order field instead of array position?**
+- Reliable reordering without race conditions
+- Clear, explicit ordering logic
+- Easy to add/remove pages without recalculating indices
+
+**Why separate 'accept' and 'cta' types?**
+- Semantic clarity for analytics
+- Different visual themes (blue vs purple)
+- Potential for type-specific features in future
+
+**Why up/down buttons instead of drag-drop?**
+- Avoid external dependencies
+- Simpler implementation
+- Better accessibility
+- Sufficient for typical page counts (2-5 pages)
+
+#### Documentation Updates
+- `README.md` - Version 1.7.1 → 2.0.0, added Custom Pages System overview
+- `package.json` - Version 1.7.2 → 2.0.0
+- `RELEASE_NOTES.md` - This entry
+- All documentation timestamps updated to ISO 8601 with milliseconds UTC
+
+#### Build & Testing
+- ✅ TypeScript compilation passes (0 errors)
+- ✅ Build completed successfully with Turbopack
+- ✅ All 27 pages generated
+- ✅ JSX className issues resolved
+- ✅ Route handler types fixed for Next.js 15
+
+#### Impact Metrics
+
+**Lines Added**:
+- Custom page components: ~522 lines
+- Admin UI component: ~468 lines
+- Capture flow refactoring: ~300 lines modified
+- Schema extensions: ~150 lines
+- API enhancements: ~100 lines
+- **Total**: ~1,540 lines added/modified
+
+**Capabilities Unlocked**:
+- Event organizers can collect user data before photo capture
+- Legal compliance with timestamped consent tracking
+- Post-sharing engagement with thank you pages
+- Flexible flow customization per event
+- Foundation for future page types (video, quiz, survey)
 
 ---
 

@@ -1,21 +1,27 @@
 /**
  * Database Schemas and TypeScript Types
- * Version: 1.1.0
+ * Version: 2.0.0
  * 
  * Defines the structure of all MongoDB collections and their TypeScript interfaces.
  * All dates stored as ISO 8601 strings with milliseconds in UTC: YYYY-MM-DDTHH:MM:SS.sssZ
  * 
  * Collections:
  * - partners: Organizations/brands that host events
- * - events: Events within partners that use frames
+ * - events: Events within partners that use frames and custom page flows
  * - frames: Pre-designed frame templates with three-tier ownership (global/partner/event)
- * - submissions: User photo submissions with comprehensive metadata
+ * - submissions: User photo submissions with comprehensive metadata and onboarding data
  * - users_cache: Optional cache of SSO user data for performance
  * 
  * Frame Visibility Hierarchy:
  * - Global frames: Available to all partners/events, can be deactivated per partner/event
  * - Partner frames: Available only to specific partner's events, can be deactivated per event
  * - Event frames: Available only to specific event
+ * 
+ * Custom Page Flows (v2.0.0):
+ * - Events can have custom onboarding and thank you pages
+ * - Pages are drag-and-drop reorderable including [Take Photo] step
+ * - Page types: 'who-are-you' (data collection), 'accept' (consent), 'cta' (call to action), 'take-photo' (capture)
+ * - Collected data (name, email, consents) stored with each submission
  */
 
 import { ObjectId } from 'mongodb';
@@ -75,6 +81,76 @@ export interface Partner {
 // ============================================================================
 
 /**
+ * Custom Page Type
+ * Defines the type of page in the event flow
+ * 
+ * Why four types:
+ * - who-are-you: Collect user information (name, email) before photo capture
+ * - accept: GDPR/terms consent with required checkbox
+ * - cta: Call-to-action that can redirect to URL, optional button (if no button = end page)
+ * - take-photo: Represents the existing camera capture flow (special type for ordering)
+ */
+export enum CustomPageType {
+  WHO_ARE_YOU = 'who-are-you',  // Data collection page
+  ACCEPT = 'accept',            // Consent/terms page
+  CTA = 'cta',                  // Call to action page
+  TAKE_PHOTO = 'take-photo',    // Photo capture step (for ordering only)
+}
+
+/**
+ * Custom Page Configuration
+ * Defines a single page in the event flow
+ * 
+ * Why order field:
+ * - Enables drag-and-drop reordering without array manipulation
+ * - Survives page additions/deletions
+ * - Clear sorting: customPages.sort((a, b) => a.order - b.order)
+ * 
+ * Why isActive field:
+ * - Allows temporarily disabling pages without deleting configuration
+ * - Useful for A/B testing or seasonal campaigns
+ */
+export interface CustomPage {
+  pageId: string;              // Unique page identifier (UUID)
+  pageType: CustomPageType;    // Type of page
+  order: number;               // Display order (0-based, lower = earlier in flow)
+  isActive: boolean;           // Whether page is currently enabled
+  config: {
+    title: string;             // Page heading displayed to user
+    description: string;       // Explanatory text shown above form/content
+    buttonText: string;        // Next/Continue button label
+    // For 'who-are-you' type only
+    nameLabel?: string;        // Label for name input (e.g., "Your Name")
+    emailLabel?: string;       // Label for email input (e.g., "Your Email")
+    namePlaceholder?: string;  // Placeholder for name input (e.g., "Enter your name")
+    emailPlaceholder?: string; // Placeholder for email input (e.g., "your.email@example.com")
+    // For 'accept' type only
+    checkboxText?: string;     // Text displayed next to checkbox (e.g., "I agree to...")
+    // For 'cta' type only
+    // checkboxText is repurposed as URL to visit
+    hasButton?: boolean;       // If false, CTA is end page (no continue button, auto-continues after URL visit)
+    visitButtonText?: string;  // Label for visit URL button (e.g., "Visit Now")
+    redirectingText?: string;  // Text shown while redirecting (e.g., "Redirecting you shortly...")
+    // For 'take-photo' type only
+    captureButtonText?: string;  // Label for main capture/save button (e.g., "LOVE IT")
+    retryButtonText?: string;    // Label for retry button (e.g., "TRY AGAIN")
+    shareNextButtonText?: string; // Label for next button on share screen (e.g., "NEXT")
+    changeButtonText?: string;   // Label for change frame button (e.g., "Change")
+    successMessage?: string;     // Message shown after successful save (e.g., "Photo saved successfully! You can now share it.")
+    showSharePage?: boolean;     // If false, skip share page and show thank you message instead
+    skipShareMessage?: string;   // Message shown when share page is skipped (e.g., "Thank you! Your photo has been saved.")
+    // Error and notification messages
+    errorFrameMessage?: string;  // Error when frame fails to apply (e.g., "Failed to apply frame. Please try again.")
+    errorSaveMessage?: string;   // Error when save fails (e.g., "Failed to save photo: Please try again.")
+    linkCopiedMessage?: string;  // Success when link copied (e.g., "Link copied to clipboard!")
+    copyErrorMessage?: string;   // Error when copy fails (e.g., "Failed to copy link. Please copy it manually.")
+    saveFirstMessage?: string;   // Warning when trying to share before saving (e.g., "Please save the photo first to get a shareable link.")
+  };
+  createdAt: string;           // ISO 8601 timestamp when page was added
+  updatedAt: string;           // ISO 8601 timestamp of last modification
+}
+
+/**
  * Event Document Interface
  * Represents a specific event within a partner that uses frames
  * 
@@ -82,6 +158,7 @@ export interface Partner {
  * - Events need their own frame collections
  * - Enables per-event customization and activation control
  * - Supports event-specific QR codes and sharing
+ * - v2.0.0: Supports custom page flows for onboarding and thank you pages
  * 
  * Example: "Serie A - AC Milan x AS Roma", "Red Bull Racing - Monaco GP 2025"
  */
@@ -109,6 +186,16 @@ export interface Event {
     addedAt: string;                 // ISO 8601 timestamp when frame was added to event
     addedBy?: string;                // Admin user ID who added this frame
   }>;
+  
+  // Custom page flow (v2.0.0)
+  // Defines onboarding and thank you pages shown before/after photo capture
+  // Pages with order < [Take Photo] order = onboarding pages
+  // Pages with order > [Take Photo] order = thank you pages
+  // Empty array = default behavior (go straight to photo capture)
+  customPages: CustomPage[];         // Array of custom pages (ordered by order field)
+  
+  // Customization
+  loadingText?: string;              // Text shown while event is loading (e.g., "Loading event...")
   
   // Statistics
   submissionCount?: number;          // Cached count of submissions for this event
@@ -276,8 +363,35 @@ export enum SubmissionStatus {
 }
 
 /**
+ * User Consent Record
+ * Tracks acceptance of terms, GDPR consents, or marketing opt-ins
+ * 
+ * Why stored per submission:
+ * - Legal requirement to track exactly what user agreed to and when
+ * - Supports audit trails for GDPR compliance
+ * - Links consent to specific submission context
+ */
+export interface UserConsent {
+  pageId: string;              // Reference to customPage that generated this consent
+  pageType: 'accept' | 'cta';  // Type of page (for categorization)
+  checkboxText: string;        // Exact text user agreed to (immutable record)
+  accepted: boolean;           // Always true (required to proceed)
+  acceptedAt: string;          // ISO 8601 timestamp when user checked the box
+}
+
+/**
  * Submission Document Interface
  * Represents a user photo submission with complete metadata
+ * 
+ * v2.0.0 additions:
+ * - userInfo: Name and email collected from 'who-are-you' pages
+ * - consents: Array of acceptances from 'accept' and 'cta' pages
+ * 
+ * Why store in submission:
+ * - All capture session data kept together for easy retrieval
+ * - Single query gets complete context
+ * - Supports GDPR data export requirements
+ * - Maintains audit trail of what user agreed to per submission
  */
 export interface Submission {
   _id?: ObjectId;                    // MongoDB document ID
@@ -299,6 +413,20 @@ export interface Submission {
   // Submission details
   method: SubmissionMethod;          // Camera capture or file upload
   status: SubmissionStatus;          // Processing status
+  
+  // User information collected from onboarding pages (v2.0.0)
+  // Only present if event has 'who-are-you' pages
+  // Stored here for GDPR compliance and easy data export
+  userInfo?: {
+    name?: string;                   // User's name from onboarding form
+    email?: string;                  // User's email from onboarding form
+    collectedAt: string;             // ISO 8601 timestamp when data was collected
+  };
+  
+  // Consent records from accept/CTA pages (v2.0.0)
+  // Empty array if no consent pages in event flow
+  // Each consent is immutable record of what user agreed to
+  consents: UserConsent[];           // Array of user consent acceptances
   
   // Comprehensive metadata for tracking and analytics
   metadata: {

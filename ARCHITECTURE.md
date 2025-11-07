@@ -1,8 +1,8 @@
 # ARCHITECTURE.md
 
 **Project**: Camera — Photo Frame Webapp  
-**Current Version**: 1.7.1  
-**Last Updated**: 2025-11-06T19:05:13.000Z
+**Current Version**: 2.0.0  
+**Last Updated**: 2025-11-07T00:00:00.000Z
 
 This document describes the complete system architecture, technical decisions, and implementation patterns for the Camera photo frame application.
 

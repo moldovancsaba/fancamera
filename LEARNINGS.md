@@ -1,8 +1,8 @@
 # LEARNINGS.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 1.7.1
-**Last Updated**: 2025-11-06T18:52:18.000Z
+**Current Version**: 2.0.0
+**Last Updated**: 2025-11-07T00:00:00.000Z
 
 This document records actual issues encountered during development, their solutions, and strategic decisions made. It serves as a knowledge base to prevent repeated mistakes and guide future development.
 
@@ -111,6 +111,79 @@ _No entries yet. Design learnings will be documented as UI/UX work begins._
 ---
 
 ## Backend
+
+### [BACK-002] Next.js 15 Route Handler Type Compatibility — 2025-11-07T00:00:00.000Z
+
+**Issue**: TypeScript compilation errors in API route handlers after implementing custom pages system. Error: "Type '(request: NextRequest, context: { params: Promise<{ eventId: string }> }) => Promise<NextResponse>' is not assignable to type 'RouteHandler'"
+
+**Context**:
+- Implementing PATCH /api/events/[eventId] for custom pages system (v2.0.0)
+- Next.js 15 requires route handlers to accept `context` parameter with `params: Promise<T>`
+- Custom `withErrorHandler` wrapper was using incompatible type definition
+- Build failed with type mismatch on route handler signatures
+
+**Root Cause**:
+```typescript
+// Old type (v1.7.1) - incompatible with Next.js 15
+type RouteHandler = (
+  request: NextRequest,
+  context?: { params?: Promise<any> | any }  // ❌ Mixed Promise/non-Promise
+) => Promise<NextResponse>;
+```
+
+Next.js 15 route handlers:
+- Routes WITHOUT params: `context` optional or undefined
+- Routes WITH params: `context` required with `params: Promise<T>`
+- No mixed Promise/non-Promise types allowed
+
+**Solution**:
+```typescript
+// New type (v2.0.0) - flexible for both cases
+type RouteHandler = (
+  request: NextRequest,
+  context?: any  // ✅ Allows both parameterized and non-parameterized routes
+) => Promise<NextResponse>;
+
+export function withErrorHandler(handler: RouteHandler): RouteHandler {
+  return async (request: NextRequest, context?: any) => {
+    try {
+      return await handler(request, context);
+    } catch (error) {
+      // Error handling logic...
+    }
+  };
+}
+```
+
+**Files Modified**:
+- `lib/api/withErrorHandler.ts` - Updated RouteHandler type to use `any` for context
+- `app/api/events/[eventId]/route.ts` - Route handlers now compile correctly
+
+**Key Decisions**:
+- Use `any` for context parameter to support both route types (with/without params)
+- Alternative approaches (union types, overloads) were too complex
+- Trade-off: Type safety vs compatibility - chose compatibility
+- Handler implementations still have strong typing (e.g., `context: { params: Promise<{ eventId: string }> }`)
+
+**Lessons Learned**:
+1. Next.js 15 requires all dynamic route params to be Promise-wrapped
+2. Type wrappers (like withErrorHandler) must be flexible enough for all route types
+3. Using `any` in wrapper types is acceptable when handler implementations remain strongly typed
+4. Next.js type system changes can break existing middleware patterns
+5. Always verify build passes after framework upgrades
+
+**Impact**:
+- Build now passes with 0 TypeScript errors
+- All route handlers (24 endpoints) compatible with wrapper
+- Future route handlers can use standard Next.js 15 signature
+- No runtime behavior changes - purely type-level fix
+
+**Prevention**:
+- Document Next.js version-specific type requirements
+- Include TypeScript compilation in CI/CD checks
+- Test wrapper utilities with both parameterized and non-parameterized routes
+
+---
 
 ### [BACK-001] imgbb URL Structure Crisis — 2025-11-05T18:47:41.000Z
 
@@ -296,6 +369,155 @@ Flexbox with viewport-based constraints:
 - Correct aspect ratios maintained
 - Works across all screen sizes
 - No overflow or scrolling needed
+
+### [FRONT-003] Custom Pages API Validation Error — 2025-11-07T17:14:35.000Z
+
+**Issue**: "Failed to save pages" error when saving custom pages in admin UI. Error: "Empty required fields: description, buttonText"
+
+**Context**:
+- Implementing custom pages manager in admin event edit page
+- [Take Photo] placeholder page created with empty `description` and `buttonText`
+- API validation required all pages to have non-empty fields
+- PATCH /api/events/[eventId] returned 400 Bad Request
+
+**Root Cause**:
+```typescript
+// CustomPagesManager creates take-photo placeholder with empty fields
+{
+  pageType: 'take-photo',
+  config: {
+    title: '[Take Photo]',
+    description: '',      // ❌ Empty - API validation failed
+    buttonText: '',       // ❌ Empty - API validation failed
+  }
+}
+
+// API validation was too strict
+validateRequiredFields(page.config, ['title', 'description', 'buttonText']);
+```
+
+**Why This Happened**:
+- `take-photo` is a special placeholder type for ordering only
+- It doesn't display to users (just marks position in flow)
+- Unlike other page types, it doesn't need description or button text
+- API validation didn't account for this special case
+
+**Solution**:
+```typescript
+// app/api/events/[eventId]/route.ts
+if (page.pageType !== 'take-photo') {
+  validateRequiredFields(page.config, ['title', 'description', 'buttonText']);
+} else {
+  // take-photo only needs config object to exist
+  if (!page.config || typeof page.config !== 'object') {
+    throw apiBadRequest('take-photo pages must have config object');
+  }
+}
+```
+
+**Key Decisions**:
+- Allow empty strings for take-photo type fields
+- Still require config object to exist
+- Other page types (who-are-you, accept, cta) still require all fields
+- No changes needed to CustomPagesManager component
+
+**Lessons Learned**:
+1. Special placeholder types need special validation rules
+2. Don't apply uniform validation to structurally different entities
+3. Empty string vs undefined have different meanings in validation
+4. Test with actual data flow (admin UI → API → database)
+5. Consider edge cases when one entity is "just for ordering"
+
+**Impact**:
+- Admin UI now successfully saves custom pages
+- take-photo placeholder no longer causes validation errors
+- Other page types still properly validated
+- No breaking changes to existing functionality
+
+**Prevention**:
+- Document special entity types and their validation requirements
+- Add comments explaining why certain validations are skipped
+- Test full user flows before considering feature complete
+
+### [FRONT-004] CustomPagesManager Not Showing Saved Pages — 2025-11-07T17:17:18.000Z
+
+**Issue**: After saving custom pages successfully (API returns 200), pages don't appear in the CustomPagesManager UI. User has to manually refresh the page to see saved pages.
+
+**Context**:
+- CustomPagesManager saves pages via PATCH /api/events/[eventId]
+- API returns 200 success
+- Alert shows "Pages saved successfully!"
+- But page list remains empty until full page refresh
+
+**Root Cause**:
+```typescript
+// Event edit page
+<CustomPagesManager
+  initialPages={customPages}  // ❌ Only set on mount
+  onSave={async (pages) => {
+    // Save to API...
+    setCustomPages(pages);  // ❌ Updates state but component doesn't re-render
+    alert('Pages saved successfully!');
+  }}
+/>
+```
+
+**Why This Happened**:
+- `CustomPagesManager` uses `initialPages` prop to initialize internal state
+- Once component mounts, it doesn't react to `initialPages` changes
+- `setCustomPages()` updates parent state but doesn't force child re-render
+- React optimizes by not re-rendering if props haven't "changed" (same reference)
+
+**Solution**:
+```typescript
+// 1. Add key prop to force remount when pages change
+<CustomPagesManager
+  key={customPages.length}  // ✅ Forces new instance when count changes
+  initialPages={customPages}
+  onSave={async (pages) => {
+    // Save to API...
+    
+    // 2. Reload event data from server
+    const response = await fetch(`/api/events/${eventId}`);
+    const data = await response.json();
+    if (response.ok) {
+      setCustomPages(data.event?.customPages || []);
+      setEvent(data.event);
+    }
+    
+    alert('Pages saved successfully!');
+  }}
+/>
+```
+
+**Key Decisions**:
+- Use `key` prop to force component remount (simplest solution)
+- Reload from server instead of trusting client state (source of truth)
+- Keep CustomPagesManager using `initialPages` (uncontrolled component pattern)
+- Alternative: Convert to fully controlled component with `pages` + `onPagesChange`
+
+**Lessons Learned**:
+1. React components with internal state don't auto-sync with prop changes
+2. Use `key` prop to force remount when data fundamentally changes
+3. Reload from server after mutations for consistency
+4. Test full user flows including UI updates after saves
+5. Uncontrolled components (initialValue pattern) need remounting strategy
+
+**Impact**:
+- Pages now immediately visible after save
+- No manual page refresh needed
+- Source of truth remains server-side
+- Component properly reflects latest state
+
+**Alternative Solutions Considered**:
+1. Convert to controlled component - more complex, unnecessary for this use case
+2. Use `useEffect` to sync - can cause infinite loops if not careful
+3. Expose internal state setter - breaks encapsulation
+
+**Prevention**:
+- Document component as uncontrolled with initialValue pattern
+- Always test save → display flow in UI
+- Consider controlled vs uncontrolled tradeoffs upfront
 
 ---
 

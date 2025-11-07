@@ -49,8 +49,10 @@ export default function EventFramesPage({
           throw new Error(eventData.error || 'Failed to load event');
         }
         
-        setEvent(eventData.event);
-        setAssignedFrames(eventData.event.frames || []);
+        // apiSuccess wraps in { success: true, data: { event: {...} } }
+        const event = eventData.data?.event || eventData.event;
+        setEvent(event);
+        setAssignedFrames(event?.frames || []);
 
         // Fetch available frames (all active frames for now)
         // Note: Future enhancement - filter by global + partner-specific frames
@@ -63,7 +65,7 @@ export default function EventFramesPage({
         }
         
         console.log('DEBUG: Available frames from API:', framesData.data?.frames);
-        console.log('DEBUG: Assigned frames:', eventData.event.frames);
+        console.log('DEBUG: Assigned frames:', event?.frames);
         
         setAvailableFrames(framesData.data?.frames || []);
         setIsLoading(false);
@@ -93,8 +95,9 @@ export default function EventFramesPage({
       // Refresh data
       const eventResponse = await fetch(`/api/events/${eventId}`);
       const eventData = await eventResponse.json();
-      setEvent(eventData.event);
-      setAssignedFrames(eventData.event.frames || []);
+      const event = eventData.data?.event || eventData.event;
+      setEvent(event);
+      setAssignedFrames(event?.frames || []);
     } catch (err: any) {
       alert(err.message);
     }
@@ -116,8 +119,9 @@ export default function EventFramesPage({
       // Refresh data
       const eventResponse = await fetch(`/api/events/${eventId}`);
       const eventData = await eventResponse.json();
-      setEvent(eventData.event);
-      setAssignedFrames(eventData.event.frames || []);
+      const event = eventData.data?.event || eventData.event;
+      setEvent(event);
+      setAssignedFrames(event?.frames || []);
     } catch (err: any) {
       alert(err.message);
     }
@@ -137,8 +141,9 @@ export default function EventFramesPage({
       // Refresh data
       const eventResponse = await fetch(`/api/events/${eventId}`);
       const eventData = await eventResponse.json();
-      setEvent(eventData.event);
-      setAssignedFrames(eventData.event.frames || []);
+      const event = eventData.data?.event || eventData.event;
+      setEvent(event);
+      setAssignedFrames(event?.frames || []);
     } catch (err: any) {
       alert(err.message);
     }
