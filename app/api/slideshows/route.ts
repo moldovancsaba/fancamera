@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const db = await connectToDatabase();
 
-    // Validate that event exists
+    // Validate that event exists and get its UUID
     const event = await db
       .collection(COLLECTIONS.EVENTS)
       .findOne({ _id: new ObjectId(eventId) });
@@ -54,9 +54,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create slideshow document
+    // IMPORTANT: Store event UUID (event.eventId), not MongoDB _id
+    // This matches how submissions store events and allows direct filtering
     const slideshow = {
       slideshowId: generateId(),
-      eventId,
+      eventId: event.eventId,  // UUID, not MongoDB _id
       eventName: event.name,
       name,
       isActive: true,

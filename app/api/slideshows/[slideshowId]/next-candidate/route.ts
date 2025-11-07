@@ -42,6 +42,19 @@ export async function GET(
       return NextResponse.json({ error: 'Slideshow not found' }, { status: 404 });
     }
 
+    // Get event to convert MongoDB _id to UUID
+    const event = await db
+      .collection(COLLECTIONS.EVENTS)
+      .findOne({ _id: new ObjectId(slideshow.eventId) });
+    
+    if (!event) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+    
+    const eventUuid = event.eventId;
+    console.log(`[NextCandidate] Slideshow eventId (MongoDB _id): ${slideshow.eventId}`);
+    console.log(`[NextCandidate] Event UUID (event.eventId): ${eventUuid}`);
+
     // Get submissions for the event, sorted by playCount (least played first)
     // Exclude submissions already in buffer
     // Only show submissions visible in Event Gallery (not hidden or archived)
