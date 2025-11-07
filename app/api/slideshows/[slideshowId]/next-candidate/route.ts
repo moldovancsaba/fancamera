@@ -51,16 +51,16 @@ export async function GET(
         $and: [
           {
             $or: [
-              { eventId: slideshow.eventId },               // Old schema: singular eventId field
-              { eventIds: { $in: [slideshow.eventId] } }    // New schema: eventIds array
+              { eventId: eventUuid },                    // Old schema: singular eventId field
+              { eventIds: { $in: [eventUuid] } }         // New schema: eventIds array
             ]
           },
           { _id: { $nin: excludeIds.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id)) } },
-          { isArchived: { $ne: true } },                    // Exclude archived submissions
+          { isArchived: { $ne: true } },                 // Exclude archived submissions
           {
             $or: [
-              { hiddenFromEvents: { $exists: false } },      // Field doesn't exist yet (old data)
-              { hiddenFromEvents: { $nin: [slideshow.eventId] } } // Field exists and event not in it
+              { hiddenFromEvents: { $exists: false } },  // Field doesn't exist yet (old data)
+              { hiddenFromEvents: { $nin: [eventUuid] } } // Field exists and event not in it - USE UUID!
             ]
           }
         ]

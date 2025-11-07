@@ -55,7 +55,9 @@ export async function GET(
     }
     
     const eventUuid = event.eventId; // This is the UUID stored in submissions
-    console.log(`[Playlist] Event UUID: ${eventUuid}, Event Name: ${event.name}`);
+    console.log(`[Playlist] Slideshow eventId (MongoDB _id): ${slideshow.eventId}`);
+    console.log(`[Playlist] Event UUID (event.eventId): ${eventUuid}`);
+    console.log(`[Playlist] Event Name: ${event.name}`);
 
     // Build match filter: event + exclude IDs in other playlists + archived/hidden check
     // BACKWARD COMPATIBILITY: Support both eventId (singular) and eventIds (array)
