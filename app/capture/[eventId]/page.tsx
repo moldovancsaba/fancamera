@@ -706,8 +706,8 @@ export default function EventCapturePage({
               <CameraCapture 
                 onCapture={handlePhotoCapture} 
                 frameOverlay={showFrameOnCapture ? selectedFrame?.imageUrl : undefined}
-                frameWidth={selectedFrame?.width}
-                frameHeight={selectedFrame?.height}
+                frameWidth={selectedFrame?.width || 1920}
+                frameHeight={selectedFrame?.height || 1080}
               />
             </div>
           </div>

@@ -253,11 +253,12 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
       const availableHeight = parent.clientHeight;
       
       // Calculate frame aspect ratio
+      // Default to 16:9 (landscape) if no frame specified
       const frameAspectRatio = (frameWidth && frameHeight) 
         ? frameWidth / frameHeight
         : frameImage
           ? frameImage.width / frameImage.height
-          : 9 / 16;
+          : 16 / 9;
       
       // Determine if width or height is the constraint
       const containerAspectRatio = availableWidth / availableHeight;
