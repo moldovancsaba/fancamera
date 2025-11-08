@@ -196,21 +196,31 @@ export default function PseudoUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {users.map((user) => (
-                  <tr
-                    key={user.email}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {user.name || 'Unknown'}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {user.email}
-                        </span>
-                      </div>
-                    </td>
+                {users.map((user) => {
+                  // Sanitize name for URL (same as /users/[name] route)
+                  const sanitizedName = (user.name || 'Unknown').replace(/[^a-zA-Z0-9]/g, '_');
+                  const profileUrl = `/users/${sanitizedName}`;
+                  
+                  return (
+                    <tr
+                      key={user.email}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = profileUrl}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <Link
+                            href={profileUrl}
+                            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {user.name || 'Unknown'}
+                          </Link>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {user.email}
+                          </span>
+                        </div>
+                      </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                       {user.submissionCount}
                     </td>
@@ -243,7 +253,8 @@ export default function PseudoUsersPage() {
                       {formatDateTime(user.lastSeen)}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
