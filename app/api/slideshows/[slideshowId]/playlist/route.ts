@@ -124,6 +124,7 @@ export async function GET(
       return NextResponse.json({
         slideshow: {
           _id: slideshow._id,
+          eventId: slideshow.eventId,  // MongoDB _id of event (for logo fetching)
           name: slideshow.name,
           eventName: slideshow.eventName,
         },
@@ -138,6 +139,7 @@ export async function GET(
     return NextResponse.json({
       slideshow: {
         _id: slideshow._id,
+        eventId: slideshow.eventId,  // MongoDB _id of event (for logo fetching)
         name: slideshow.name,
         eventName: slideshow.eventName,
         transitionDurationMs: slideshow.transitionDurationMs,
