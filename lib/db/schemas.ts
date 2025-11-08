@@ -141,6 +141,9 @@ export interface CustomPage {
     showSharePage?: boolean;     // If false, skip share page and show thank you message instead
     skipShareMessage?: string;   // Message shown when share page is skipped (e.g., "Thank you! Your photo has been saved.")
     showFrameOnCapture?: boolean; // If true, show frame overlay during live capture; if false, frame only applied after capture (default: true)
+    // Camera button styling
+    captureButtonColor?: string; // Hex color for capture button fill (e.g., "#3B82F6", default: blue-500)
+    captureButtonBorderColor?: string; // Hex color for capture button border (e.g., "#3B82F6", default: blue-500)
     // Error and notification messages
     errorFrameMessage?: string;  // Error when frame fails to apply (e.g., "Failed to apply frame. Please try again.")
     errorSaveMessage?: string;   // Error when save fails (e.g., "Failed to save photo: Please try again.")

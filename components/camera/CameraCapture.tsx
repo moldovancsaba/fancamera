@@ -29,9 +29,20 @@ export interface CameraCaptureProps {
   frameOverlay?: string; // URL of frame image to overlay
   frameWidth?: number;   // Frame width in pixels (for aspect ratio)
   frameHeight?: number;  // Frame height in pixels (for aspect ratio)
+  captureButtonColor?: string; // Hex color for capture button fill (default: #3B82F6)
+  captureButtonBorderColor?: string; // Hex color for capture button border (default: #3B82F6)
 }
 
-export default function CameraCapture({ onCapture, onError, className = '', frameOverlay, frameWidth, frameHeight }: CameraCaptureProps) {
+export default function CameraCapture({ 
+  onCapture, 
+  onError, 
+  className = '', 
+  frameOverlay, 
+  frameWidth, 
+  frameHeight,
+  captureButtonColor = '#3B82F6',
+  captureButtonBorderColor = '#3B82F6'
+}: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -338,10 +349,18 @@ export default function CameraCapture({ onCapture, onError, className = '', fram
                 {/* Capture Button */}
                 <button
                   onClick={capturePhoto}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-blue-500 hover:bg-blue-50 transition-colors shadow-lg flex-shrink-0"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0"
+                  style={{
+                    borderWidth: '4px',
+                    borderStyle: 'solid',
+                    borderColor: captureButtonBorderColor
+                  }}
                   aria-label="Capture photo"
                 >
-                  <div className="w-full h-full rounded-full bg-blue-500"></div>
+                  <div 
+                    className="w-full h-full rounded-full"
+                    style={{ backgroundColor: captureButtonColor }}
+                  ></div>
                 </button>
 
                 {/* Switch Camera Button (mobile) */}

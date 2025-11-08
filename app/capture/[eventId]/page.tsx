@@ -91,6 +91,8 @@ export default function EventCapturePage({
   const showSharePage = takePhotoPage?.config.showSharePage !== false;
   const skipShareMessage = takePhotoPage?.config.skipShareMessage || 'Thank you! Your photo has been saved.';
   const showFrameOnCapture = takePhotoPage?.config.showFrameOnCapture !== false; // Default true
+  const captureButtonColor = takePhotoPage?.config.captureButtonColor || '#3B82F6'; // Default blue-500
+  const captureButtonBorderColor = takePhotoPage?.config.captureButtonBorderColor || '#3B82F6'; // Default blue-500
   const errorFrameMessage = takePhotoPage?.config.errorFrameMessage || 'Failed to apply frame. Please try again.';
   const errorSaveMessage = takePhotoPage?.config.errorSaveMessage || 'Failed to save photo: Please try again.';
   const linkCopiedMessage = takePhotoPage?.config.linkCopiedMessage || 'Link copied to clipboard!';
@@ -756,6 +758,8 @@ export default function EventCapturePage({
                 frameOverlay={showFrameOnCapture ? selectedFrame?.imageUrl : undefined}
                 frameWidth={selectedFrame?.width || 1920}
                 frameHeight={selectedFrame?.height || 1080}
+                captureButtonColor={captureButtonColor}
+                captureButtonBorderColor={captureButtonBorderColor}
               />
             </div>
           </div>
