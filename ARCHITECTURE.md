@@ -1,8 +1,10 @@
 # ARCHITECTURE.md
 
 **Project**: Camera — Photo Frame Webapp  
-**Current Version**: 2.0.0  
-**Last Updated**: 2025-11-07T00:00:00.000Z
+**Current Version**: 2.0.1  
+**Last Updated**: 2025-11-08T17:53:00.000Z
+
+**Latest Changes (v2.0.1)**: Safari camera initialization fixes for iOS and desktop
 
 This document describes the complete system architecture, technical decisions, and implementation patterns for the Camera photo frame application.
 
@@ -34,6 +36,12 @@ Camera is a professional web application that allows users to capture or upload 
 - **User Features**: Photo capture/upload, frame selection, social sharing, submission history
 - **Admin Features**: Partner management, event management, frame library, submission galleries, slideshow control
 - **Event Features**: Public capture pages, real-time slideshows with smart playlist algorithms
+
+### Browser Compatibility
+- **Desktop**: Chrome, Firefox, Safari (macOS)
+- **Mobile**: Safari (iOS 14+), Chrome (Android)
+- **Camera Features**: Fully tested on Safari iOS (primary mobile platform)
+- **Known Quirks**: Safari requires extended video initialization sequence (see LEARNINGS.md [FRONT-005])
 
 ### Architecture Style
 - **Pattern**: Server-side rendered React with API routes (Next.js App Router)
@@ -674,6 +682,8 @@ See `docs/MONGODB_CONVENTIONS.md` for complete reference guide.
 
 ## Version History
 
+- **v2.0.1** (2025-11-08): Safari camera initialization fixes - comprehensive video readiness validation
+- **v2.0.0** (2025-11-07): Custom pages system implementation - onboarding/thank you pages
 - **v1.7.1** (2025-11-06): Comprehensive refactoring - added middleware, shared components, fixed TypeScript errors
 - **v1.5.0** (2025-04-27): Per-slideshow play tracking, mosaic generation fixes
 - **v1.0.0** (2025-11-03): Initial project planning and setup

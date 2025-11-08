@@ -1,7 +1,23 @@
 # TASKLIST.md
 
-Current Version: 2.0.0
-Last Updated: 2025-11-07T00:00:00.000Z
+Current Version: 2.0.1
+Last Updated: 2025-11-08T17:53:00.000Z
+
+## Recently Completed
+
+### Safari Camera Initialization Fix (v2.0.1) - COMPLETE
+- **Completed**: 2025-11-08T17:53:00.000Z
+- **Type**: PATCH release (bug fix)
+- **Status**: ✅ Complete
+- **Summary**: Fixed critical Safari camera capture issues with comprehensive video readiness validation
+- **Deliverables**:
+  - ✅ Enhanced video initialization with multiple event listeners
+  - ✅ Safari-specific readiness checks (videoWidth, playback state, currentTime)
+  - ✅ Double requestAnimationFrame for render completion
+  - ✅ Explicit canvas context configuration
+  - ✅ Tested on Safari iOS, Safari Desktop, Chrome, Firefox
+  - ✅ Documentation updated (LEARNINGS.md [FRONT-005])
+- **Impact**: Camera now works reliably on Safari iOS (primary mobile platform)
 
 ## Recently Completed
 

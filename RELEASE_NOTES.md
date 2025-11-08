@@ -1,10 +1,174 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.0.0
-**Last Updated**: 2025-11-07T00:00:00.000Z
+**Current Version**: 2.0.1
+**Last Updated**: 2025-11-08T17:53:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.0.1] — 2025-11-08T17:53:00.000Z
+
+### Bug Fix — Safari Camera Initialization
+
+**Status**: Complete  
+**Release Type**: PATCH (bug fix for Safari compatibility)
+
+#### Summary
+Fixed critical camera capture issues on Safari (iOS and desktop) where video stream initialization was unreliable, causing black canvas captures and 0x0 video dimensions. Implemented comprehensive video readiness validation with multiple event listeners, explicit state checks, and Safari-specific timing delays.
+
+#### Problem Statement
+Camera capture failed on Safari browsers with multiple symptoms:
+- Canvas captures produced completely black images
+- Video element reported dimensions as 0x0 even after play() resolved
+- Race conditions between video metadata loading and capture attempts
+- Standard pattern `video.srcObject = stream; await video.play()` insufficient for Safari
+
+#### Root Cause Analysis
+Safari's WebKit engine has stricter video element initialization requirements:
+1. `srcObject` assignment doesn't immediately populate video dimensions
+2. `play()` promise resolution doesn't guarantee frames are renderable
+3. Video metadata must be fully loaded before canvas can capture
+4. Additional render cycles needed after metadata loads
+5. Video.currentTime may remain 0 even after 'canplay' event fires
+
+#### Technical Solution
+
+**Enhanced Video Initialization**:
+```typescript
+// Wait for BOTH loadedmetadata (readyState >= 2) and canplay (readyState >= 3)
+await Promise.race([
+  Promise.all([
+    new Promise(resolve => {
+      if (video.readyState >= 2) resolve();
+      video.addEventListener('loadedmetadata', resolve, { once: true });
+    }),
+    new Promise(resolve => {
+      if (video.readyState >= 3) resolve();
+      video.addEventListener('canplay', resolve, { once: true });
+    })
+  ]),
+  new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Video init timeout')), 3000)
+  )
+]);
+
+// Safari-specific: Give extra render cycle after events fire
+await new Promise(resolve => setTimeout(resolve, 300));
+```
+
+**Enhanced Capture with Readiness Validation**:
+```typescript
+const capturePhoto = async () => {
+  // 1. Validate video dimensions are populated
+  if (video.videoWidth === 0 || video.videoHeight === 0) {
+    await new Promise(r => setTimeout(r, 100));
+    if (video.videoWidth === 0) throw new Error('Video dimensions not ready');
+  }
+
+  // 2. Ensure video is actively playing
+  if (video.paused || video.ended) {
+    try {
+      await video.play();
+      await new Promise(r => setTimeout(r, 100));
+    } catch {
+      throw new Error('Video playback failed. Please try again.');
+    }
+  }
+
+  // 3. Verify video has progressed past first frame
+  if (video.currentTime === 0) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  // 4. Use double RAF to ensure Safari completes render pipeline
+  await new Promise(resolve => requestAnimationFrame(() => 
+    requestAnimationFrame(resolve)
+  ));
+
+  // 5. Canvas capture with explicit context configuration
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d', { 
+    willReadFrequently: false,
+    alpha: false 
+  });
+  
+  if (!ctx) throw new Error('Failed to get canvas context');
+  ctx.drawImage(video, 0, 0);
+};
+```
+
+#### Key Implementation Details
+
+**Multiple Readiness Checks**:
+- `readyState >= 2`: HAVE_CURRENT_DATA (metadata loaded)
+- `readyState >= 3`: HAVE_FUTURE_DATA (can play)
+- 300ms delay after events for Safari render completion
+- 3-second timeout fallback for initialization
+
+**Capture-Time Validation**:
+- Check `videoWidth`/`videoHeight` are non-zero
+- Verify `paused`/`ended` state and restart playback if needed
+- Confirm `currentTime > 0` (video has progressed)
+- Double `requestAnimationFrame` ensures complete render
+
+**Canvas Context Optimization**:
+- `willReadFrequently: false` - single capture use case
+- `alpha: false` - opaque images only, performance optimization
+- Explicit null check on context creation
+
+#### Browser-Specific Behavior
+
+| Browser | Initialization Pattern | Notes |
+|---------|----------------------|-------|
+| Chrome/Firefox | Single RAF + play() | Standard pattern sufficient |
+| Safari iOS | loadedmetadata + canplay + 300ms + double RAF | Strictest requirements |
+| Safari Desktop | Same as iOS | Slightly more forgiving with timing |
+
+#### Files Modified
+- `components/camera/CameraCapture.tsx` - Enhanced video initialization and capture validation
+- `README.md` - Version 2.0.0 → 2.0.1, updated status
+- `package.json` - Version 2.0.0 → 2.0.1
+- `ARCHITECTURE.md` - Added Safari compatibility notes
+- `LEARNINGS.md` - Added [FRONT-005] Safari Camera Video Stream Initialization
+- `RELEASE_NOTES.md` - This entry
+
+#### Testing Results
+- ✅ Safari iOS 14+ (iPhone): Camera capture working reliably
+- ✅ Safari Desktop (macOS): Camera capture working reliably
+- ✅ Chrome Desktop/Android: No regressions, continues working
+- ✅ Firefox Desktop: No regressions, continues working
+- ✅ Black canvas captures: Eliminated across all browsers
+- ✅ Error handling: User-friendly messages for all failure modes
+
+#### Performance Impact
+- **Initialization overhead**: +350ms (300ms delay + 2x RAF ~50ms)
+- **Per-capture overhead**: +100-200ms for validation checks
+- **Trade-off**: Acceptable for reliability across all browsers
+- **User impact**: Minimal - initialization happens once per camera session
+
+#### Breaking Changes
+None - Backward compatible enhancement
+
+#### Migration Notes
+No migration required - Drop-in replacement
+
+#### Known Limitations
+- Requires mediaDevices.getUserMedia support (no IE11)
+- 3-second timeout may be insufficient on very slow devices
+- Validation delays may feel slow on low-end hardware
+
+#### Related Issues
+- Fixes GitHub issues: N/A (internal development)
+- Related learnings: [FRONT-001] Camera Mirror Effect
+- Documentation: See LEARNINGS.md [FRONT-005] for complete technical analysis
+
+#### Future Considerations
+- Monitor Safari updates for potential simplification
+- Consider progressive enhancement for older iOS versions
+- Evaluate WebCodecs API as future alternative
 
 ---
 

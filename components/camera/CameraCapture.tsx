@@ -143,7 +143,63 @@ export default function CameraCapture({
 
       // Attach stream to video element
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+        const video = videoRef.current;
+        video.srcObject = mediaStream;
+        
+        // Safari fix: Must wait for BOTH loadedmetadata AND canplay events
+        // Safari needs the video to actually start playing before capture works
+        await new Promise<void>((resolve) => {
+          let metadataLoaded = false;
+          let canPlay = false;
+          
+          const checkReady = () => {
+            if (metadataLoaded && canPlay) {
+              cleanup();
+              resolve();
+            }
+          };
+          
+          const handleMetadata = () => {
+            metadataLoaded = true;
+            checkReady();
+          };
+          
+          const handleCanPlay = () => {
+            canPlay = true;
+            checkReady();
+          };
+          
+          const cleanup = () => {
+            video.removeEventListener('loadedmetadata', handleMetadata);
+            video.removeEventListener('canplay', handleCanPlay);
+          };
+          
+          // Check if already ready
+          if (video.readyState >= 2) {
+            metadataLoaded = true;
+          }
+          if (video.readyState >= 3) {
+            canPlay = true;
+          }
+          
+          if (metadataLoaded && canPlay) {
+            resolve();
+            return;
+          }
+          
+          // Listen for events
+          video.addEventListener('loadedmetadata', handleMetadata);
+          video.addEventListener('canplay', handleCanPlay);
+          
+          // Timeout fallback (3 seconds)
+          setTimeout(() => {
+            cleanup();
+            resolve();
+          }, 3000);
+        });
+        
+        // Extra Safari fix: Small delay to ensure video is actually rendering
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       setIsLoading(false);
@@ -199,6 +255,7 @@ export default function CameraCapture({
 
   /**
    * Capture photo from video stream
+   * Fixed for Safari: Uses requestAnimationFrame to ensure video frame is rendered
    */
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
@@ -208,42 +265,103 @@ export default function CameraCapture({
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw current video frame to canvas
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
+    // Safari fix: Comprehensive checks before capture
+    // 1. Check if video has valid dimensions
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn('Video dimensions not ready, waiting...');
+      setTimeout(() => capturePhoto(), 100);
+      return;
+    }
+    
+    // 2. Check if video is actually playing (Safari specific)
+    if (video.paused || video.ended) {
+      console.warn('Video not playing, attempting to play...');
+      video.play().then(() => {
+        setTimeout(() => capturePhoto(), 100);
+      }).catch(err => {
+        console.error('Failed to play video:', err);
+        setError('Video playback failed. Please try again.');
+      });
+      return;
+    }
+    
+    // 3. Check if video currentTime is progressing (actually rendering frames)
+    if (video.currentTime === 0) {
+      console.warn('Video not rendering frames yet, waiting...');
+      setTimeout(() => capturePhoto(), 100);
       return;
     }
 
-    // If front camera, flip horizontally to match mirror view
-    if (facingMode === 'user') {
-      ctx.save();
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-      ctx.restore();
-    } else {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
+    // Safari fix: Use requestAnimationFrame to capture during actual frame render
+    // This ensures Safari has actually painted the video frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Double RAF ensures we're definitely on a rendered frame
+        
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-    // Convert canvas to blob and data URL
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        setError('Failed to capture photo');
-        return;
-      }
+        // Get canvas context
+        const ctx = canvas.getContext('2d', { 
+          willReadFrequently: false,
+          alpha: false // Safari optimization: no alpha channel needed
+        });
+        
+        if (!ctx) {
+          setError('Failed to get canvas context');
+          return;
+        }
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      setCapturedImage(dataUrl);
-      
-      // Pass captured image to parent
-      onCapture(blob, dataUrl);
-      
-      // Stop camera after capture
-      stopCamera();
-    }, 'image/jpeg', 0.95);
+        // Safari fix: Fill with white background first
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        try {
+          // Draw video frame to canvas
+          // If front camera, flip horizontally to match mirror view
+          if (facingMode === 'user') {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+          } else {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Verify something was actually drawn (not black)
+          const imageData = ctx.getImageData(canvas.width / 2, canvas.height / 2, 1, 1);
+          const [r, g, b] = imageData.data;
+          
+          if (r === 0 && g === 0 && b === 0) {
+            console.warn('Captured black frame, retrying...');
+            setTimeout(() => capturePhoto(), 100);
+            return;
+          }
+
+          // Convert canvas to blob and data URL
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              setError('Failed to capture photo');
+              return;
+            }
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            setCapturedImage(dataUrl);
+            
+            // Pass captured image to parent
+            onCapture(blob, dataUrl);
+            
+            // Stop camera after capture
+            stopCamera();
+          }, 'image/jpeg', 0.95);
+          
+        } catch (err) {
+          console.error('Error drawing video to canvas:', err);
+          setError('Failed to capture photo. Please try again.');
+        }
+      });
+    });
   };
 
   /**

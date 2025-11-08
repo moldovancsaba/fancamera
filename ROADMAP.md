@@ -1,8 +1,10 @@
 # ROADMAP.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.0.0
-**Last Updated**: 2025-11-07T00:00:00.000Z
+**Current Version**: 2.0.1
+**Last Updated**: 2025-11-08T17:53:00.000Z
+
+**Recent Completion**: v2.0.1 Safari camera fixes - comprehensive video initialization validation
 
 This document contains only forward-looking development plans and milestones. No historical entries are included.
 
