@@ -55,7 +55,6 @@ export default function CameraCapture({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [isVideoReady, setIsVideoReady] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -145,22 +144,9 @@ export default function CameraCapture({
       // Attach stream to video element
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
-        // Wait for video to be actually playing with valid dimensions
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-        };
-        
-        videoRef.current.onplaying = () => {
-          // Extra safety: ensure dimensions are available
-          setTimeout(() => {
-            setIsVideoReady(true);
-            setIsLoading(false);
-          }, 100);
-        };
-      } else {
-        setIsLoading(false);
       }
+
+      setIsLoading(false);
       
     } catch (err) {
       setIsLoading(false);
@@ -193,8 +179,6 @@ export default function CameraCapture({
    * Stop camera stream and release resources
    */
   const stopCamera = () => {
-    setIsVideoReady(false);
-    
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
@@ -216,7 +200,7 @@ export default function CameraCapture({
   /**
    * Capture photo from video stream
    */
-  const capturePhoto = async () => {
+  const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
       return;
     }
@@ -224,36 +208,15 @@ export default function CameraCapture({
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Validate video is ready with actual dimensions
-    if (!video.videoWidth || !video.videoHeight) {
-      console.error('Video not ready - dimensions are 0');
-      setError('Camera not ready yet. Please wait a moment and try again.');
-      return;
-    }
-
-    // Wait for next animation frame to ensure video frame is rendered
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => requestAnimationFrame(resolve)); // Double RAF for safety
-
-    console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
-    console.log('Video readyState:', video.readyState);
-    console.log('Video paused:', video.paused);
-
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-
     // Draw current video frame to canvas
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.error('Failed to get canvas context');
       return;
     }
-
-    // Clear canvas first
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // If front camera, flip horizontally to match mirror view
     if (facingMode === 'user') {
@@ -265,37 +228,22 @@ export default function CameraCapture({
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
 
-    console.log('Drew image to canvas');
-
-    // Get data URL immediately after drawing (synchronous)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    
-    console.log('Data URL length:', dataUrl.length);
-    console.log('Data URL prefix:', dataUrl.substring(0, 50));
-    
-    // Validate we actually captured something
-    if (!dataUrl || dataUrl === 'data:,' || dataUrl.length < 1000) {
-      console.error('Failed to create data URL from canvas or data too small');
-      setError('Failed to capture photo. Please try again.');
-      return;
-    }
-    
-    console.log('Setting captured image');
-    setCapturedImage(dataUrl);
-
-    // Convert canvas to blob (asynchronous but non-blocking)
+    // Convert canvas to blob and data URL
     canvas.toBlob((blob) => {
       if (!blob) {
-        console.error('Failed to create blob from canvas');
+        setError('Failed to capture photo');
         return;
       }
 
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      setCapturedImage(dataUrl);
+      
       // Pass captured image to parent
       onCapture(blob, dataUrl);
+      
+      // Stop camera after capture
+      stopCamera();
     }, 'image/jpeg', 0.95);
-    
-    // Stop camera after capture (moved outside toBlob callback)
-    stopCamera();
   };
 
   /**
@@ -405,8 +353,7 @@ export default function CameraCapture({
                 {/* Capture Button */}
                 <button
                   onClick={capturePhoto}
-                  disabled={!isVideoReady}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0 disabled:opacity-50"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0"
                   style={{
                     borderWidth: '4px',
                     borderStyle: 'solid',
