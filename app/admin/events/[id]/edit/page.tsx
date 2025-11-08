@@ -405,19 +405,26 @@ export default function EditEventPage({
                 <div className="flex gap-2 items-center">
                   <input
                     type="color"
-                    id="brandColor"
-                    name="brandColor"
+                    id="brandColorPicker"
                     defaultValue={event?.brandColor || '#3B82F6'}
                     className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                    onChange={(e) => {
+                      const textInput = document.getElementById('brandColor') as HTMLInputElement;
+                      if (textInput) {
+                        textInput.value = e.target.value;
+                      }
+                    }}
                   />
                   <input
                     type="text"
+                    id="brandColor"
+                    name="brandColor"
                     defaultValue={event?.brandColor || '#3B82F6'}
                     pattern="^#[0-9A-Fa-f]{6}$"
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
                     placeholder="#3B82F6"
                     onChange={(e) => {
-                      const colorInput = document.getElementById('brandColor') as HTMLInputElement;
+                      const colorInput = document.getElementById('brandColorPicker') as HTMLInputElement;
                       if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
                         colorInput.value = e.target.value;
                       }
@@ -436,19 +443,26 @@ export default function EditEventPage({
                 <div className="flex gap-2 items-center">
                   <input
                     type="color"
-                    id="brandBorderColor"
-                    name="brandBorderColor"
+                    id="brandBorderColorPicker"
                     defaultValue={event?.brandBorderColor || '#3B82F6'}
                     className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                    onChange={(e) => {
+                      const textInput = document.getElementById('brandBorderColor') as HTMLInputElement;
+                      if (textInput) {
+                        textInput.value = e.target.value;
+                      }
+                    }}
                   />
                   <input
                     type="text"
+                    id="brandBorderColor"
+                    name="brandBorderColor"
                     defaultValue={event?.brandBorderColor || '#3B82F6'}
                     pattern="^#[0-9A-Fa-f]{6}$"
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
                     placeholder="#3B82F6"
                     onChange={(e) => {
-                      const colorInput = document.getElementById('brandBorderColor') as HTMLInputElement;
+                      const colorInput = document.getElementById('brandBorderColorPicker') as HTMLInputElement;
                       if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
                         colorInput.value = e.target.value;
                       }
