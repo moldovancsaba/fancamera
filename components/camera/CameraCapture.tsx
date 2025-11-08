@@ -216,7 +216,7 @@ export default function CameraCapture({
   /**
    * Capture photo from video stream
    */
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) {
       return;
     }
@@ -230,6 +230,10 @@ export default function CameraCapture({
       setError('Camera not ready yet. Please wait a moment and try again.');
       return;
     }
+
+    // Wait for next animation frame to ensure video frame is rendered
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => requestAnimationFrame(resolve)); // Double RAF for safety
 
     console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
     console.log('Video readyState:', video.readyState);
