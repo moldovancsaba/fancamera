@@ -265,6 +265,13 @@ export default function CameraCapture({
       console.error('❌ Could not get canvas context');
       return;
     }
+    
+    // SAFARI FIX: Temporarily remove CSS transform during capture
+    const originalTransform = video.style.transform;
+    video.style.transform = 'none';
+    
+    // Force a paint/reflow to ensure transform is removed
+    void video.offsetHeight;
 
     // If front camera, flip horizontally to match mirror view
     if (facingMode === 'user') {
@@ -275,6 +282,9 @@ export default function CameraCapture({
     } else {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
+    
+    // Restore CSS transform
+    video.style.transform = originalTransform;
     
     console.log('✅ Drew image to canvas');
 
