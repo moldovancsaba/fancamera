@@ -53,7 +53,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
 
   // Build aggregation pipeline to group submissions by userInfo.email
   const matchStage: any = {
-    'userInfo.email': { $exists: true, $ne: null, $ne: '' }, // Only submissions with userInfo
+    'userInfo.email': { $exists: true, $ne: null, $nin: ['', null] }, // Only submissions with userInfo
   };
 
   // Apply filters
