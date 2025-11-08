@@ -59,16 +59,24 @@ export default function PseudoUsersPage() {
           params.append('search', searchQuery);
         }
 
+        console.log('Fetching pseudo users from API...');
         const response = await fetch(`/api/pseudo-users?${params}`);
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to load users');
         }
 
-        setUsers(data.users || []);
-        setTotal(data.pagination?.total || 0);
-        setTotalPages(data.pagination?.pages || 1);
+        // API returns { success: true, data: { users, pagination } }
+        const responseData = data.data || data;
+        console.log('Users:', responseData.users);
+        console.log('Pagination:', responseData.pagination);
+        
+        setUsers(responseData.users || []);
+        setTotal(responseData.pagination?.total || 0);
+        setTotalPages(responseData.pagination?.pages || 1);
       } catch (err: any) {
         console.error('Fetch users error:', err);
         setError(err.message);
