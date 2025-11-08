@@ -142,9 +142,15 @@ export default function LogosPage() {
                     {logo.description}
                   </p>
                 )}
-                <div className="text-xs text-gray-500 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-500 mb-3">
                   Used in {logo.usageCount || 0} event{logo.usageCount !== 1 ? 's' : ''}
                 </div>
+                <Link
+                  href={`/admin/logos/${logo._id}/edit`}
+                  className="inline-block w-full text-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Edit
+                </Link>
               </div>
             </div>
           ))}
