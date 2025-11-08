@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   title: "Camera - Photo Frame App",
   description: "Create and share beautiful framed photos",
   icons: {
-    icon: "https://i.ibb.co/Vc7CLCKh/camera-icon.png",
-    shortcut: "https://i.ibb.co/Vc7CLCKh/camera-icon.png",
-    apple: "https://i.ibb.co/Vc7CLCKh/camera-icon.png",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

@@ -1,7 +1,7 @@
 # TASKLIST.md
 
-Current Version: 2.0.1
-Last Updated: 2025-11-08T17:53:00.000Z
+Current Version: 2.1.0
+Last Updated: 2025-11-08T19:35:46.000Z
 
 ## Recently Completed
 

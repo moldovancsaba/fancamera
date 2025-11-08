@@ -27,9 +27,15 @@ export default async function AdminUsersPage() {
     // Fetch ALL submissions (both with and without userInfo)
     // Users with userInfo.name/email are real users who provided their information
     // Users without userInfo or with 'anonymous' userId are truly anonymous
+    // Note: isArchived might not exist on older submissions, so we check for both false and null/undefined
     const submissions = await db
       .collection('submissions')
-      .find({ isArchived: false })
+      .find({ 
+        $or: [
+          { isArchived: false },
+          { isArchived: { $exists: false } }
+        ]
+      })
       .sort({ createdAt: -1 })
       .toArray();
 

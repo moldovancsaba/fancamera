@@ -1,10 +1,59 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.0.1
-**Last Updated**: 2025-11-08T17:53:00.000Z
+**Current Version**: 2.1.0
+**Last Updated**: 2025-11-08T19:35:46.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.1.0] — 2025-11-08T19:35:46.000Z
+
+### Enhancement — Custom Favicon Implementation
+
+**Status**: Complete  
+**Release Type**: MINOR (UI enhancement)
+
+#### Summary
+Replaced default Next.js favicon with custom camera icon to improve brand identity and user recognition across browser tabs and bookmarks.
+
+#### Changes
+- ✅ Downloaded custom camera icon from https://i.ibb.co/Dgvmw4WR/camera-icon.png
+- ✅ Saved as `/public/favicon.png` for reliable local serving
+- ✅ Updated `app/layout.tsx` metadata to reference local favicon
+- ✅ Applied icon to all variants: standard icon, shortcut icon, and Apple touch icon
+
+#### Files Modified
+- `public/favicon.png` — New favicon image file
+- `app/layout.tsx` — Updated metadata.icons configuration
+- `package.json` — Version 2.0.1 → 2.1.0
+- `README.md` — Updated version and status
+- `RELEASE_NOTES.md` — This entry
+- `TASKLIST.md` — Version updated
+
+#### Technical Details
+**Icon Configuration**:
+```typescript
+icons: {
+  icon: "/favicon.png",
+  shortcut: "/favicon.png",
+  apple: "/favicon.png",
+}
+```
+
+**Browser Support**:
+- ✅ Standard favicon for all modern browsers
+- ✅ Shortcut icon for Windows/Android
+- ✅ Apple touch icon for iOS home screen bookmarks
+
+#### Impact
+- Improved brand consistency across all touchpoints
+- Enhanced user experience with recognizable tab icon
+- Better visual identity when users bookmark the app
+
+#### Breaking Changes
+None - Backward compatible enhancement
 
 ---
 
