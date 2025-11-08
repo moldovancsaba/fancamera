@@ -45,22 +45,36 @@ export default function NewLogoPage() {
     const formData = new FormData(e.currentTarget);
 
     try {
+      console.log('Starting logo upload...');
       const response = await fetch('/api/logos', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload logo');
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (jsonErr) {
+        console.error('Failed to parse JSON response:', jsonErr);
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
 
+      if (!response.ok) {
+        const errorMsg = data.error || data.message || 'Failed to upload logo';
+        console.error('API error response:', data);
+        throw new Error(errorMsg);
+      }
+
+      console.log('Logo uploaded successfully!');
       router.push('/admin/logos');
       router.refresh();
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred');
       setIsUploading(false);
     }
   };

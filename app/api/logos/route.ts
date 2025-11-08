@@ -73,10 +73,21 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
  * Create a new logo (admin only)
  */
 export const POST = withErrorHandler(async (request: NextRequest) => {
+  console.log('=== Logo Upload API Called ===');
+  
   // Check authentication and authorization - only admin users can create logos
-  const session = await requireAdmin();
+  console.log('Checking admin authentication...');
+  let session;
+  try {
+    session = await requireAdmin();
+    console.log('Admin authenticated:', session.user.email);
+  } catch (authError: any) {
+    console.error('Authentication failed:', authError.message || authError);
+    throw authError;
+  }
 
   // Parse form data
+  console.log('Parsing form data...');
   const formData = await request.formData();
   const file = formData.get('file') as File;
   const name = formData.get('name') as string;
@@ -90,6 +101,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     fileType: file?.type,
     fileSize: file?.size,
     name,
+    description,
     isActive,
   });
 
@@ -109,9 +121,12 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Upload to imgbb
+  console.log('Converting file to base64...');
   const buffer = Buffer.from(await file.arrayBuffer());
   const base64 = buffer.toString('base64');
+  console.log('Uploading to imgbb...');
   const uploadResult = await uploadImage(base64, { name: `logo-${Date.now()}` });
+  console.log('Upload successful:', uploadResult.imageUrl);
 
   // Get image dimensions (for display calculations)
   // Note: We rely on imgbb metadata, but could add image-size library for validation
@@ -119,6 +134,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const height = 0; // TODO: Extract from image if needed
 
   // Save to database
+  console.log('Connecting to database...');
   const db = await connectToDatabase();
   const logo = {
     logoId: generateId(),
@@ -137,12 +153,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     updatedAt: new Date().toISOString(),
   };
 
+  console.log('Inserting logo into database:', { logoId: logo.logoId, name: logo.name });
   const result = await db.collection('logos').insertOne(logo);
+  console.log('Database insert successful, _id:', result.insertedId.toString());
 
-  return apiCreated({
+  const responseData = {
     logo: {
       _id: result.insertedId.toString(),
       ...logo,
     },
-  });
+  };
+  console.log('Returning success response');
+  return apiCreated(responseData);
 });
