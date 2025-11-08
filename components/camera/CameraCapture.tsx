@@ -148,14 +148,18 @@ export default function CameraCapture({
         videoRef.current.srcObject = mediaStream;
         
         // Wait for video to be fully ready before allowing capture
+        // Safari needs 'playing' event, not just 'loadeddata'
         const onVideoReady = () => {
-          console.log('✅ Video ready for capture');
-          setIsVideoReady(true);
-          setIsLoading(false);
+          console.log('✅ Video ready for capture (playing)');
+          // Extra delay for Safari to ensure frame buffer is ready
+          setTimeout(() => {
+            setIsVideoReady(true);
+            setIsLoading(false);
+          }, 500);
         };
         
-        // Use loadeddata event which fires when frame data is available
-        videoRef.current.addEventListener('loadeddata', onVideoReady, { once: true });
+        // Use 'playing' event which ensures video is actively rendering frames
+        videoRef.current.addEventListener('playing', onVideoReady, { once: true });
       } else {
         setIsLoading(false);
       }
