@@ -47,6 +47,7 @@ export default function SlideshowPlayerV2({
 
   // Slideshow state with 3-playlist rotation
   const [settings, setSettings] = useState<SlideshowSettings | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [playlistA, setPlaylistA] = useState<Slide[]>([]);
   const [playlistB, setPlaylistB] = useState<Slide[]>([]);
   const [playlistC, setPlaylistC] = useState<Slide[]>([]);
@@ -150,6 +151,23 @@ export default function SlideshowPlayerV2({
       }
 
       setSettings(data.slideshow);
+      
+      // Fetch logo for loading-slideshow scenario
+      if (data.slideshow.eventId) {
+        try {
+          const logoResponse = await fetch(`/api/events/${data.slideshow.eventId}/logos`);
+          if (logoResponse.ok) {
+            const logoData = await logoResponse.json();
+            const loadingLogos = logoData.data?.logos?.['loading-slideshow'] || logoData.logos?.['loading-slideshow'] || [];
+            const activeLogo = loadingLogos.find((l: any) => l.isActive);
+            if (activeLogo) {
+              setLogoUrl(activeLogo.imageUrl);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch logo:', err);
+        }
+      }
       
       // STARTUP: Build A, B, C with proper exclusion
       // Images in A cannot be in B, images in A+B cannot be in C
@@ -421,7 +439,14 @@ export default function SlideshowPlayerV2({
   // Loading state
   if (isLoading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-black">
+        {logoUrl && (
+          <img 
+            src={logoUrl} 
+            alt="Event logo" 
+            className="max-w-md max-h-64 mb-8 object-contain"
+          />
+        )}
         <div className="text-white text-2xl">Loading slideshow...</div>
       </div>
     );
