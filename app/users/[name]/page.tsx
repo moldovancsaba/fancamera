@@ -36,6 +36,9 @@ export default async function UserProfilePage({ params }: PageProps) {
   try {
     const db = await connectToDatabase();
     
+    console.log('=== User Profile Debug ===');
+    console.log('Looking for user with sanitized name:', sanitizedUrlName);
+    
     // Get all submissions and find matching user by sanitized name comparison
     const allSubmissions = await db
       .collection('submissions')
@@ -43,17 +46,35 @@ export default async function UserProfilePage({ params }: PageProps) {
       .sort({ createdAt: -1 })
       .toArray();
     
+    console.log('Total submissions:', allSubmissions.length);
+    console.log('Sample submission with userInfo:', allSubmissions.find((s: any) => s.userInfo?.name));
+    
     // Filter submissions where sanitized username matches the URL parameter
     const submissions = allSubmissions.filter((sub: any) => {
       const nameFromUserInfo = sub.userInfo?.name;
       const nameFromUser = sub.userName;
       const isAnonymous = sub.userId === 'anonymous' || sub.userEmail === 'anonymous@event';
       const actualName = nameFromUserInfo || (isAnonymous ? 'Anonymous User' : nameFromUser) || 'Unknown';
+      const sanitized = sanitizeUsername(actualName);
       
-      return sanitizeUsername(actualName) === sanitizedUrlName;
+      if (nameFromUserInfo) {
+        console.log(`Comparing: "${sanitized}" === "${sanitizedUrlName}" (from userInfo: ${nameFromUserInfo})`);
+      }
+      
+      return sanitized === sanitizedUrlName;
     });
 
+    console.log('Matched submissions:', submissions.length);
     if (submissions.length === 0) {
+      console.log('No submissions found for user:', sanitizedUrlName);
+      // Show all unique sanitized names to help debug
+      const uniqueNames = new Set(
+        allSubmissions.map((s: any) => {
+          const n = s.userInfo?.name || s.userName || 'Unknown';
+          return sanitizeUsername(n);
+        })
+      );
+      console.log('Available sanitized names:', Array.from(uniqueNames).slice(0, 10));
       notFound();
     }
 
