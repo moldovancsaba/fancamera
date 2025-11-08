@@ -47,10 +47,19 @@ export default async function AdminUsersPage() {
         (submission.userId === 'anonymous' || submission.userEmail === 'anonymous@event');
       
       if (!userMap.has(identifier)) {
+        // Determine user type: administrator (SSO user) or pseudo (event guest with userInfo)
+        const isPseudoUser = hasUserInfo; // Has userInfo = provided name/email at event
+        const isAdministrator = !hasUserInfo && !isAnonymous; // Has userId/userName but no userInfo
+        
+        let userType = 'pseudo';
+        if (isAdministrator) userType = 'administrator';
+        if (isAnonymous) userType = 'anonymous';
+        
         userMap.set(identifier, {
           email: hasUserInfo ? submission.userInfo.email : submission.userEmail,
           name: hasUserInfo ? submission.userInfo.name : (isAnonymous ? 'Anonymous User' : submission.userName || 'Unknown'),
           isAnonymous: isAnonymous,
+          type: userType,
           collectedAt: submission.userInfo?.collectedAt || submission.createdAt,
           eventId: submission.eventId,
           eventName: submission.eventName || 'Unknown Event',
@@ -119,6 +128,7 @@ export default async function AdminUsersPage() {
                       )}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">email: {emailDisplay}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">type: {user.type || 'unknown'}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">Last Event: {lastEvent}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">Registered: {registeredAt}</div>
                   </div>
