@@ -880,7 +880,8 @@ export default function EventCapturePage({
                     {/* Next Button */}
                     <button
                       onClick={handleMoveToThankYou}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl"
+                      style={{ backgroundColor: event?.brandColor || '#3B82F6' }}
+                      className="w-full px-6 py-4 text-white rounded-lg font-bold text-lg hover:opacity-90 transition-all shadow-xl"
                     >
                       {shareNextButtonText}
                     </button>
@@ -898,7 +899,8 @@ export default function EventCapturePage({
                     </p>
                     <button
                       onClick={handleMoveToThankYou}
-                      className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl"
+                      style={{ backgroundColor: event?.brandColor || '#3B82F6' }}
+                      className="px-8 py-4 text-white rounded-lg font-bold text-lg hover:opacity-90 transition-all shadow-xl"
                     >
                       {shareNextButtonText}
                     </button>

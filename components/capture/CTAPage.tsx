@@ -125,7 +125,8 @@ export default function CTAPage({ config, pageId, onNext, onBack, logoUrl, brand
               <button
                 onClick={handleRedirect}
                 disabled={isRedirecting}
-                className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                style={{ backgroundColor: brandColor }}
+                className="w-full px-6 py-4 text-white rounded-lg font-semibold text-lg hover:opacity-90 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 aria-label="Visit URL"
               >
                 {isRedirecting ? `🔗 Opening...` : `🔗 ${visitButtonText}`}
