@@ -62,6 +62,7 @@ export default function EventCapturePage({
   const { eventId } = use(params);
   
   const [event, setEvent] = useState<EventData | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -122,6 +123,21 @@ export default function EventCapturePage({
           logoUrl: eventData.logoUrl,
           showLogo: eventData.showLogo || false,
         });
+        
+        // Fetch logo for loading-capture scenario
+        try {
+          const logoResponse = await fetch(`/api/events/${eventId}/logos`);
+          if (logoResponse.ok) {
+            const logoData = await logoResponse.json();
+            const loadingLogos = logoData.data?.logos?.['loading-capture'] || logoData.logos?.['loading-capture'] || [];
+            const activeLogo = loadingLogos.find((l: any) => l.isActive);
+            if (activeLogo) {
+              setLogoUrl(activeLogo.imageUrl);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch logo:', err);
+        }
         
         // v2.0.0: Set up custom page flow
         const pages = (eventData.customPages || []).filter((p: CustomPage) => p.isActive);
@@ -580,18 +596,18 @@ export default function EventCapturePage({
   
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
-          {event?.showLogo && event?.logoUrl ? (
+          {logoUrl ? (
             <img
-              src={event.logoUrl}
+              src={logoUrl}
               alt="Event logo"
-              className="w-32 h-32 mx-auto mb-4 object-contain"
+              className="max-w-md max-h-64 mx-auto mb-8 object-contain"
             />
           ) : (
             <div className="text-6xl mb-4">⏳</div>
           )}
-          <p className="text-gray-600 dark:text-gray-400">{event?.loadingText || 'Loading event...'}</p>
+          <p className="text-white text-2xl">{event?.loadingText || 'Loading event...'}</p>
         </div>
       </div>
     );
