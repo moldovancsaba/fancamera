@@ -308,6 +308,76 @@ export default async function EventDetailPage({
         </div>
       </div>
 
+      {/* Logos Section */}
+      <div className="mt-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Event Logos</h2>
+              <Link
+                href={`/admin/events/${id}/logos`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Manage Logos
+              </Link>
+            </div>
+          </div>
+
+          {(!event.logos || event.logos.length === 0) ? (
+            <div className="p-12 text-center">
+              <div className="text-5xl mb-4">🎨</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No logos assigned yet</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Assign logos to display on different screens (transitions, loading, custom pages)
+              </p>
+              <Link
+                href={`/admin/events/${id}/logos`}
+                className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Assign Logos
+              </Link>
+            </div>
+          ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries([
+                  { id: 'slideshow-transition', name: 'Slideshow Transitions', icon: '🔄' },
+                  { id: 'onboarding-thankyou', name: 'Custom Pages', icon: '📝' },
+                  { id: 'loading-slideshow', name: 'Loading Slideshow', icon: '⏳' },
+                  { id: 'loading-capture', name: 'Loading Capture', icon: '📸' },
+                ]).map(([key, scenario]: [string, any]) => {
+                  const count = (event.logos || []).filter((l: any) => l.scenario === scenario.id && l.isActive).length;
+                  return (
+                    <div
+                      key={scenario.id}
+                      className="relative bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                    >
+                      <div className="text-center">
+                        <div className="text-3xl mb-2">{scenario.icon}</div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                          {scenario.name}
+                        </p>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                          {count} active
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 text-center">
+                <Link
+                  href={`/admin/events/${id}/logos`}
+                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
+                >
+                  Manage logo assignments →
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Slideshows Section */}
       <div id="slideshows" className="mt-8">
         <SlideshowManager
