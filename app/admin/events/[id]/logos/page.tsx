@@ -102,22 +102,36 @@ export default function EventLogosPage({
 
   const handleAssignLogo = async (logoId: string, scenario: string) => {
     try {
+      console.log('Assigning logo:', logoId, 'to scenario:', scenario);
       const response = await fetch(`/api/events/${eventId}/logos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logoId, scenario, isActive: true }),
       });
 
+      console.log('Assignment response status:', response.status);
+      const data = await response.json();
+      console.log('Assignment response data:', data);
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to assign logo');
       }
 
+      alert('Logo assigned successfully!');
+
       // Refresh data
+      console.log('Refreshing assigned logos...');
       const eventResponse = await fetch(`/api/events/${eventId}/logos`);
+      console.log('Refresh response status:', eventResponse.status);
       const eventData = await eventResponse.json();
-      setAssignedLogos(eventData.logos || {});
+      console.log('Refresh response data:', eventData);
+      
+      // Handle both wrapped and unwrapped responses
+      const logos = eventData.logos || eventData.data?.logos || {};
+      console.log('Setting assigned logos:', logos);
+      setAssignedLogos(logos);
     } catch (err: any) {
+      console.error('Assignment error:', err);
       alert(err.message);
     }
   };
