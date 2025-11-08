@@ -31,7 +31,7 @@ export interface CameraCaptureProps {
   frameHeight?: number;  // Frame height in pixels (for aspect ratio)
   captureButtonColor?: string; // Hex color for capture button fill (default: #3B82F6)
   captureButtonBorderColor?: string; // Hex color for capture button border (default: #3B82F6)
-  promptTitle?: string;  // Custom title for camera start prompt (default: 'Ready to capture?')
+  promptTitle?: string;  // Custom title for camera start prompt
   promptDescription?: string; // Custom description for camera start prompt
 }
 
@@ -55,7 +55,6 @@ export default function CameraCapture({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [isVideoReady, setIsVideoReady] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -141,41 +140,13 @@ export default function CameraCapture({
       
       setStream(mediaStream);
       setFacingMode(facing);
-      setIsVideoReady(false);
 
       // Attach stream to video element
       if (videoRef.current) {
-        const video = videoRef.current;
-        video.srcObject = mediaStream;
-        
-        // Safari desktop has a known bug where video frames aren't drawable immediately
-        // We need to wait for actual frame rendering
-        const onVideoPlaying = () => {
-          console.log('🎬 Video playing event fired');
-          
-          // Use requestVideoFrameCallback if available (Chrome/Safari)
-          if ('requestVideoFrameCallback' in video) {
-            (video as any).requestVideoFrameCallback(() => {
-              console.log('✅ Video frame ready (requestVideoFrameCallback)');
-              setIsVideoReady(true);
-              setIsLoading(false);
-            });
-          } else {
-            // Fallback: wait for next animation frame + small delay
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                console.log('✅ Video frame ready (fallback)');
-                setIsVideoReady(true);
-                setIsLoading(false);
-              }, 100);
-            });
-          }
-        };
-        
-        video.addEventListener('playing', onVideoPlaying, { once: true });
-      } else {
-        setIsLoading(false);
+        videoRef.current.srcObject = mediaStream;
       }
+
+      setIsLoading(false);
       
     } catch (err) {
       setIsLoading(false);
@@ -216,8 +187,6 @@ export default function CameraCapture({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    
-    setIsVideoReady(false);
   };
 
   /**
@@ -233,45 +202,21 @@ export default function CameraCapture({
    */
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
-      console.error('❌ Missing video or canvas ref');
-      return;
-    }
-    
-    if (!isVideoReady) {
-      console.warn('⚠️ Video not ready yet, waiting...');
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    console.log('📹 Video state:', {
-      readyState: video.readyState,
-      videoWidth: video.videoWidth,
-      videoHeight: video.videoHeight,
-      paused: video.paused,
-      currentTime: video.currentTime
-    });
-
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
-    console.log('🎨 Canvas size:', canvas.width, 'x', canvas.height);
 
     // Draw current video frame to canvas
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.error('❌ Could not get canvas context');
       return;
     }
-    
-    // SAFARI FIX: Temporarily remove CSS transform during capture
-    const originalTransform = video.style.transform;
-    video.style.transform = 'none';
-    
-    // Force a paint/reflow to ensure transform is removed
-    void video.offsetHeight;
 
     // If front camera, flip horizontally to match mirror view
     if (facingMode === 'user') {
@@ -282,29 +227,16 @@ export default function CameraCapture({
     } else {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
-    
-    // Restore CSS transform
-    video.style.transform = originalTransform;
-    
-    console.log('✅ Drew image to canvas');
 
-    // CRITICAL: Generate data URL IMMEDIATELY after drawing, while canvas still has image data
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    console.log('📊 Data URL length:', dataUrl.length, 'bytes');
-    console.log('📊 Data URL preview:', dataUrl.substring(0, 100));
-    
-    // Set preview immediately
-    setCapturedImage(dataUrl);
-
-    // Convert canvas to blob (this happens async but uses canvas data from above)
+    // Convert canvas to blob and data URL
     canvas.toBlob((blob) => {
       if (!blob) {
-        console.error('❌ Failed to create blob');
         setError('Failed to capture photo');
         return;
       }
-      
-      console.log('✅ Blob created:', blob.size, 'bytes');
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      setCapturedImage(dataUrl);
       
       // Pass captured image to parent
       onCapture(blob, dataUrl);
@@ -421,8 +353,7 @@ export default function CameraCapture({
                 {/* Capture Button */}
                 <button
                   onClick={capturePhoto}
-                  disabled={!isVideoReady}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0"
                   style={{
                     borderWidth: '4px',
                     borderStyle: 'solid',
