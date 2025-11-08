@@ -764,8 +764,10 @@ export default function EventCapturePage({
             )}
             <div className="flex-1 flex items-center justify-center p-4 min-h-0">
               <CameraCapture 
-                onCapture={handlePhotoCapture} 
-                frameOverlay={showFrameOnCapture ? selectedFrame?.imageUrl : undefined}
+                onCapture={handlePhotoCapture}
+                // CRITICAL: No frame overlay during capture to prevent canvas issues
+                // Frame will be composited AFTER capture in compositeImageWithFrame()
+                frameOverlay={undefined}
                 frameWidth={selectedFrame?.width || 1920}
                 frameHeight={selectedFrame?.height || 1080}
                 captureButtonColor={event?.brandColor || '#3B82F6'}
