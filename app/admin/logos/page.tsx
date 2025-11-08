@@ -31,15 +31,21 @@ export default function LogosPage() {
   useEffect(() => {
     const fetchLogos = async () => {
       try {
+        console.log('Fetching logos from API...');
         const response = await fetch('/api/logos?limit=100');
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.error || 'Failed to load logos');
         }
 
-        setLogos(data.logos || []);
+        console.log('Logos from data.logos:', data.logos);
+        console.log('Logos from data.data.logos:', data.data?.logos);
+        setLogos(data.logos || data.data?.logos || []);
       } catch (err: any) {
+        console.error('Error fetching logos:', err);
         setError(err.message);
       } finally {
         setIsLoading(false);
