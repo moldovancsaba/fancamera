@@ -137,6 +137,14 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
   // Execute aggregation
   const allUsers = await db.collection('submissions').aggregate(pipeline).toArray();
 
+  // Debug logging
+  console.log('Pseudo Users API Debug:');
+  console.log('- Match stage:', JSON.stringify(matchStage));
+  console.log('- Found users:', allUsers.length);
+  if (allUsers.length > 0) {
+    console.log('- Sample user:', allUsers[0]);
+  }
+
   // Manual pagination (aggregation results are in memory)
   const total = allUsers.length;
   const startIndex = (page - 1) * limit;
