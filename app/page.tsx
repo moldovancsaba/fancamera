@@ -8,6 +8,9 @@
 
 import { getSession } from '@/lib/auth/session';
 
+// This page uses cookies, so it must be dynamic
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Get current session to show user info
   const session = await getSession();

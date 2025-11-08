@@ -13,6 +13,7 @@ import Image from 'next/image';
 import CameraCapture from '@/components/camera/CameraCapture';
 import FileUpload from '@/components/camera/FileUpload';
 
+
 interface Frame {
   _id: string;
   name: string;
