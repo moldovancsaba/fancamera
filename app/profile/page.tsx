@@ -11,6 +11,9 @@ import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+// This page uses cookies and database, so it must be dynamic
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage() {
   // Check authentication
   const session = await getSession();
