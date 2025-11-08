@@ -228,15 +228,18 @@ export default function CameraCapture({
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
 
-    // Convert canvas to blob and data URL
+    // CRITICAL: Generate data URL IMMEDIATELY after drawing, while canvas still has image data
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    
+    // Set preview immediately
+    setCapturedImage(dataUrl);
+
+    // Convert canvas to blob (this happens async but uses canvas data from above)
     canvas.toBlob((blob) => {
       if (!blob) {
         setError('Failed to capture photo');
         return;
       }
-
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      setCapturedImage(dataUrl);
       
       // Pass captured image to parent
       onCapture(blob, dataUrl);
