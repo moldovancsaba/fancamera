@@ -9,7 +9,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { uploadImage } from '@/lib/imgbb/upload';
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -72,13 +71,35 @@ export default function NewEventPage() {
 
     const formData = new FormData(e.currentTarget);
     
-    // Upload logo if provided
+    // Upload logo if provided (via server-side API route)
     let logoUrl: string | undefined;
     if (logoFile) {
       try {
         setIsUploadingLogo(true);
-        const result = await uploadImage(logoFile, { name: `event-logo-${Date.now()}` });
-        logoUrl = result.imageUrl;
+        // Convert file to base64
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(logoFile);
+        });
+        
+        // Upload via API route (server-side has access to IMGBB_API_KEY)
+        const uploadResponse = await fetch('/api/upload-logo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            imageData: base64Data,
+            name: `event-logo-${Date.now()}`
+          }),
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok) {
+          throw new Error(uploadResult.error || 'Upload failed');
+        }
+        
+        logoUrl = uploadResult.imageUrl;
       } catch (err: any) {
         console.error('Logo upload error:', err);
         setError(`Failed to upload logo: ${err.message}`);

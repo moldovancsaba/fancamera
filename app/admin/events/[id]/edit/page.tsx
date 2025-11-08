@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { type CustomPage } from '@/lib/db/schemas';
 import CustomPagesManager from '@/components/admin/CustomPagesManager';
-import { uploadImage } from '@/lib/imgbb/upload';
 
 export default function EditEventPage({
   params,
@@ -102,13 +101,35 @@ export default function EditEventPage({
 
     const formData = new FormData(e.currentTarget);
     
-    // Upload logo if a new file is provided
+    // Upload logo if a new file is provided (via server-side API route)
     let logoUrl: string | undefined = event?.logoUrl; // Keep existing logo by default
     if (logoFile) {
       try {
         setIsUploadingLogo(true);
-        const result = await uploadImage(logoFile, { name: `event-logo-${Date.now()}` });
-        logoUrl = result.imageUrl;
+        // Convert file to base64
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(logoFile);
+        });
+        
+        // Upload via API route (server-side has access to IMGBB_API_KEY)
+        const uploadResponse = await fetch('/api/upload-logo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            imageData: base64Data,
+            name: `event-logo-${Date.now()}`
+          }),
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok) {
+          throw new Error(uploadResult.error || 'Upload failed');
+        }
+        
+        logoUrl = uploadResult.imageUrl;
       } catch (err: any) {
         console.error('Logo upload error:', err);
         setError(`Failed to upload logo: ${err.message}`);
