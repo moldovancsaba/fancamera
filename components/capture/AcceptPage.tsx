@@ -32,6 +32,7 @@ export interface AcceptPageProps {
   pageId: string;
   onNext: (data: AcceptPageData) => void;
   onBack?: () => void;
+  logoUrl?: string | null;
 }
 
 /**
@@ -40,7 +41,7 @@ export interface AcceptPageProps {
  * Renders a consent form with required checkbox
  * User must check the box to proceed
  */
-export default function AcceptPage({ config, pageId, onNext, onBack }: AcceptPageProps) {
+export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl }: AcceptPageProps) {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +76,17 @@ export default function AcceptPage({ config, pageId, onNext, onBack }: AcceptPag
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 sm:p-8">
+          {/* Logo */}
+          {logoUrl && (
+            <div className="flex justify-center mb-6">
+              <img
+                src={logoUrl}
+                alt="Event logo"
+                className="max-w-xs max-h-32 object-contain"
+              />
+            </div>
+          )}
+          
           {/* Title */}
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 text-center">
             {config.title}

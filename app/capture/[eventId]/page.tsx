@@ -62,7 +62,8 @@ export default function EventCapturePage({
   const { eventId } = use(params);
   
   const [event, setEvent] = useState<EventData | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [loadingLogoUrl, setLoadingLogoUrl] = useState<string | null>(null);
+  const [onboardingLogoUrl, setOnboardingLogoUrl] = useState<string | null>(null);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -124,19 +125,28 @@ export default function EventCapturePage({
           showLogo: eventData.showLogo || false,
         });
         
-        // Fetch logo for loading-capture scenario
+        // Fetch logos for loading-capture and onboarding-thankyou scenarios
         try {
           const logoResponse = await fetch(`/api/events/${eventId}/logos`);
           if (logoResponse.ok) {
             const logoData = await logoResponse.json();
+            
+            // Loading logo
             const loadingLogos = logoData.data?.logos?.['loading-capture'] || logoData.logos?.['loading-capture'] || [];
-            const activeLogo = loadingLogos.find((l: any) => l.isActive);
-            if (activeLogo) {
-              setLogoUrl(activeLogo.imageUrl);
+            const activeLoadingLogo = loadingLogos.find((l: any) => l.isActive);
+            if (activeLoadingLogo) {
+              setLoadingLogoUrl(activeLoadingLogo.imageUrl);
+            }
+            
+            // Onboarding/thank you logo
+            const onboardingLogos = logoData.data?.logos?.['onboarding-thankyou'] || logoData.logos?.['onboarding-thankyou'] || [];
+            const activeOnboardingLogo = onboardingLogos.find((l: any) => l.isActive);
+            if (activeOnboardingLogo) {
+              setOnboardingLogoUrl(activeOnboardingLogo.imageUrl);
             }
           }
         } catch (err) {
-          console.warn('Failed to fetch logo:', err);
+          console.warn('Failed to fetch logos:', err);
         }
         
         // v2.0.0: Set up custom page flow
@@ -548,6 +558,7 @@ export default function EventCapturePage({
               namePlaceholder: currentPage.config.namePlaceholder,
               emailPlaceholder: currentPage.config.emailPlaceholder,
             }}
+            logoUrl={onboardingLogoUrl}
             onNext={handleWhoAreYouComplete}
           />
         );
@@ -562,6 +573,7 @@ export default function EventCapturePage({
               buttonText: currentPage.config.buttonText,
             }}
             pageId={currentPage.pageId}
+            logoUrl={onboardingLogoUrl}
             onNext={(data) => handleConsentComplete(currentPage, data)}
           />
         );
@@ -579,6 +591,7 @@ export default function EventCapturePage({
               redirectingText: currentPage.config.redirectingText,
             }}
             pageId={currentPage.pageId}
+            logoUrl={onboardingLogoUrl}
             onNext={(data) => handleConsentComplete(currentPage, data)}
           />
         );
@@ -598,9 +611,9 @@ export default function EventCapturePage({
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
-          {logoUrl ? (
+          {loadingLogoUrl ? (
             <img
-              src={logoUrl}
+              src={loadingLogoUrl}
               alt="Event logo"
               className="max-w-md max-h-64 mx-auto mb-8 object-contain"
             />

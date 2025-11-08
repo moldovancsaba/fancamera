@@ -34,6 +34,7 @@ export interface WhoAreYouPageProps {
   config: WhoAreYouPageConfig;
   onNext: (data: WhoAreYouPageData) => void;
   onBack?: () => void;
+  logoUrl?: string | null;
 }
 
 /**
@@ -42,7 +43,7 @@ export interface WhoAreYouPageProps {
  * Renders a form to collect user name and email
  * Both fields are required to proceed
  */
-export default function WhoAreYouPage({ config, onNext, onBack }: WhoAreYouPageProps) {
+export default function WhoAreYouPage({ config, onNext, onBack, logoUrl }: WhoAreYouPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
@@ -99,6 +100,17 @@ export default function WhoAreYouPage({ config, onNext, onBack }: WhoAreYouPageP
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 sm:p-8">
+          {/* Logo */}
+          {logoUrl && (
+            <div className="flex justify-center mb-6">
+              <img
+                src={logoUrl}
+                alt="Event logo"
+                className="max-w-xs max-h-32 object-contain"
+              />
+            </div>
+          )}
+          
           {/* Title */}
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 text-center">
             {config.title}

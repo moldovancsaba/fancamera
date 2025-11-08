@@ -40,6 +40,7 @@ export interface CTAPageProps {
   pageId: string;
   onNext: (data: CTAPageData) => void;
   onBack?: () => void;
+  logoUrl?: string | null;
 }
 
 /**
@@ -49,7 +50,7 @@ export interface CTAPageProps {
  * If hasButton is true, shows continue button
  * If hasButton is false, auto-redirects after displaying message
  */
-export default function CTAPage({ config, pageId, onNext, onBack }: CTAPageProps) {
+export default function CTAPage({ config, pageId, onNext, onBack, logoUrl }: CTAPageProps) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const hasButton = config.hasButton !== false;  // Default to true for backward compatibility
   const urlToVisit = config.checkboxText;  // Repurposed field
@@ -93,6 +94,17 @@ export default function CTAPage({ config, pageId, onNext, onBack }: CTAPageProps
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 sm:p-8">
+          {/* Logo */}
+          {logoUrl && (
+            <div className="flex justify-center mb-6">
+              <img
+                src={logoUrl}
+                alt="Event logo"
+                className="max-w-xs max-h-32 object-contain"
+              />
+            </div>
+          )}
+          
           {/* Title */}
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 text-center">
             {config.title}
