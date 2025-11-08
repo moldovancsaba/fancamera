@@ -202,19 +202,31 @@ export default function CameraCapture({
    */
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
+      console.error('❌ Missing video or canvas ref');
       return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
+    console.log('📹 Video state:', {
+      readyState: video.readyState,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight,
+      paused: video.paused,
+      currentTime: video.currentTime
+    });
+
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    
+    console.log('🎨 Canvas size:', canvas.width, 'x', canvas.height);
 
     // Draw current video frame to canvas
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      console.error('❌ Could not get canvas context');
       return;
     }
 
@@ -227,9 +239,13 @@ export default function CameraCapture({
     } else {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
+    
+    console.log('✅ Drew image to canvas');
 
     // CRITICAL: Generate data URL IMMEDIATELY after drawing, while canvas still has image data
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    console.log('📊 Data URL length:', dataUrl.length, 'bytes');
+    console.log('📊 Data URL preview:', dataUrl.substring(0, 100));
     
     // Set preview immediately
     setCapturedImage(dataUrl);
@@ -237,9 +253,12 @@ export default function CameraCapture({
     // Convert canvas to blob (this happens async but uses canvas data from above)
     canvas.toBlob((blob) => {
       if (!blob) {
+        console.error('❌ Failed to create blob');
         setError('Failed to capture photo');
         return;
       }
+      
+      console.log('✅ Blob created:', blob.size, 'bytes');
       
       // Pass captured image to parent
       onCapture(blob, dataUrl);
