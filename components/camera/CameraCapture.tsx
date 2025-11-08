@@ -55,6 +55,7 @@ export default function CameraCapture({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [isVideoReady, setIsVideoReady] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -140,13 +141,24 @@ export default function CameraCapture({
       
       setStream(mediaStream);
       setFacingMode(facing);
+      setIsVideoReady(false);
 
       // Attach stream to video element
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        
+        // Wait for video to be fully ready before allowing capture
+        const onVideoReady = () => {
+          console.log('✅ Video ready for capture');
+          setIsVideoReady(true);
+          setIsLoading(false);
+        };
+        
+        // Use loadeddata event which fires when frame data is available
+        videoRef.current.addEventListener('loadeddata', onVideoReady, { once: true });
+      } else {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
       
     } catch (err) {
       setIsLoading(false);
@@ -187,6 +199,8 @@ export default function CameraCapture({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    
+    setIsVideoReady(false);
   };
 
   /**
@@ -203,6 +217,11 @@ export default function CameraCapture({
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
       console.error('❌ Missing video or canvas ref');
+      return;
+    }
+    
+    if (!isVideoReady) {
+      console.warn('⚠️ Video not ready yet, waiting...');
       return;
     }
 
@@ -375,7 +394,8 @@ export default function CameraCapture({
                 {/* Capture Button */}
                 <button
                   onClick={capturePhoto}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0"
+                  disabled={!isVideoReady}
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     borderWidth: '4px',
                     borderStyle: 'solid',
