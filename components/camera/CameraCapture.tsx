@@ -145,21 +145,34 @@ export default function CameraCapture({
 
       // Attach stream to video element
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+        const video = videoRef.current;
+        video.srcObject = mediaStream;
         
-        // Wait for video to be fully ready before allowing capture
-        // Safari needs 'playing' event, not just 'loadeddata'
-        const onVideoReady = () => {
-          console.log('✅ Video ready for capture (playing)');
-          // Extra delay for Safari to ensure frame buffer is ready
-          setTimeout(() => {
-            setIsVideoReady(true);
-            setIsLoading(false);
-          }, 500);
+        // Safari desktop has a known bug where video frames aren't drawable immediately
+        // We need to wait for actual frame rendering
+        const onVideoPlaying = () => {
+          console.log('🎬 Video playing event fired');
+          
+          // Use requestVideoFrameCallback if available (Chrome/Safari)
+          if ('requestVideoFrameCallback' in video) {
+            (video as any).requestVideoFrameCallback(() => {
+              console.log('✅ Video frame ready (requestVideoFrameCallback)');
+              setIsVideoReady(true);
+              setIsLoading(false);
+            });
+          } else {
+            // Fallback: wait for next animation frame + small delay
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                console.log('✅ Video frame ready (fallback)');
+                setIsVideoReady(true);
+                setIsLoading(false);
+              }, 100);
+            });
+          }
         };
         
-        // Use 'playing' event which ensures video is actively rendering frames
-        videoRef.current.addEventListener('playing', onVideoReady, { once: true });
+        video.addEventListener('playing', onVideoPlaying, { once: true });
       } else {
         setIsLoading(false);
       }
