@@ -197,6 +197,8 @@ export interface Event {
   
   // Customization
   loadingText?: string;              // Text shown while event is loading (e.g., "Loading event...")
+  logoUrl?: string;                  // Optional event logo URL (imgbb.com) - displayed on capture pages
+  showLogo: boolean;                 // Whether to display logo on event pages (default: false)
   
   // Statistics
   submissionCount?: number;          // Cached count of submissions for this event

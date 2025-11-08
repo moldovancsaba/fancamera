@@ -102,7 +102,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Parse request body
   const body = await request.json();
-  const { name, partnerId, description, eventDate, location, isActive } = body;
+  const { name, partnerId, description, eventDate, location, isActive, logoUrl, showLogo } = body;
 
   // Validate required fields
   validateRequiredFields(body, ['name', 'partnerId']);
@@ -134,6 +134,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     eventDate: eventDate?.trim() || undefined,
     location: location?.trim() || undefined,
     isActive: isActive !== undefined ? Boolean(isActive) : true,
+    logoUrl: logoUrl?.trim() || undefined,
+    showLogo: Boolean(showLogo),
     frames: [],
     customPages: [],  // v2.0.0: Empty array = default flow (straight to photo capture)
     submissionCount: 0,

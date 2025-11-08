@@ -38,6 +38,8 @@ interface EventData {
   location: string | null;
   customPages: CustomPage[];  // v2.0.0: Custom page flow
   loadingText?: string;  // Customizable loading text
+  logoUrl?: string;  // Optional event logo URL
+  showLogo: boolean;  // Whether to display logo on pages
 }
 
 // v2.0.0: Collected data from custom pages
@@ -117,6 +119,8 @@ export default function EventCapturePage({
           location: eventData.location || null,
           customPages: eventData.customPages || [],
           loadingText: eventData.loadingText,
+          logoUrl: eventData.logoUrl,
+          showLogo: eventData.showLogo || false,
         });
         
         // v2.0.0: Set up custom page flow
@@ -578,7 +582,15 @@ export default function EventCapturePage({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">⏳</div>
+          {event?.showLogo && event?.logoUrl ? (
+            <img
+              src={event.logoUrl}
+              alt="Event logo"
+              className="w-32 h-32 mx-auto mb-4 object-contain"
+            />
+          ) : (
+            <div className="text-6xl mb-4">⏳</div>
+          )}
           <p className="text-gray-600 dark:text-gray-400">{event?.loadingText || 'Loading event...'}</p>
         </div>
       </div>
@@ -609,6 +621,13 @@ export default function EventCapturePage({
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 landscape:h-full landscape:flex landscape:flex-col landscape:justify-center landscape:writing-mode-vertical">
             {/* Event Info */}
             <div className="text-center mb-3 landscape:mb-6 landscape:[writing-mode:vertical-lr] landscape:rotate-180">
+              {event.showLogo && event.logoUrl && (
+                <img
+                  src={event.logoUrl}
+                  alt="Event logo"
+                  className="w-16 h-16 mx-auto mb-2 object-contain"
+                />
+              )}
               {event.partnerName && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {event.partnerName}
@@ -731,9 +750,21 @@ export default function EventCapturePage({
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-8 py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl"
+                      className="px-8 py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl relative overflow-hidden"
                     >
-                      <span className="text-3xl">❤️</span>
+                      {isSaving ? (
+                        event?.showLogo && event?.logoUrl ? (
+                          <img
+                            src={event.logoUrl}
+                            alt="Event logo"
+                            className="w-8 h-8 object-contain animate-pulse"
+                          />
+                        ) : (
+                          <span className="text-3xl animate-spin">⏳</span>
+                        )
+                      ) : (
+                        <span className="text-3xl">❤️</span>
+                      )}
                       <span className="text-xl">{isSaving ? 'SAVING...' : captureButtonText}</span>
                     </button>
                     <button
@@ -839,7 +870,15 @@ export default function EventCapturePage({
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
-            <div className="text-6xl mb-4 animate-spin">⏳</div>
+            {event?.showLogo && event?.logoUrl ? (
+              <img
+                src={event.logoUrl}
+                alt="Event logo"
+                className="w-24 h-24 mx-auto mb-4 object-contain animate-pulse"
+              />
+            ) : (
+              <div className="text-6xl mb-4 animate-spin">⏳</div>
+            )}
             <p className="text-gray-900 dark:text-white font-medium">
               Applying frame...
             </p>

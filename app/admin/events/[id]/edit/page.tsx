@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { type CustomPage } from '@/lib/db/schemas';
 import CustomPagesManager from '@/components/admin/CustomPagesManager';
+import { uploadImage } from '@/lib/imgbb/upload';
 
 export default function EditEventPage({
   params,
@@ -25,6 +26,9 @@ export default function EditEventPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [event, setEvent] = useState<any>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   
   // v2.0.0: Custom pages state
   const [customPages, setCustomPages] = useState<CustomPage[]>([]);
@@ -58,6 +62,10 @@ export default function EditEventPage({
         setEvent(eventData);
         // v2.0.0: Load custom pages
         setCustomPages(eventData?.customPages || []);
+        // Set existing logo preview if available
+        if (eventData?.logoUrl) {
+          setLogoPreview(eventData.logoUrl);
+        }
         setIsLoading(false);
       } catch (err: any) {
         console.error('Fetch event error:', err);
@@ -69,12 +77,48 @@ export default function EditEventPage({
     fetchEvent();
   }, [eventId]);
 
+  // Handle logo file selection
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Clear logo
+  const clearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(event?.logoUrl || null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    
+    // Upload logo if a new file is provided
+    let logoUrl: string | undefined = event?.logoUrl; // Keep existing logo by default
+    if (logoFile) {
+      try {
+        setIsUploadingLogo(true);
+        const result = await uploadImage(logoFile, { name: `event-logo-${Date.now()}` });
+        logoUrl = result.imageUrl;
+      } catch (err: any) {
+        console.error('Logo upload error:', err);
+        setError(`Failed to upload logo: ${err.message}`);
+        setIsSubmitting(false);
+        setIsUploadingLogo(false);
+        return;
+      } finally {
+        setIsUploadingLogo(false);
+      }
+    }
     
     // Build request body from form data
     // v2.0.0: customPages are saved separately via CustomPagesManager
@@ -85,6 +129,8 @@ export default function EditEventPage({
       location: formData.get('location') as string,
       loadingText: formData.get('loadingText') as string,
       isActive: formData.get('isActive') === 'on',
+      logoUrl: logoUrl,
+      showLogo: formData.get('showLogo') === 'on',
     };
 
     try {
@@ -249,7 +295,7 @@ export default function EditEventPage({
         </div>
 
         {/* Customization */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customization</h2>
           
           <div>
@@ -267,6 +313,59 @@ export default function EditEventPage({
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Text shown while the event is loading
             </p>
+          </div>
+
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Event Logo
+            </label>
+            {logoPreview ? (
+              <div className="relative inline-block">
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="h-24 w-auto rounded border border-gray-300 dark:border-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={clearLogo}
+                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  id="logo"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleLogoChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Upload a logo to display during loading and on capture pages (JPEG, PNG, WebP, max 32MB)
+            </p>
+          </div>
+
+          {/* Show Logo Checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showLogo"
+              name="showLogo"
+              defaultChecked={event?.showLogo}
+              disabled={!logoPreview}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+            />
+            <label htmlFor="showLogo" className="ml-2 text-sm text-gray-900 dark:text-white">
+              Display logo on event pages
+            </label>
           </div>
         </div>
 
@@ -308,10 +407,10 @@ export default function EditEventPage({
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingLogo}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isUploadingLogo ? 'Uploading logo...' : isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
           <Link
             href={`/admin/events/${eventId}`}

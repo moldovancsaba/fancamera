@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { uploadImage } from '@/lib/imgbb/upload';
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -19,6 +20,9 @@ export default function NewEventPage() {
   const [isLoadingPartners, setIsLoadingPartners] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [partners, setPartners] = useState<any[]>([]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   // Fetch partners on mount
   useEffect(() => {
@@ -43,12 +47,48 @@ export default function NewEventPage() {
     fetchPartners();
   }, []);
 
+  // Handle logo file selection
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Clear logo
+  const clearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    
+    // Upload logo if provided
+    let logoUrl: string | undefined;
+    if (logoFile) {
+      try {
+        setIsUploadingLogo(true);
+        const result = await uploadImage(logoFile, { name: `event-logo-${Date.now()}` });
+        logoUrl = result.imageUrl;
+      } catch (err: any) {
+        console.error('Logo upload error:', err);
+        setError(`Failed to upload logo: ${err.message}`);
+        setIsSubmitting(false);
+        setIsUploadingLogo(false);
+        return;
+      } finally {
+        setIsUploadingLogo(false);
+      }
+    }
     
     // Build request body from form data
     const data = {
@@ -58,6 +98,8 @@ export default function NewEventPage() {
       eventDate: formData.get('eventDate') as string,
       location: formData.get('location') as string,
       isActive: formData.get('isActive') === 'on',
+      logoUrl: logoUrl,
+      showLogo: formData.get('showLogo') === 'on',
     };
 
     try {
@@ -195,6 +237,63 @@ export default function NewEventPage() {
           </div>
         </div>
 
+        {/* Customization */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customization</h2>
+          
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Event Logo
+            </label>
+            {logoPreview ? (
+              <div className="relative inline-block">
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="h-24 w-auto rounded border border-gray-300 dark:border-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={clearLogo}
+                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  id="logo"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleLogoChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Upload a logo to display during loading and on capture pages (JPEG, PNG, WebP, max 32MB)
+            </p>
+          </div>
+
+          {/* Show Logo Checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showLogo"
+              name="showLogo"
+              disabled={!logoFile && !logoPreview}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+            />
+            <label htmlFor="showLogo" className="ml-2 text-sm text-gray-900 dark:text-white">
+              Display logo on event pages
+            </label>
+          </div>
+        </div>
+
         {/* Status */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center">
@@ -218,10 +317,10 @@ export default function NewEventPage() {
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            disabled={isSubmitting || partners.length === 0}
+            disabled={isSubmitting || isUploadingLogo || partners.length === 0}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Creating...' : 'Create Event'}
+            {isUploadingLogo ? 'Uploading logo...' : isSubmitting ? 'Creating...' : 'Create Event'}
           </button>
           <button
             type="button"

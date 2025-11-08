@@ -89,7 +89,7 @@ export const PATCH = withErrorHandler(async (
 
   // Parse request body
   const body = await request.json();
-  const { name, description, eventDate, location, loadingText, isActive, customPages } = body;
+  const { name, description, eventDate, location, loadingText, isActive, logoUrl, showLogo, customPages } = body;
 
   // Build update object with only provided fields
   const updateFields: any = {
@@ -110,6 +110,12 @@ export const PATCH = withErrorHandler(async (
   }
   if (loadingText !== undefined) {
     updateFields.loadingText = loadingText.trim() || null;
+  }
+  if (logoUrl !== undefined) {
+    updateFields.logoUrl = logoUrl?.trim() || null;
+  }
+  if (showLogo !== undefined) {
+    updateFields.showLogo = Boolean(showLogo);
   }
   if (isActive !== undefined) {
     updateFields.isActive = Boolean(isActive);
