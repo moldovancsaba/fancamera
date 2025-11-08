@@ -153,20 +153,30 @@ export default function SlideshowPlayerV2({
       setSettings(data.slideshow);
       
       // Fetch logo for loading-slideshow scenario
+      console.log('Slideshow data:', data.slideshow);
+      console.log('Event ID for logo fetch:', data.slideshow.eventId);
       if (data.slideshow.eventId) {
         try {
+          console.log('Fetching logos for event:', data.slideshow.eventId);
           const logoResponse = await fetch(`/api/events/${data.slideshow.eventId}/logos`);
+          console.log('Logo response status:', logoResponse.status);
           if (logoResponse.ok) {
             const logoData = await logoResponse.json();
+            console.log('Logo data:', logoData);
             const loadingLogos = logoData.data?.logos?.['loading-slideshow'] || logoData.logos?.['loading-slideshow'] || [];
+            console.log('Loading-slideshow logos:', loadingLogos);
             const activeLogo = loadingLogos.find((l: any) => l.isActive);
+            console.log('Active logo:', activeLogo);
             if (activeLogo) {
+              console.log('Setting logo URL:', activeLogo.imageUrl);
               setLogoUrl(activeLogo.imageUrl);
             }
           }
         } catch (err) {
-          console.warn('Failed to fetch logo:', err);
+          console.error('Failed to fetch logo:', err);
         }
+      } else {
+        console.warn('No eventId in slideshow data');
       }
       
       // STARTUP: Build A, B, C with proper exclusion
