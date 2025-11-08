@@ -378,6 +378,95 @@ export default async function EventDetailPage({
         </div>
       </div>
 
+      {/* Brand Colors Section */}
+      <div className="mt-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Brand Colors</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Used throughout the event experience: buttons, inputs, checkboxes, and camera interface
+                </p>
+              </div>
+              <Link
+                href={`/admin/events/${id}/edit`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Edit Colors
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Primary Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Primary Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-16 h-16 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-sm"
+                    style={{ backgroundColor: event.brandColor || '#3B82F6' }}
+                  ></div>
+                  <div>
+                    <p className="text-sm font-mono text-gray-900 dark:text-white font-semibold">
+                      {event.brandColor || '#3B82F6'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Buttons, camera button fill, focus states
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Border Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Border/Accent Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-16 h-16 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-sm"
+                    style={{ backgroundColor: event.brandBorderColor || '#3B82F6' }}
+                  ></div>
+                  <div>
+                    <p className="text-sm font-mono text-gray-900 dark:text-white font-semibold">
+                      {event.brandBorderColor || '#3B82F6'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Input borders, checkboxes, camera button border
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Color Preview</p>
+              <div className="flex gap-3">
+                <button
+                  style={{ backgroundColor: event.brandColor || '#3B82F6' }}
+                  className="px-6 py-3 text-white rounded-lg font-semibold shadow-sm"
+                  disabled
+                >
+                  Primary Button
+                </button>
+                <button
+                  style={{ borderColor: event.brandBorderColor || '#3B82F6', color: event.brandBorderColor || '#3B82F6' }}
+                  className="px-6 py-3 bg-white dark:bg-gray-800 rounded-lg font-semibold shadow-sm border-2"
+                  disabled
+                >
+                  Bordered Button
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Slideshows Section */}
       <div id="slideshows" className="mt-8">
         <SlideshowManager

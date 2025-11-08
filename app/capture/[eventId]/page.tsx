@@ -127,6 +127,8 @@ export default function EventCapturePage({
           loadingText: eventData.loadingText,
           logoUrl: eventData.logoUrl,
           showLogo: eventData.showLogo || false,
+          brandColor: eventData.brandColor,
+          brandBorderColor: eventData.brandBorderColor,
         });
         
         // Fetch logos for loading-capture and onboarding-thankyou scenarios
