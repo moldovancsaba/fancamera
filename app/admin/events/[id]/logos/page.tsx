@@ -69,12 +69,18 @@ export default function EventLogosPage({
         const eventResponse = await fetch(`/api/events/${eventId}/logos`);
         const eventData = await eventResponse.json();
         
+        console.log('Initial event fetch response:', eventData);
+        
         if (!eventResponse.ok) {
           throw new Error(eventData.error || 'Failed to load event');
         }
         
         setEvent({ _id: eventData.eventId, name: eventData.eventName });
-        setAssignedLogos(eventData.logos || {});
+        
+        // Handle both wrapped and unwrapped responses
+        const logos = eventData.logos || eventData.data?.logos || {};
+        console.log('Initial assigned logos:', logos);
+        setAssignedLogos(logos);
 
         // Fetch all available logos
         const logosResponse = await fetch('/api/logos?active=true&limit=100');
