@@ -84,7 +84,11 @@ export default function EventLogosPage({
           throw new Error(logosData.error || 'Failed to load logos');
         }
         
-        setAvailableLogos(logosData.logos || []);
+        console.log('Logos API response:', logosData);
+        // API returns { success: true, data: { logos, pagination } }
+        const logos = logosData.logos || logosData.data?.logos || [];
+        console.log('Available logos:', logos);
+        setAvailableLogos(logos);
         setIsLoading(false);
       } catch (err: any) {
         console.error('Error fetching data:', err);
