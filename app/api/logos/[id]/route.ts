@@ -131,7 +131,7 @@ export const DELETE = withErrorHandler(async (request: NextRequest, context: Rou
   // Also remove all event logo assignments for this logo
   await db.collection('events').updateMany(
     { 'logos.logoId': logo.logoId },
-    { $pull: { logos: { logoId: logo.logoId } } }
+    { $pull: { logos: { logoId: logo.logoId } } } as any
   );
 
   return apiNoContent();
