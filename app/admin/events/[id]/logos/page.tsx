@@ -78,9 +78,9 @@ export default function EventLogosPage({
         setEvent({ _id: eventData.eventId, name: eventData.eventName });
         
         // Handle both wrapped and unwrapped responses
-        const logos = eventData.logos || eventData.data?.logos || {};
-        console.log('Initial assigned logos:', logos);
-        setAssignedLogos(logos);
+        const initialLogosData = eventData.logos || eventData.data?.logos || {};
+        console.log('Initial assigned logos:', initialLogosData);
+        setAssignedLogos(initialLogosData);
 
         // Fetch all available logos
         const logosResponse = await fetch('/api/logos?active=true&limit=100');
@@ -92,9 +92,9 @@ export default function EventLogosPage({
         
         console.log('Logos API response:', logosData);
         // API returns { success: true, data: { logos, pagination } }
-        const logos = logosData.logos || logosData.data?.logos || [];
-        console.log('Available logos:', logos);
-        setAvailableLogos(logos);
+        const availableLogosData = logosData.logos || logosData.data?.logos || [];
+        console.log('Available logos:', availableLogosData);
+        setAvailableLogos(availableLogosData);
         setIsLoading(false);
       } catch (err: any) {
         console.error('Error fetching data:', err);
@@ -133,9 +133,9 @@ export default function EventLogosPage({
       console.log('Refresh response data:', eventData);
       
       // Handle both wrapped and unwrapped responses
-      const logos = eventData.logos || eventData.data?.logos || {};
-      console.log('Setting assigned logos:', logos);
-      setAssignedLogos(logos);
+      const assignedLogosData = eventData.logos || eventData.data?.logos || {};
+      console.log('Setting assigned logos:', assignedLogosData);
+      setAssignedLogos(assignedLogosData);
     } catch (err: any) {
       console.error('Assignment error:', err);
       alert(err.message);
