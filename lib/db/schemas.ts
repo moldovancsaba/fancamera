@@ -34,6 +34,7 @@ export const COLLECTIONS = {
   PARTNERS: 'partners',
   EVENTS: 'events',
   FRAMES: 'frames',
+  LOGOS: 'logos',
   SUBMISSIONS: 'submissions',
   USERS_CACHE: 'users_cache',
   SLIDESHOWS: 'slideshows',
@@ -188,6 +189,19 @@ export interface Event {
     addedBy?: string;                // Admin user ID who added this frame
   }>;
   
+  // Logo assignments (v2.1.0)
+  // Multiple logos can be assigned per scenario
+  // If multiple logos for same scenario: random selection on each display
+  // If no logos for scenario: no logo shown
+  logos: Array<{
+    logoId: string;                  // Reference to logo
+    scenario: LogoScenario;          // Where/when to display this logo
+    order: number;                   // Order for random selection (lower = higher priority)
+    isActive: boolean;               // Whether this logo assignment is active
+    addedAt: string;                 // ISO 8601 timestamp when logo was added
+    addedBy?: string;                // Admin user ID who added this logo
+  }>;
+  
   // Custom page flow (v2.0.0)
   // Defines onboarding and thank you pages shown before/after photo capture
   // Pages with order < [Take Photo] order = onboarding pages
@@ -207,6 +221,62 @@ export interface Event {
   createdBy: string;                 // Admin user ID from SSO who created this event
   createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC
   updatedAt: string;                 // ISO 8601 timestamp with milliseconds UTC
+}
+
+// ============================================================================
+// LOGOS COLLECTION
+// ============================================================================
+
+/**
+ * Logo Scenario Type
+ * Defines where/when a logo should be displayed
+ * 
+ * Why four scenarios:
+ * - slideshow-transition: Logo shown during slide transitions with fade in/out
+ * - onboarding-thankyou: Logo displayed on custom pages (top center above title)
+ * - loading-slideshow: Logo shown while slideshow is loading
+ * - loading-capture: Logo shown while capture app is loading
+ */
+export enum LogoScenario {
+  SLIDESHOW_TRANSITION = 'slideshow-transition',
+  ONBOARDING_THANKYOU = 'onboarding-thankyou',
+  LOADING_SLIDESHOW = 'loading-slideshow',
+  LOADING_CAPTURE = 'loading-capture',
+}
+
+/**
+ * Logo Document Interface
+ * Represents an uploaded logo that can be assigned to events
+ * 
+ * Why separate from frames:
+ * - Logos have different display rules (scenarios vs overlay)
+ * - Logos support multiple per scenario with random selection
+ * - Logos have different dimensions and aspect ratios
+ * - Simpler management and assignment logic
+ */
+export interface Logo {
+  _id?: ObjectId;                    // MongoDB document ID
+  logoId: string;                    // Unique logo identifier (UUID)
+  name: string;                      // Human-readable logo name
+  description?: string;              // Optional logo description
+  imageUrl: string;                  // imgbb.com URL for logo image
+  thumbnailUrl: string;              // imgbb.com URL for thumbnail
+  width: number;                     // Logo width in pixels
+  height: number;                    // Logo height in pixels
+  fileSize: number;                  // File size in bytes
+  mimeType: string;                  // MIME type (e.g., "image/png")
+  
+  // Status
+  isActive: boolean;                 // Whether logo is available for assignment
+  
+  // Admin tracking
+  createdBy: string;                 // Admin user ID from SSO
+  createdAt: string;                 // ISO 8601 timestamp with milliseconds UTC
+  updatedAt: string;                 // ISO 8601 timestamp with milliseconds UTC
+  
+  // Usage statistics
+  usageCount?: number;               // Number of events using this logo
+  lastUsedAt?: string;               // ISO 8601 timestamp of last use
 }
 
 // ============================================================================

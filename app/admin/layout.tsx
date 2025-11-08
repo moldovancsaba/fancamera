@@ -79,6 +79,14 @@ export default async function AdminLayout({
           </Link>
 
           <Link
+            href="/admin/logos"
+            className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <span className="text-xl">🎨</span>
+            <span className="font-medium">Logos</span>
+          </Link>
+
+          <Link
             href="/admin/submissions"
             className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
