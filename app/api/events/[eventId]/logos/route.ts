@@ -133,13 +133,20 @@ export async function GET(
       return apiNotFound('Event');
     }
 
+    console.log('Event logos array:', event.logos);
+
     // Get full logo details for assigned logos
     const logoAssignments = event.logos || [];
+    console.log('Logo assignments:', logoAssignments);
     const logoIds = logoAssignments.map((l: any) => l.logoId);
+    console.log('Logo IDs to fetch:', logoIds);
 
     const logos = await logosCollection
       .find({ logoId: { $in: logoIds } })
       .toArray();
+    
+    console.log('Found logos from collection:', logos.length);
+    console.log('Logos:', logos.map((l: any) => ({ logoId: l.logoId, name: l.name })));
 
     // Merge logo details with assignments and group by scenario
     const groupedLogos: Record<string, any[]> = {
@@ -165,6 +172,8 @@ export async function GET(
     for (const scenario in groupedLogos) {
       groupedLogos[scenario].sort((a, b) => a.order - b.order);
     }
+
+    console.log('Grouped logos result:', JSON.stringify(groupedLogos, null, 2));
 
     return apiSuccess({
       eventId: event._id.toString(),
