@@ -371,9 +371,9 @@ function PageEditModal({
   const [showSharePage, setShowSharePage] = useState(page.config.showSharePage !== false);
   const [skipShareMessage, setSkipShareMessage] = useState(page.config.skipShareMessage || 'Thank you! Your photo has been saved.');
   const [showFrameOnCapture, setShowFrameOnCapture] = useState(page.config.showFrameOnCapture !== false); // Default true
-  // Camera button colors
-  const [captureButtonColor, setCaptureButtonColor] = useState(page.config.captureButtonColor || '#3B82F6');
-  const [captureButtonBorderColor, setCaptureButtonBorderColor] = useState(page.config.captureButtonBorderColor || '#3B82F6');
+  // Camera prompt text
+  const [cameraPromptTitle, setCameraPromptTitle] = useState(page.config.cameraPromptTitle || 'Ready to capture?');
+  const [cameraPromptDescription, setCameraPromptDescription] = useState(page.config.cameraPromptDescription || 'Click to start your camera and take a photo');
   // Error and notification messages for take-photo
   const [errorFrameMessage, setErrorFrameMessage] = useState(page.config.errorFrameMessage || 'Failed to apply frame. Please try again.');
   const [errorSaveMessage, setErrorSaveMessage] = useState(page.config.errorSaveMessage || 'Failed to save photo: Please try again.');
@@ -414,8 +414,8 @@ function PageEditModal({
           showSharePage,
           skipShareMessage,
           showFrameOnCapture,
-          captureButtonColor,
-          captureButtonBorderColor,
+          cameraPromptTitle,
+          cameraPromptDescription,
           errorFrameMessage,
           errorSaveMessage,
           linkCopiedMessage,
@@ -697,61 +697,41 @@ function PageEditModal({
                 </p>
               </div>
               
-              {/* Camera Button Colors */}
+              {/* Camera Prompt Text */}
               <div className="col-span-2">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 mt-2">Camera Capture Button Colors</h4>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 mt-2">Camera Start Prompt</h4>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Button Fill Color
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="color"
-                      value={captureButtonColor}
-                      onChange={(e) => setCaptureButtonColor(e.target.value)}
-                      className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={captureButtonColor}
-                      onChange={(e) => setCaptureButtonColor(e.target.value)}
-                      pattern="^#[0-9A-Fa-f]{6}$"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Hex color for the solid inner circle of the capture button
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Button Border Color
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="color"
-                      value={captureButtonBorderColor}
-                      onChange={(e) => setCaptureButtonBorderColor(e.target.value)}
-                      className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={captureButtonBorderColor}
-                      onChange={(e) => setCaptureButtonBorderColor(e.target.value)}
-                      pattern="^#[0-9A-Fa-f]{6}$"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Hex color for the outer ring/border of the capture button
-                  </p>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Prompt Title
+                </label>
+                <input
+                  type="text"
+                  value={cameraPromptTitle}
+                  onChange={(e) => setCameraPromptTitle(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="e.g., Ready to capture?"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Large heading shown when camera needs to be started
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Prompt Description
+                </label>
+                <textarea
+                  value={cameraPromptDescription}
+                  onChange={(e) => setCameraPromptDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="e.g., Click to start your camera and take a photo"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Instructional text shown below the title
+                </p>
               </div>
               
               {/* Error and Notification Messages */}

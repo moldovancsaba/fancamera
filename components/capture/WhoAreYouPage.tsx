@@ -35,6 +35,8 @@ export interface WhoAreYouPageProps {
   onNext: (data: WhoAreYouPageData) => void;
   onBack?: () => void;
   logoUrl?: string | null;
+  brandColor?: string;
+  brandBorderColor?: string;
 }
 
 /**
@@ -43,7 +45,7 @@ export interface WhoAreYouPageProps {
  * Renders a form to collect user name and email
  * Both fields are required to proceed
  */
-export default function WhoAreYouPage({ config, onNext, onBack, logoUrl }: WhoAreYouPageProps) {
+export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandColor = '#3B82F6', brandBorderColor = '#3B82F6' }: WhoAreYouPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
@@ -145,11 +147,16 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl }: WhoAr
                   }
                 }}
                 onKeyPress={handleKeyPress}
-                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                style={{
+                  ...(!errors.name && { borderColor: brandBorderColor }),
+                }}
+                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent transition-colors ${
                   errors.name 
                     ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : ''
                 }`}
+                onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px ${brandColor}40`}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
                 placeholder={config.namePlaceholder || 'Enter your name'}
                 aria-label={config.nameLabel}
                 aria-invalid={!!errors.name}
@@ -182,11 +189,16 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl }: WhoAr
                   }
                 }}
                 onKeyPress={handleKeyPress}
-                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                style={{
+                  ...(!errors.email && { borderColor: brandBorderColor }),
+                }}
+                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent transition-colors ${
                   errors.email 
                     ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 dark:border-gray-600'
+                    : ''
                 }`}
+                onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px ${brandColor}40`}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
                 placeholder={config.emailPlaceholder || 'your.email@example.com'}
                 aria-label={config.emailLabel}
                 aria-invalid={!!errors.email}
@@ -212,7 +224,8 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl }: WhoAr
               )}
               <button
                 onClick={handleNext}
-                className={`px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors ${
+                style={{ backgroundColor: brandColor }}
+                className={`px-6 py-3 text-white rounded-lg font-semibold transition-all hover:opacity-90 ${
                   onBack ? 'flex-1' : 'w-full'
                 }`}
                 aria-label={config.buttonText}

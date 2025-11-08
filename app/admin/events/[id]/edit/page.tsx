@@ -152,6 +152,8 @@ export default function EditEventPage({
       isActive: formData.get('isActive') === 'on',
       logoUrl: logoUrl,
       showLogo: formData.get('showLogo') === 'on',
+      brandColor: formData.get('brandColor') as string || undefined,
+      brandBorderColor: formData.get('brandBorderColor') as string || undefined,
     };
 
     try {
@@ -387,6 +389,77 @@ export default function EditEventPage({
             <label htmlFor="showLogo" className="ml-2 text-sm text-gray-900 dark:text-white">
               Display logo on event pages
             </label>
+          </div>
+          
+          {/* Brand Colors */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Brand Colors</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              These colors will be used throughout the event experience: buttons, inputs, checkboxes, and camera interface
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="brandColor" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Primary Color
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    id="brandColor"
+                    name="brandColor"
+                    defaultValue={event?.brandColor || '#3B82F6'}
+                    className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    defaultValue={event?.brandColor || '#3B82F6'}
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                    placeholder="#3B82F6"
+                    onChange={(e) => {
+                      const colorInput = document.getElementById('brandColor') as HTMLInputElement;
+                      if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+                        colorInput.value = e.target.value;
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Used for buttons, camera capture button fill, and focus states
+                </p>
+              </div>
+              
+              <div>
+                <label htmlFor="brandBorderColor" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Border/Accent Color
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    id="brandBorderColor"
+                    name="brandBorderColor"
+                    defaultValue={event?.brandBorderColor || '#3B82F6'}
+                    className="h-10 w-16 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    defaultValue={event?.brandBorderColor || '#3B82F6'}
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                    placeholder="#3B82F6"
+                    onChange={(e) => {
+                      const colorInput = document.getElementById('brandBorderColor') as HTMLInputElement;
+                      if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+                        colorInput.value = e.target.value;
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Used for input borders, checkboxes, and camera capture button border
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -33,6 +33,8 @@ export interface AcceptPageProps {
   onNext: (data: AcceptPageData) => void;
   onBack?: () => void;
   logoUrl?: string | null;
+  brandColor?: string;
+  brandBorderColor?: string;
 }
 
 /**
@@ -41,7 +43,7 @@ export interface AcceptPageProps {
  * Renders a consent form with required checkbox
  * User must check the box to proceed
  */
-export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl }: AcceptPageProps) {
+export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl, brandColor = '#3B82F6', brandBorderColor = '#3B82F6' }: AcceptPageProps) {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,12 +105,13 @@ export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl }: 
           <div className="mb-6">
             <label 
               htmlFor={`accept-${pageId}`}
+              style={{
+                ...(!error && (accepted ? { borderColor: brandBorderColor, backgroundColor: `${brandColor}10` } : { borderColor: '#d1d5db' })),
+              }}
               className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                accepted
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : error
+                error
                   ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700'
+                  : ''
               }`}
             >
               <input
@@ -116,7 +119,8 @@ export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl }: 
                 type="checkbox"
                 checked={accepted}
                 onChange={(e) => handleCheckboxChange(e.target.checked)}
-                className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+                style={{ accentColor: brandColor }}
+                className="mt-1 w-5 h-5 border-gray-300 rounded focus:ring-2 flex-shrink-0"
                 aria-label="Accept terms"
                 aria-invalid={!!error}
                 aria-describedby={error ? 'accept-error' : undefined}
@@ -146,11 +150,12 @@ export default function AcceptPage({ config, pageId, onNext, onBack, logoUrl }: 
             <button
               onClick={handleNext}
               disabled={!accepted}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+              style={accepted ? { backgroundColor: brandColor } : {}}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
                 onBack ? 'flex-1' : 'w-full'
               } ${
                 accepted
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'text-white hover:opacity-90'
                   : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }`}
               aria-label={config.buttonText}

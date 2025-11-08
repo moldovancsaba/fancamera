@@ -31,6 +31,8 @@ export interface CameraCaptureProps {
   frameHeight?: number;  // Frame height in pixels (for aspect ratio)
   captureButtonColor?: string; // Hex color for capture button fill (default: #3B82F6)
   captureButtonBorderColor?: string; // Hex color for capture button border (default: #3B82F6)
+  promptTitle?: string;  // Custom title for camera start prompt (default: 'Ready to capture?')
+  promptDescription?: string; // Custom description for camera start prompt
 }
 
 export default function CameraCapture({ 
@@ -41,7 +43,9 @@ export default function CameraCapture({
   frameWidth, 
   frameHeight,
   captureButtonColor = '#3B82F6',
-  captureButtonBorderColor = '#3B82F6'
+  captureButtonBorderColor = '#3B82F6',
+  promptTitle = 'Ready to capture?',
+  promptDescription = 'Click to start your camera and take a photo'
 }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -411,16 +415,19 @@ export default function CameraCapture({
             {!stream && !isLoading && !error && (
               <button
                 onClick={() => startCamera(facingMode)}
-                className="absolute inset-0 bg-gradient-to-br from-blue-900 to-indigo-900 flex items-center justify-center p-3 md:p-4 w-full h-full cursor-pointer hover:from-blue-800 hover:to-indigo-800 transition-colors z-10"
+                className="absolute inset-0 flex items-center justify-center p-3 md:p-4 w-full h-full cursor-pointer transition-all z-10"
+                style={{
+                  background: `linear-gradient(to bottom right, ${captureButtonColor}dd, ${captureButtonColor}aa)`,
+                }}
               >
                 <div className="text-white text-center max-w-xs md:max-w-md">
                   <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <p className="text-base md:text-lg font-semibold mb-2">Ready to capture?</p>
-                  <p className="text-xs text-blue-100">
-                    Click to start your camera and take a photo
+                  <p className="text-base md:text-lg font-semibold mb-2">{promptTitle}</p>
+                  <p className="text-xs text-white/90">
+                    {promptDescription}
                   </p>
                 </div>
               </button>

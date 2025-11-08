@@ -41,6 +41,8 @@ export interface CTAPageProps {
   onNext: (data: CTAPageData) => void;
   onBack?: () => void;
   logoUrl?: string | null;
+  brandColor?: string;
+  brandBorderColor?: string;
 }
 
 /**
@@ -50,7 +52,7 @@ export interface CTAPageProps {
  * If hasButton is true, shows continue button
  * If hasButton is false, auto-redirects after displaying message
  */
-export default function CTAPage({ config, pageId, onNext, onBack, logoUrl }: CTAPageProps) {
+export default function CTAPage({ config, pageId, onNext, onBack, logoUrl, brandColor = '#9333EA', brandBorderColor = '#9333EA' }: CTAPageProps) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const hasButton = config.hasButton !== false;  // Default to true for backward compatibility
   const urlToVisit = config.checkboxText;  // Repurposed field
@@ -150,9 +152,10 @@ export default function CTAPage({ config, pageId, onNext, onBack, logoUrl }: CTA
             {hasButton && (
               <button
                 onClick={handleContinue}
-                className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                style={{ backgroundColor: brandColor }}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all hover:opacity-90 text-white ${
                   onBack ? 'flex-1' : 'w-full'
-                } bg-purple-600 text-white hover:bg-purple-700`}
+                }`}
                 aria-label={config.buttonText}
               >
                 {config.buttonText}
