@@ -231,15 +231,25 @@ export default function CameraCapture({
       return;
     }
 
+    console.log('Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    console.log('Video readyState:', video.readyState);
+    console.log('Video paused:', video.paused);
+
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
+    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+
     // Draw current video frame to canvas
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      console.error('Failed to get canvas context');
       return;
     }
+
+    // Clear canvas first
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // If front camera, flip horizontally to match mirror view
     if (facingMode === 'user') {
@@ -251,16 +261,22 @@ export default function CameraCapture({
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
 
+    console.log('Drew image to canvas');
+
     // Get data URL immediately after drawing (synchronous)
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     
+    console.log('Data URL length:', dataUrl.length);
+    console.log('Data URL prefix:', dataUrl.substring(0, 50));
+    
     // Validate we actually captured something
-    if (!dataUrl || dataUrl === 'data:,') {
-      console.error('Failed to create data URL from canvas');
+    if (!dataUrl || dataUrl === 'data:,' || dataUrl.length < 1000) {
+      console.error('Failed to create data URL from canvas or data too small');
       setError('Failed to capture photo. Please try again.');
       return;
     }
     
+    console.log('Setting captured image');
     setCapturedImage(dataUrl);
 
     // Convert canvas to blob (asynchronous but non-blocking)
