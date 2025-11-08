@@ -81,9 +81,9 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-inline/eval
-              "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind requires unsafe-inline, Google Fonts for Material Icons
               "img-src 'self' data: https://i.ibb.co https://imgbb.com blob:",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts CDN for Material Icons
               "connect-src 'self' https://sso.doneisbetter.com https://api.imgbb.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
