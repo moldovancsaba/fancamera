@@ -93,6 +93,14 @@ export default async function AdminLayout({
             <span className="text-xl">👥</span>
             <span className="font-medium">Users</span>
           </Link>
+
+          <Link
+            href="/admin/pseudo-users"
+            className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <span className="text-xl">👤</span>
+            <span className="font-medium">Pseudo Users</span>
+          </Link>
         </nav>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
