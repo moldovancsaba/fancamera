@@ -225,7 +225,15 @@ export default function EventFramesPage({
                       className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="text-2xl">🖼️</div>
+                        {frame?.thumbnailUrl ? (
+                          <img 
+                            src={frame.thumbnailUrl} 
+                            alt={frame.name}
+                            className="w-16 h-auto object-contain"
+                          />
+                        ) : (
+                          <div className="text-2xl">🖼️</div>
+                        )}
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {frame?.name || frameAssignment.frameId}
@@ -281,13 +289,21 @@ export default function EventFramesPage({
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">🖼️</div>
+                      {frame.thumbnailUrl ? (
+                        <img 
+                          src={frame.thumbnailUrl} 
+                          alt={frame.name}
+                          className="w-16 h-auto object-contain"
+                        />
+                      ) : (
+                        <div className="text-2xl">🖼️</div>
+                      )}
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {frame.name}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {frame.category || 'No category'}
+                          {frame.hashtags?.join(', ') || 'No hashtags'}
                         </p>
                       </div>
                     </div>

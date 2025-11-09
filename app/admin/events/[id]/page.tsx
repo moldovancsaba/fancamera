@@ -273,26 +273,47 @@ export default async function EventDetailPage({
             ) : (
               <div className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {event.frames.map((frameAssignment: any, index: number) => (
-                    <div
-                      key={index}
-                      className="relative bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-                    >
-                      <div className="text-center">
-                        <div className="text-3xl mb-2">🖼️</div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 font-mono truncate">
-                          {frameAssignment.frameId}
-                        </p>
-                        <span className={`inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full ${
-                          frameAssignment.isActive
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                        }`}>
-                          {frameAssignment.isActive ? '● Active' : '○ Inactive'}
-                        </span>
+                  {event.frames.map((frameAssignment: any, index: number) => {
+                    // Find frame details from frames collection
+                    // Note: This requires frames to be populated on the event object
+                    const frameDetails = frameAssignment.frameDetails || frameAssignment;
+                    const thumbnailUrl = frameDetails.thumbnailUrl;
+                    const frameName = frameDetails.name || 'Unnamed Frame';
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="relative bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                      >
+                        <div className="text-center">
+                          {thumbnailUrl ? (
+                            <div className="mb-2 flex items-center justify-center">
+                              <img 
+                                src={thumbnailUrl} 
+                                alt={frameName}
+                                className="max-w-full h-auto max-h-32 object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-3xl mb-2">🖼️</div>
+                          )}
+                          <p className="text-sm font-medium text-gray-900 dark:text-white mb-1 truncate">
+                            {frameName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate mb-2">
+                            {frameAssignment.frameId}
+                          </p>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            frameAssignment.isActive
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            {frameAssignment.isActive ? '● Active' : '○ Inactive'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-4 text-center">
                   <Link

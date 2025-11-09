@@ -1,10 +1,73 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.1.0
-**Last Updated**: 2025-11-08T19:35:46.000Z
+**Current Version**: 2.2.0
+**Last Updated**: 2025-11-09T11:57:43.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.2.0] — 2025-11-09T11:57:43.000Z
+
+### Enhancement — Frame Thumbnail Display in Admin
+
+**Status**: Complete  
+**Release Type**: MINOR (UI enhancement)
+
+#### Summary
+Replaced emoji placeholders with actual frame thumbnails in admin interface, displaying frames with proper aspect ratios and names for better visual identification.
+
+#### Changes
+- ✅ Event details page now shows frame thumbnails instead of emoji icons
+- ✅ Frame management page displays thumbnails in both assigned and available sections
+- ✅ Thumbnails maintain proper aspect ratios (portrait, landscape, square)
+- ✅ Frame names displayed prominently alongside thumbnails
+- ✅ API enhanced to populate frame details when fetching events
+- ✅ Fallback to emoji if thumbnail unavailable
+
+#### Files Modified
+- `app/admin/events/[id]/page.tsx` — Display frame thumbnails in event overview
+- `app/admin/events/[id]/frames/page.tsx` — Display thumbnails in frame assignment UI
+- `app/api/events/[eventId]/route.ts` — Populate frame details on event fetch
+- `app/page.tsx` — Removed promotional content from homepage
+- `package.json` — Version 2.1.0 → 2.2.0
+- `README.md` — Updated version and status
+- `RELEASE_NOTES.md` — This entry
+- `TASKLIST.md` — Version updated
+
+#### Technical Details
+**Frame Detail Population**:
+```typescript
+// API now enriches event.frames[] with full frame data
+if (event.frames && event.frames.length > 0) {
+  const frameIds = event.frames.map(f => f.frameId);
+  const frames = await db.collection(COLLECTIONS.FRAMES)
+    .find({ frameId: { $in: frameIds } })
+    .toArray();
+  
+  event.frames = event.frames.map(assignment => ({
+    ...assignment,
+    frameDetails: { name, thumbnailUrl, width, height, hashtags }
+  }));
+}
+```
+
+**UI Display**:
+- Thumbnails use `object-contain` to maintain aspect ratio
+- Max height of 128px in grid view
+- Fixed width of 64px in list view
+- Frame names shown below thumbnails
+- Active/inactive status badges preserved
+
+#### Impact
+- Improved admin user experience with visual frame identification
+- Faster frame recognition without needing to read IDs
+- Better understanding of frame appearance before assignment
+- More professional admin interface
+
+#### Breaking Changes
+None - Backward compatible enhancement
 
 ---
 
