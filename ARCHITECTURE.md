@@ -557,7 +557,7 @@ import { Button, Card, Badge, LoadingSpinner } from '@/components/shared';
 - **URLs**: Permanent, no expiration
 
 ### SSO Service (sso.doneisbetter.com)
-- **Version**: 5.16.0
+- **Version**: 5.23.1
 - **Protocol**: OAuth2/OIDC with PKCE
 - **Endpoints**: /authorize, /token, /userinfo
 - **Scopes**: openid, profile, email

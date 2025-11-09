@@ -5,7 +5,7 @@
  * Integrates with sso.doneisbetter.com for user authentication.
  * Implements Authorization Code Flow with PKCE (required for public clients).
  * 
- * SSO Service: https://sso.doneisbetter.com (v5.16.0)
+ * SSO Service: https://sso.doneisbetter.com (v5.23.1)
  * 
  * Why PKCE:
  * - Camera is a public client (browser-based SPA)

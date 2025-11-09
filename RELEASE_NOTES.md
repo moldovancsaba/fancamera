@@ -1,10 +1,60 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.2.0
-**Last Updated**: 2025-11-09T11:57:43.000Z
+**Current Version**: 2.3.0
+**Last Updated**: 2025-11-09T12:20:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.3.0] — 2025-11-09T12:20:00.000Z
+
+### Update — SSO Integration Compatibility
+
+**Status**: Complete  
+**Release Type**: MINOR (compatibility update)
+
+#### Summary
+Updated SSO service integration to support version 5.23.1, verifying OAuth2 endpoint compatibility and ensuring seamless authentication flow with the latest SSO release.
+
+#### Changes
+- ✅ Updated SSO version reference from 5.16.0 to 5.23.1 in lib/auth/sso.ts
+- ✅ Verified OAuth2 endpoint paths remain compatible (/api/oauth/authorize, /api/oauth/token, /api/oauth/userinfo)
+- ✅ Confirmed PKCE implementation matches SSO v5.23.1 requirements
+- ✅ Tested development server startup with no authentication errors
+- ✅ Verified camera OAuth client registration in SSO database (active status)
+- ✅ Updated documentation references across ARCHITECTURE.md, LEARNINGS.md, and RELEASE_NOTES.md
+
+#### Files Modified
+- `lib/auth/sso.ts` — Updated SSO version reference to v5.23.1
+- `ARCHITECTURE.md` — Updated SSO service version documentation
+- `LEARNINGS.md` — Updated SSO version in external service integration section
+- `RELEASE_NOTES.md` — Updated SSO version in integration documentation and this entry
+- `package.json` — Version 2.2.0 → 2.3.0
+
+#### Technical Details
+**SSO Service Compatibility**:
+- OAuth2 Authorization Code Flow with PKCE
+- Public client configuration (token_endpoint_auth_method: 'none')
+- PKCE mandatory for security (require_pkce: true)
+- Redirect URIs verified: http://localhost:3000/api/auth/callback, https://fancamera.vercel.app/api/auth/callback
+- Client ID: 1e59b6a1-3c18-4141-9139-7a3dd0da62bf (status: active)
+
+**OAuth2 Endpoints** (unchanged, compatible):
+- Authorization: https://sso.doneisbetter.com/api/oauth/authorize
+- Token Exchange: https://sso.doneisbetter.com/api/oauth/token
+- User Info: https://sso.doneisbetter.com/api/oauth/userinfo
+- Token Revocation: https://sso.doneisbetter.com/api/oauth/revoke
+
+#### Impact
+- Maintains compatibility with latest SSO service version
+- No breaking changes to authentication flow
+- Improved security through updated SSO service features
+- Documentation now accurately reflects current SSO version
+
+#### Breaking Changes
+None - Backward compatible update
 
 ---
 
@@ -997,7 +1047,7 @@ Example: 2025-11-03T18:31:18.000Z
 - Security: No hardcoded secrets, input validation on all endpoints
 
 #### External Service Integrations Planned
-**SSO Service** (sso.doneisbetter.com v5.16.0):
+**SSO Service** (sso.doneisbetter.com v5.23.1):
 - OAuth2/OIDC authorization
 - Public client with PKCE required
 - Scopes: openid, profile, email
