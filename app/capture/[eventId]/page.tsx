@@ -314,11 +314,11 @@ export default function EventCapturePage({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas not supported');
 
-      // v2.8.0: Use captured photo dimensions as base (already cropped to correct aspect by camera component)
-      // Only scale down if exceeds max dimension limit
+      // v2.8.0: FRAME sets the canvas size, captured photo scales to fit
+      // Photo is already cropped to frame's aspect ratio by camera component
       const maxDimension = 2048;
-      let targetWidth = photoImg.width;
-      let targetHeight = photoImg.height;
+      let targetWidth = frameImg.width;
+      let targetHeight = frameImg.height;
       
       if (targetWidth > maxDimension || targetHeight > maxDimension) {
         const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
@@ -332,10 +332,10 @@ export default function EventCapturePage({
       // Store dimensions for submission
       setImageDimensions({ width: targetWidth, height: targetHeight });
 
-      // Draw captured photo (already correct aspect ratio and crop)
+      // Draw captured photo scaled to canvas (frame) size
       ctx.drawImage(photoImg, 0, 0, canvas.width, canvas.height);
       
-      // Overlay frame (scale to match canvas)
+      // Overlay frame at exact canvas size
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
       // Convert to JPEG with compression to reduce file size (quality 0.85 = ~85%)
