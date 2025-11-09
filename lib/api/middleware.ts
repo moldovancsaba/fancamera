@@ -64,22 +64,19 @@ export async function requireAuth(request?: NextRequest): Promise<Session> {
  * @throws Response with 401 if not authenticated, 403 if not admin
  * 
  * Why: Admin-only endpoints need both authentication AND authorization checks
- * This middleware eliminates the repeated pattern:
- * ```
- * const session = await getSession();
- * if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
- * if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
- *   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
- * }
- * ```
+ * 
+ * WHAT: Check app-specific role (appRole), NOT SSO-level role (user.role)
+ * WHY: SSO v5.24.0 introduced multi-app permissions - each app has its own roles
+ * HOW: Use session.appRole which was queried from SSO during login callback
  */
 export async function requireAdmin(request?: NextRequest): Promise<Session> {
   // First check authentication
   const session = await requireAuth(request);
   
-  // Then check authorization
-  if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
-    throw apiForbidden('Admin access required');
+  // CRITICAL: Check app-specific role, not SSO-level role
+  // App role is queried from SSO permission endpoint during OAuth callback
+  if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
+    throw apiForbidden('Admin access required for this app');
   }
   
   return session;

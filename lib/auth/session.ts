@@ -209,11 +209,15 @@ export async function isAuthenticated(): Promise<boolean> {
 /**
  * Check if user is an admin
  * 
- * @returns True if user has admin role
+ * WHAT: Check app-specific role (appRole), NOT SSO-level role (user.role)
+ * WHY: SSO v5.24.0 introduced multi-app permissions - each app has its own roles
+ * HOW: Use session.appRole which was queried from SSO during login callback
+ * 
+ * @returns True if user has admin or superadmin role in this app
  */
 export async function isAdmin(): Promise<boolean> {
   const session = await getSession();
-  return session?.user.role === 'admin' || session?.user.role === 'super-admin';
+  return session?.appRole === 'admin' || session?.appRole === 'superadmin';
 }
 
 /**
@@ -237,14 +241,18 @@ export async function requireAuth(): Promise<Session> {
  * Require admin role for a route
  * Throws error if not admin
  * 
+ * WHAT: Check app-specific role (appRole), NOT SSO-level role (user.role)
+ * WHY: SSO v5.24.0 introduced multi-app permissions - each app has its own roles
+ * HOW: Use session.appRole which was queried from SSO during login callback
+ * 
  * @returns Session if admin
  * @throws Error if not admin
  */
 export async function requireAdmin(): Promise<Session> {
   const session = await requireAuth();
   
-  if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
-    throw new Error('Admin access required');
+  if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
+    throw new Error('Admin access required for this app');
   }
   
   return session;

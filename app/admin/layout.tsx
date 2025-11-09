@@ -25,8 +25,10 @@ export default async function AdminLayout({
     redirect('/api/auth/login');
   }
   
-  // Only admins and super-admins can access admin area
-  if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
+  // WHAT: Check app-specific role (appRole), NOT SSO-level role (user.role)
+  // WHY: SSO v5.24.0 introduced multi-app permissions - each app has its own roles
+  // HOW: Use session.appRole which was queried from SSO during login callback
+  if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
     redirect('/');
   }
 
