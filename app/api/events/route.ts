@@ -1,14 +1,15 @@
 /**
  * Events API - List and Create
- * Version: 1.7.1
+ * Version: 2.8.0
  * 
  * GET: List all events with pagination, search, and partner filtering
- * POST: Create new event (admin only, requires partnerId)
+ * POST: Create new event (admin only, requires partnerId, inherits partner defaults)
  */
 
 import { NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { COLLECTIONS, generateId, generateTimestamp } from '@/lib/db/schemas';
+import { inheritPartnerDefaults } from '@/lib/db/events';
 import {
   withErrorHandler,
   requireAdmin,
@@ -119,10 +120,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     throw apiNotFound('Partner');
   }
 
+  // Inherit partner defaults (v2.8.0)
+  // New events automatically get partner's default styles (brand colors, frames, logos)
+  // Override flags are set to false (child behavior)
+  const inheritedDefaults = await inheritPartnerDefaults(partner.partnerId);
+
   // Create event document
   // eventId is a UUID for consistent identification
   // partnerName is cached for efficient queries and display
-  // frames array starts empty - frames are assigned separately
+  // frames/logos inherited from partner defaults (v2.8.0)
   // customPages array starts empty - pages can be added via PATCH (v2.0.0)
   const now = generateTimestamp();
   const event = {
@@ -136,7 +142,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     isActive: isActive !== undefined ? Boolean(isActive) : true,
     logoUrl: logoUrl?.trim() || undefined,
     showLogo: Boolean(showLogo),
-    frames: [],
+    // Inherited defaults from partner (v2.8.0)
+    brandColor: inheritedDefaults.brandColor,
+    brandBorderColor: inheritedDefaults.brandBorderColor,
+    brandColorsOverridden: inheritedDefaults.brandColorsOverridden,
+    frames: inheritedDefaults.frames,
+    framesOverridden: inheritedDefaults.framesOverridden,
+    logos: inheritedDefaults.logos || [],
+    logosOverridden: inheritedDefaults.logosOverridden,
     customPages: [],  // v2.0.0: Empty array = default flow (straight to photo capture)
     submissionCount: 0,
     createdBy: session.user.id,

@@ -1,9 +1,9 @@
 /**
  * Event Frames API Endpoint
- * Version: 1.0.0
+ * Version: 2.8.0
  * 
  * Manages frame assignments for events
- * POST: Assign a frame to an event
+ * POST: Assign a frame to an event (sets framesOverridden flag)
  */
 
 import { NextRequest } from 'next/server';
@@ -71,11 +71,15 @@ export async function POST(
       addedBy: session.user.id, // SSO User interface uses 'id' not 'userId'
     };
 
+    // Adding a frame marks event as having custom frame assignments (v2.8.0)
     await eventsCollection.updateOne(
       { _id: new ObjectId(eventId) },
       {
         $push: { frames: frameAssignment } as any,
-        $set: { updatedAt: generateTimestamp() },
+        $set: { 
+          updatedAt: generateTimestamp(),
+          framesOverridden: true, // Mark as orphan - independent of partner defaults
+        },
       }
     );
 

@@ -1,9 +1,9 @@
 /**
  * Partner API - Individual Operations
- * Version: 1.1.0
+ * Version: 2.8.0
  * 
  * GET: Get single partner details
- * PATCH: Update partner
+ * PATCH: Update partner (includes cascade to child events for default styles)
  * DELETE: Delete partner (prevents deletion if has active events)
  */
 
@@ -11,7 +11,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { getSession } from '@/lib/auth/session';
-import { COLLECTIONS, generateTimestamp } from '@/lib/db/schemas';
+import { COLLECTIONS, generateTimestamp, LogoScenario } from '@/lib/db/schemas';
+import { updateChildEventsFromPartner } from '@/lib/db/events';
 
 /**
  * GET /api/partners/[id]
@@ -111,7 +112,17 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, description, contactEmail, contactName, logoUrl, isActive } = body;
+    const { 
+      name, 
+      description, 
+      contactEmail, 
+      contactName, 
+      logoUrl, 
+      isActive,
+      defaultBrandColors,
+      defaultFrames,
+      defaultLogos,
+    } = body;
 
     // Build update object with only provided fields
     // This allows partial updates without overwriting unspecified fields
@@ -149,8 +160,34 @@ export async function PATCH(
       updates.isActive = Boolean(isActive);
     }
 
+    // Default style fields (v2.8.0)
+    // These will cascade to child events
+    if (defaultBrandColors !== undefined) {
+      updates.defaultBrandColors = defaultBrandColors;
+    }
+
+    if (defaultFrames !== undefined) {
+      updates.defaultFrames = defaultFrames;
+    }
+
+    if (defaultLogos !== undefined) {
+      updates.defaultLogos = defaultLogos;
+    }
+
     const db = await connectToDatabase();
     
+    // Get partner to check partnerId before update
+    const existingPartner = await db
+      .collection(COLLECTIONS.PARTNERS)
+      .findOne({ _id: new ObjectId(partnerId) });
+
+    if (!existingPartner) {
+      return NextResponse.json(
+        { error: 'Partner not found' },
+        { status: 404 }
+      );
+    }
+
     // Update partner document
     const result = await db
       .collection(COLLECTIONS.PARTNERS)
@@ -167,9 +204,32 @@ export async function PATCH(
       );
     }
 
+    // Cascade style changes to child events (v2.8.0)
+    // Only if any default style fields were updated
+    let cascadeResult;
+    if (defaultBrandColors !== undefined || defaultFrames !== undefined || defaultLogos !== undefined) {
+      const cascadeUpdates: any = {};
+      
+      if (defaultBrandColors !== undefined) {
+        cascadeUpdates.defaultBrandColors = defaultBrandColors;
+      }
+      if (defaultFrames !== undefined) {
+        cascadeUpdates.defaultFrames = defaultFrames;
+      }
+      if (defaultLogos !== undefined) {
+        cascadeUpdates.defaultLogos = defaultLogos;
+      }
+
+      cascadeResult = await updateChildEventsFromPartner(
+        existingPartner.partnerId,
+        cascadeUpdates
+      );
+    }
+
     return NextResponse.json({
       success: true,
       partner: result,
+      cascade: cascadeResult, // Include cascade stats if defaults were updated
     });
   } catch (error) {
     console.error('Error updating partner:', error);

@@ -67,6 +67,21 @@ export interface Partner {
   contactName?: string;              // Partner contact person
   logoUrl?: string;                  // Partner logo URL (imgbb.com)
   
+  // Default styles for child events (v2.8.0)
+  // These defaults cascade to all non-orphaned events under this partner
+  // Events can override these to become "orphans" (independent of partner changes)
+  defaultBrandColors?: {
+    primary?: string;                // Default primary brand color (hex)
+    secondary?: string;              // Default secondary brand color (hex)
+    accent?: string;                 // Default accent brand color (hex)
+  };
+  defaultFrames?: string[];          // Default frame IDs to assign to new events
+  defaultLogos?: Array<{             // Default logo assignments for new events
+    logoId: string;                  // Reference to logo
+    scenario: LogoScenario;          // Where/when to display this logo
+    order: number;                   // Order for random selection
+  }>;
+  
   // Statistics
   eventCount?: number;               // Cached count of partner's events
   frameCount?: number;               // Cached count of partner-specific frames
@@ -221,6 +236,14 @@ export interface Event {
   // Used throughout the event experience for consistent branding
   brandColor?: string;               // Primary brand color (hex, e.g., "#3B82F6") - used for buttons, focus states
   brandBorderColor?: string;         // Border/accent color (hex, e.g., "#3B82F6") - used for borders, outlines
+  
+  // Style inheritance from partner (v2.8.0)
+  // Override flags track whether this event uses partner defaults (child) or custom values (orphan)
+  // false/undefined = child (inherits from partner, updates when partner changes)
+  // true = orphan (custom values, independent of partner changes)
+  brandColorsOverridden?: boolean;   // Whether event has custom brand colors
+  framesOverridden?: boolean;        // Whether event has custom frame assignments
+  logosOverridden?: boolean;         // Whether event has custom logo assignments
   
   // Statistics
   submissionCount?: number;          // Cached count of submissions for this event

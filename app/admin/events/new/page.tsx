@@ -36,7 +36,10 @@ export default function NewEventPage() {
           throw new Error(data.error || 'Failed to load partners');
         }
 
-        setPartners(data.partners || []);
+        // API returns { success: true, data: { partners: [...] } }
+        const partnersList = data.data?.partners || data.partners || [];
+        console.log('Loaded partners:', partnersList.length);
+        setPartners(partnersList);
         setIsLoadingPartners(false);
       } catch (err: any) {
         console.error('Fetch partners error:', err);

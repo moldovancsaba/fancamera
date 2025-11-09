@@ -143,11 +143,14 @@ export const PATCH = withErrorHandler(async (
   if (showLogo !== undefined) {
     updateFields.showLogo = Boolean(showLogo);
   }
+  // Brand colors (v2.8.0: Set override flag when changed)
   if (brandColor !== undefined) {
     updateFields.brandColor = brandColor?.trim() || null;
+    updateFields.brandColorsOverridden = true; // Mark as orphan
   }
   if (brandBorderColor !== undefined) {
     updateFields.brandBorderColor = brandBorderColor?.trim() || null;
+    updateFields.brandColorsOverridden = true; // Mark as orphan
   }
   if (isActive !== undefined) {
     updateFields.isActive = Boolean(isActive);

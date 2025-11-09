@@ -1,9 +1,9 @@
 /**
  * Event Logos API Endpoint
- * Version: 1.0.0
+ * Version: 2.8.0
  * 
  * Manages logo assignments for events with scenario support
- * POST: Assign a logo to an event scenario
+ * POST: Assign a logo to an event scenario (sets logosOverridden flag)
  * GET: List logos assigned to event (grouped by scenario)
  */
 
@@ -84,11 +84,15 @@ export async function POST(
       addedBy: session.user.id,
     };
 
+    // Adding a logo marks event as having custom logo assignments (v2.8.0)
     await eventsCollection.updateOne(
       { _id: new ObjectId(eventId) },
       {
         $push: { logos: logoAssignment } as any,
-        $set: { updatedAt: generateTimestamp() },
+        $set: { 
+          updatedAt: generateTimestamp(),
+          logosOverridden: true, // Mark as orphan - independent of partner defaults
+        },
       }
     );
 
