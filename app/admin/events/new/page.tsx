@@ -144,7 +144,12 @@ export default function NewEventPage() {
       }
 
       // Navigate to event detail page on success
-      router.push(`/admin/events/${result.event._id}`);
+      // API returns { success: true, data: { event: {...} } }
+      const event = result.data?.event || result.event;
+      if (!event || !event._id) {
+        throw new Error('Invalid response from server');
+      }
+      router.push(`/admin/events/${event._id}`);
       router.refresh();
     } catch (err: any) {
       console.error('Create event error:', err);
