@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import PartnerSearchDropdown from '@/components/admin/PartnerSearchDropdown';
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function NewEventPage() {
   const [isLoadingPartners, setIsLoadingPartners] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [partners, setPartners] = useState<any[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(preselectedPartnerId);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -178,20 +180,12 @@ export default function NewEventPage() {
                 No active partners found. Please create a partner first.
               </div>
             ) : (
-              <select
-                id="partnerId"
-                name="partnerId"
+              <PartnerSearchDropdown
+                partners={partners}
+                selectedPartnerId={selectedPartnerId}
+                onSelect={(partnerId) => setSelectedPartnerId(partnerId)}
                 required
-                defaultValue={preselectedPartnerId || ''}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Choose a partner...</option>
-                {partners.map((partner) => (
-                  <option key={partner.partnerId} value={partner.partnerId}>
-                    {partner.name}
-                  </option>
-                ))}
-              </select>
+              />
             )}
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               The partner organization for this event
