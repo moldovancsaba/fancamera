@@ -288,12 +288,26 @@ export function decodeIdToken(idToken: string): SSOUser {
       Buffer.from(parts[1], 'base64url').toString('utf-8')
     );
 
+    // Debug: Log all claims in the ID token to diagnose Facebook login issue
+    console.log('[SSO] ID Token payload:', JSON.stringify(payload, null, 2));
+
     // Extract user claims from payload
     // ID token includes: sub, email, name, role, user_type
+    // Note: Facebook federated login may have different claim structure
+    const userEmail = payload.email || payload.preferred_username || payload.upn || 'unknown@unknown.com';
+    const userName = payload.name || payload.given_name || payload.display_name || undefined;
+    
+    console.log('[SSO] Extracted user info:', { 
+      id: payload.sub, 
+      email: userEmail, 
+      name: userName,
+      role: payload.role 
+    });
+
     return {
       id: payload.sub,
-      email: payload.email,
-      name: payload.name,
+      email: userEmail,
+      name: userName,
       email_verified: payload.email_verified,
       role: payload.role,
     };
