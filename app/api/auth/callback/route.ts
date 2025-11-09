@@ -13,7 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { exchangeCodeForToken, getUserInfo } from '@/lib/auth/sso';
+import { exchangeCodeForToken, decodeIdToken } from '@/lib/auth/sso';
 import { consumePendingSession, createSession } from '@/lib/auth/session';
 
 export async function GET(request: NextRequest) {
@@ -64,12 +64,13 @@ export async function GET(request: NextRequest) {
     // Exchange authorization code for tokens using PKCE verifier
     const tokens = await exchangeCodeForToken(code, pendingSession.codeVerifier);
     
-    console.log('✓ Tokens obtained, fetching user info');
+    console.log('✓ Tokens obtained, extracting user info from ID token');
 
-    // Fetch user information using access token
-    const user = await getUserInfo(tokens.access_token);
+    // Extract user information from ID token (JWT)
+    // SSO v5.23.1 includes all user claims in the id_token
+    const user = decodeIdToken(tokens.id_token);
 
-    console.log('✓ User info obtained:', user.email);
+    console.log('✓ User info extracted:', user.email);
 
     // Create session with user and tokens
     await createSession(user, tokens);

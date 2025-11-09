@@ -1,10 +1,86 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.3.0
-**Last Updated**: 2025-11-09T12:20:00.000Z
+**Current Version**: 2.4.0
+**Last Updated**: 2025-11-09T12:35:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.4.0] — 2025-11-09T12:35:00.000Z
+
+### Bug Fix — SSO Authentication Userinfo Endpoint
+
+**Status**: Complete  
+**Release Type**: MINOR (bug fix with feature enhancement)
+
+#### Summary
+Fixed SSO authentication failure by replacing userinfo endpoint call with ID token decoding. SSO v5.23.1 does not have a `/api/oauth/userinfo` endpoint, causing 404 errors during authentication. Updated to extract user information directly from the OIDC ID token (JWT), which is more efficient and reliable.
+
+#### Problem
+- SSO login was failing with error: `Failed to get user info: 404`
+- `/api/oauth/userinfo` endpoint doesn't exist in SSO v5.23.1
+- Discovery document references the endpoint, but it was never implemented
+- Camera app was calling non-existent endpoint after token exchange
+
+#### Solution
+- Created `decodeIdToken()` function to extract user claims from JWT ID token
+- Updated callback route to use ID token instead of userinfo endpoint
+- ID token includes all required claims: sub, email, name, role, email_verified
+- More efficient (no extra HTTP round trip)
+- More reliable (no dependency on external endpoint)
+
+#### Changes
+- ✅ Added `decodeIdToken()` function in `lib/auth/sso.ts`
+- ✅ Updated `TokenResponse` interface to include `id_token` field
+- ✅ Modified callback route to extract user info from ID token
+- ✅ Updated dev-login mock to generate fake ID token
+- ✅ Deprecated `getUserInfo()` function (marked as @deprecated)
+- ✅ Build passes with 0 errors
+
+#### Files Modified
+- `lib/auth/sso.ts` — Added decodeIdToken(), updated TokenResponse interface
+- `app/api/auth/callback/route.ts` — Extract user from ID token instead of calling userinfo
+- `app/api/auth/dev-login/route.ts` — Generate mock ID token for development
+- `package.json` — Version 2.3.0 → 2.4.0
+- `RELEASE_NOTES.md` — This entry
+- `README.md` — Updated version
+- `TASKLIST.md` — Updated version
+
+#### Technical Details
+**ID Token Decoding**:
+```typescript
+// JWT format: header.payload.signature
+const parts = idToken.split('.');
+const payload = JSON.parse(
+  Buffer.from(parts[1], 'base64url').toString('utf-8')
+);
+
+// Extract user claims
+return {
+  id: payload.sub,
+  email: payload.email,
+  name: payload.name,
+  email_verified: payload.email_verified,
+  role: payload.role,
+};
+```
+
+**Benefits**:
+- Eliminates dependency on non-existent endpoint
+- Reduces latency (one fewer HTTP request)
+- More secure (no access token sent over network for userinfo)
+- Standard OIDC practice (ID token is designed for this)
+
+#### Impact
+- **Critical**: SSO login now works correctly
+- Authentication flow completes successfully
+- Users can log in and access the application
+- No breaking changes to existing sessions
+
+#### Breaking Changes
+None - Backward compatible fix
 
 ---
 

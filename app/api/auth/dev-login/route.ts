@@ -23,9 +23,22 @@ export async function GET(request: NextRequest) {
   };
 
   // Create mock tokens for development
+  // Generate a fake ID token (JWT) with user claims
+  const mockIdTokenPayload = {
+    sub: mockUser.id,
+    email: mockUser.email,
+    name: mockUser.name,
+    role: mockUser.role,
+    email_verified: true,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  };
+  const mockIdToken = `mock.${Buffer.from(JSON.stringify(mockIdTokenPayload)).toString('base64url')}.mock`;
+
   const mockTokens: TokenResponse = {
     access_token: 'dev-access-token',
     refresh_token: 'dev-refresh-token',
+    id_token: mockIdToken,
     expires_in: 3600,
     token_type: 'Bearer',
     scope: 'openid profile email',

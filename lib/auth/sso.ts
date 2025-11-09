@@ -81,11 +81,13 @@ export interface SSOUser {
 }
 
 /**
- * OAuth2 token response
+ * OAuth2 token response from SSO
+ * Includes OIDC id_token with user claims
  */
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
+  id_token: string;  // OIDC ID token (JWT with user claims)
   expires_in: number;
   token_type: string;
   scope: string;
@@ -243,9 +245,56 @@ export async function refreshAccessToken(
 }
 
 /**
- * Get user information from SSO
- * Uses access token to fetch user profile
+ * Decode ID token (JWT) to extract user information
+ * ID tokens are JWTs containing user identity claims per OpenID Connect spec
  * 
+ * Why decode instead of calling userinfo endpoint:
+ * - SSO v5.23.1 includes all user claims in the id_token (email, name, role)
+ * - Avoids extra HTTP round trip
+ * - More efficient and reliable
+ * 
+ * @param idToken - JWT ID token from token response
+ * @returns User information extracted from token
+ */
+export function decodeIdToken(idToken: string): SSOUser {
+  if (!idToken) {
+    throw new Error('ID token is required');
+  }
+
+  try {
+    // JWT format: header.payload.signature
+    // We only need to decode the payload (base64url encoded)
+    const parts = idToken.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT format');
+    }
+
+    // Decode payload (middle part)
+    const payload = JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf-8')
+    );
+
+    // Extract user claims from payload
+    // ID token includes: sub, email, name, role, user_type
+    return {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      email_verified: payload.email_verified,
+      role: payload.role,
+    };
+  } catch (error) {
+    throw new Error(`Failed to decode ID token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get user information from SSO userinfo endpoint
+ * 
+ * Note: This endpoint is not available in SSO v5.23.1
+ * Use decodeIdToken() instead to extract user info from ID token
+ * 
+ * @deprecated Use decodeIdToken() instead
  * @param accessToken - Valid access token
  * @returns User information
  */
