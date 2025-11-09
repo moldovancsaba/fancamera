@@ -46,7 +46,8 @@ export const DELETE = withErrorHandler(async (
 
   // Authorization check: User must own the submission OR be admin
   const isOwner = submission.userId === session.user.id;
-  const isAdmin = session.user.role === 'admin';
+  // Check app-specific role (appRole), not SSO-level role (user.role)
+  const isAdmin = session.appRole === 'admin' || session.appRole === 'superadmin';
   
   if (!isOwner && !isAdmin) {
     throw apiForbidden('You can only delete your own submissions');

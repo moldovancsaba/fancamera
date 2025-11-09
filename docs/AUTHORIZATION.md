@@ -1,0 +1,271 @@
+# Authorization Guide
+
+**Version**: 1.0.0  
+**Last Updated**: 2025-11-09T20:30:00.000Z
+
+## Critical: Always Use `session.appRole` for Authorization
+
+### ⚠️ Common Mistake
+
+**WRONG** ❌:
+```typescript
+if (session.user.role === 'admin') {
+  // This checks SSO-level role, NOT app-level role!
+}
+```
+
+**CORRECT** ✅:
+```typescript
+if (session.appRole === 'admin' || session.appRole === 'superadmin') {
+  // This checks app-specific role from SSO permissions
+}
+```
+
+---
+
+## Why Two Role Fields?
+
+### `session.user.role` (SSO-Level Role)
+- **Source**: Extracted from OIDC ID token during OAuth login
+- **Scope**: User's global role across ALL SSO-managed applications
+- **Examples**: `'super-admin'`, `'user'`, `null`
+- **Use Case**: SSO administration, NOT for app-specific authorization
+
+### `session.appRole` (App-Level Role)
+- **Source**: Queried from SSO `/api/users/{userId}/apps/{clientId}/permissions` during OAuth callback
+- **Scope**: User's role specifically for THIS application (Camera)
+- **Examples**: `'admin'`, `'user'`, `'none'`, `'superadmin'`
+- **Use Case**: **ALL app authorization checks**
+
+---
+
+## SSO Multi-App Permission System
+
+SSO v5.24.0+ uses a **multi-app permission model** where:
+
+1. Each application has its own client ID
+2. Users must explicitly request access to each app
+3. Admins grant app-specific roles to users
+4. Each user can have different roles in different apps
+
+**Example**:
+- User A: `admin` in Camera app, `user` in Analytics app
+- User B: `user` in Camera app, `admin` in Analytics app
+
+### Database Structure
+
+**SSO Database** (`mongodb://...doneisbetter/sso`):
+
+```javascript
+// Collection: publicUsers
+{
+  id: "5143beb1-9bb6-47e7-a099-e9eeb2d89e93",
+  email: "moldovancsaba@gmail.com",
+  role: "user",  // ← SSO-level role (not used for app auth)
+  // ... other fields
+}
+
+// Collection: appPermissions
+{
+  userId: "5143beb1-9bb6-47e7-a099-e9eeb2d89e93",
+  clientId: "1e59b6a1-3c18-4141-9139-7a3dd0da62bf",  // Camera app
+  appName: "camera",
+  role: "admin",  // ← App-specific role (USED for app auth)
+  hasAccess: true,
+  status: "approved"
+}
+```
+
+---
+
+## How Roles Are Set During Login
+
+### OAuth Callback Flow (`app/api/auth/callback/route.ts`)
+
+1. **Exchange code for tokens** → Get ID token with `user.role`
+2. **Decode ID token** → Extract `session.user.role` (SSO-level)
+3. **Query SSO permissions API** → Get `appRole` for Camera app
+4. **Store both in session**:
+   ```typescript
+   await createSession(user, tokens, {
+     appRole: permission.role,  // 'admin', 'user', etc.
+     appAccess: permission.hasAccess
+   });
+   ```
+
+---
+
+## Authorization Patterns
+
+### Pattern 1: Require Admin (Recommended)
+
+Use the `requireAdmin()` middleware from `lib/api/middleware.ts`:
+
+```typescript
+import { requireAdmin } from '@/lib/api';
+
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const session = await requireAdmin();  // ✅ Checks appRole
+  
+  // Admin-only logic
+});
+```
+
+**Implementation**:
+```typescript
+export async function requireAdmin(): Promise<Session> {
+  const session = await requireAuth();
+  
+  // ✅ CORRECT: Checks appRole
+  if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
+    throw apiForbidden('Admin access required for this app');
+  }
+  
+  return session;
+}
+```
+
+### Pattern 2: Manual Check
+
+```typescript
+const session = await getSession();
+
+if (!session) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+
+// ✅ CORRECT: Check appRole
+if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+}
+```
+
+### Pattern 3: Owner or Admin
+
+```typescript
+const isOwner = resource.userId === session.user.id;
+// ✅ CORRECT: Check appRole for admin
+const isAdmin = session.appRole === 'admin' || session.appRole === 'superadmin';
+
+if (!isOwner && !isAdmin) {
+  throw apiForbidden('You can only access your own resources');
+}
+```
+
+### Pattern 4: Frontend Display
+
+```typescript
+// Homepage - Show admin button
+{session.appRole === 'admin' || session.appRole === 'superadmin' && (
+  <a href="/admin">Admin Panel</a>
+)}
+
+// Admin layout - Protect route
+if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
+  redirect('/');
+}
+```
+
+---
+
+## Granting App-Level Admin Access
+
+### Via Script
+
+```bash
+node scripts/grant-app-permission.mjs <userId> admin
+```
+
+**Example**:
+```bash
+node scripts/grant-app-permission.mjs 5143beb1-9bb6-47e7-a099-e9eeb2d89e93 admin
+```
+
+### Via MongoDB
+
+```javascript
+// Connect to SSO database
+const db = client.db('sso');
+
+// Grant admin role
+await db.collection('appPermissions').updateOne(
+  {
+    userId: "5143beb1-9bb6-47e7-a099-e9eeb2d89e93",
+    clientId: "1e59b6a1-3c18-4141-9139-7a3dd0da62bf"
+  },
+  {
+    $set: {
+      role: "admin",
+      hasAccess: true,
+      status: "approved",
+      grantedAt: new Date().toISOString()
+    }
+  },
+  { upsert: true }
+);
+```
+
+**User must logout and login again for changes to take effect.**
+
+---
+
+## Complete Checklist
+
+When adding authorization to an endpoint:
+
+- [ ] Use `requireAdmin()` middleware OR
+- [ ] Manually check `session.appRole` (NOT `session.user.role`)
+- [ ] Check for both `'admin'` AND `'superadmin'` roles
+- [ ] Add comment: `// Check app-specific role (appRole), not SSO-level role (user.role)`
+- [ ] Test with actual admin user
+- [ ] Verify 403 response for non-admin users
+
+---
+
+## Files Fixed
+
+All authorization checks have been updated to use `session.appRole`:
+
+- ✅ `lib/api/middleware.ts` - `requireAdmin()` middleware
+- ✅ `app/page.tsx` - Homepage admin button
+- ✅ `app/admin/layout.tsx` - Admin route protection
+- ✅ `components/admin/CollapsibleSidebar.tsx` - Sidebar role display
+- ✅ `app/api/partners/[partnerId]/route.ts` - PATCH and DELETE
+- ✅ `app/api/partners/[partnerId]/toggle/route.ts` - Toggle status
+- ✅ `app/api/frames/[id]/route.ts` - PUT and DELETE
+- ✅ `app/api/submissions/[submissionId]/route.ts` - DELETE
+
+---
+
+## Troubleshooting
+
+### "Forbidden" error despite being admin in SSO
+
+**Problem**: You have SSO admin role but not app-level admin role.
+
+**Solution**:
+1. Check your app permission:
+   ```bash
+   node scripts/grant-app-permission.mjs <your-user-id> admin
+   ```
+2. Logout and login again
+3. Check sidebar - should show "admin" not "user"
+
+### Session shows wrong role
+
+**Problem**: Cached session with old role.
+
+**Solution**:
+1. Logout completely
+2. Login again
+3. Session will refresh with new `appRole`
+
+---
+
+## References
+
+- **SSO Service**: https://sso.doneisbetter.com
+- **SSO Database**: `mongodb://...doneisbetter/sso`
+- **Camera Client ID**: `1e59b6a1-3c18-4141-9139-7a3dd0da62bf`
+- **Session Interface**: `lib/auth/session.ts`
+- **OAuth Callback**: `app/api/auth/callback/route.ts`

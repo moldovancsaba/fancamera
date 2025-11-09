@@ -41,7 +41,6 @@ export {
   requireAuth,
   requireAdmin,
   optionalAuth,
-  requireRole,
   validateRequiredFields,
   parsePaginationParams,
 } from './middleware';

@@ -107,21 +107,6 @@ export async function optionalAuth(request?: NextRequest): Promise<Session | nul
  * Why: Some endpoints may require specific roles beyond just 'admin'
  * This provides flexible role-based access control
  */
-export async function requireRole(
-  roles: string | string[],
-  request?: NextRequest
-): Promise<Session> {
-  const session = await requireAuth(request);
-  
-  const allowedRoles = Array.isArray(roles) ? roles : [roles];
-  const userRole = session.user.role || '';
-  
-  if (!allowedRoles.includes(userRole)) {
-    throw apiForbidden(`Required role: ${allowedRoles.join(' or ')}`);
-  }
-  
-  return session;
-}
 
 /**
  * Validate required fields in request body
