@@ -124,14 +124,15 @@ export default function CameraCapture({
         stream.getTracks().forEach(track => track.stop());
       }
 
-      // Request camera access with appropriate constraints
+      // Request camera access with MAXIMUM resolution
+      // v2.8.0: Request highest available resolution for maximum quality
       // For mobile: use facingMode to select front/back camera
       // For desktop: use default camera
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: { ideal: facing },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 3840 }, // 4K
+          height: { ideal: 2160 }, // 4K
         },
         audio: false,
       };
@@ -255,7 +256,8 @@ export default function CameraCapture({
 
   /**
    * Capture photo from video stream
-   * Fixed for Safari: Uses requestAnimationFrame to ensure video frame is rendered
+   * v2.8.0: Captures exactly what's visible in the live view
+   * Crops to target aspect ratio from center of camera sensor
    */
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
@@ -298,9 +300,40 @@ export default function CameraCapture({
       requestAnimationFrame(() => {
         // Double RAF ensures we're definitely on a rendered frame
         
-        // Set canvas dimensions to match video
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // Calculate target aspect ratio
+        const targetAspect = (frameWidth && frameHeight)
+          ? frameWidth / frameHeight
+          : frameImage
+            ? frameImage.width / frameImage.height
+            : 16 / 9;
+        
+        const videoAspect = video.videoWidth / video.videoHeight;
+        
+        // Calculate crop area to show MAXIMUM view (minimal crop)
+        // We want to use as much of the sensor as possible
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceWidth = video.videoWidth;
+        let sourceHeight = video.videoHeight;
+        
+        if (videoAspect > targetAspect) {
+          // Video is wider than target - use FULL HEIGHT, crop width
+          // Example: 4000x3000 sensor, 1:1 target -> use full 3000 height, crop to 3000 width
+          sourceWidth = video.videoHeight * targetAspect;
+          sourceX = (video.videoWidth - sourceWidth) / 2;
+          // sourceHeight = video.videoHeight (full height)
+        } else if (videoAspect < targetAspect) {
+          // Video is taller than target - use FULL WIDTH, crop height
+          // Example: 3000x4000 sensor, 16:9 target -> use full 3000 width, crop height
+          sourceHeight = video.videoWidth / targetAspect;
+          sourceY = (video.videoHeight - sourceHeight) / 2;
+          // sourceWidth = video.videoWidth (full width)
+        }
+        // If aspects match exactly, use full sensor (no crop)
+        
+        // Set canvas to target dimensions (will be scaled by frame later)
+        canvas.width = sourceWidth;
+        canvas.height = sourceHeight;
 
         // Get canvas context
         const ctx = canvas.getContext('2d', { 
@@ -318,15 +351,23 @@ export default function CameraCapture({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         try {
-          // Draw video frame to canvas
+          // Draw video frame to canvas - crop to center area matching target aspect
           // If front camera, flip horizontally to match mirror view
           if (facingMode === 'user') {
             ctx.save();
             ctx.scale(-1, 1);
-            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+              video,
+              sourceX, sourceY, sourceWidth, sourceHeight,
+              -canvas.width, 0, canvas.width, canvas.height
+            );
             ctx.restore();
           } else {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+              video,
+              sourceX, sourceY, sourceWidth, sourceHeight,
+              0, 0, canvas.width, canvas.height
+            );
           }
           
           // Verify something was actually drawn (not black)
@@ -373,7 +414,9 @@ export default function CameraCapture({
   };
 
   /**
-   * Calculate container size based on viewport and frame aspect ratio
+   * Calculate container size to match target aspect ratio
+   * v2.8.0: Show maximum view at target aspect ratio
+   * What you see is what you capture - exact 1:1 correspondence
    */
   useEffect(() => {
     const calculateSize = () => {
@@ -385,27 +428,26 @@ export default function CameraCapture({
       const availableWidth = parent.clientWidth;
       const availableHeight = parent.clientHeight;
       
-      // Calculate frame aspect ratio
-      // Default to 16:9 (landscape) if no frame specified
-      const frameAspectRatio = (frameWidth && frameHeight) 
+      // Calculate target aspect ratio (frame or default 16:9)
+      const targetAspect = (frameWidth && frameHeight) 
         ? frameWidth / frameHeight
         : frameImage
           ? frameImage.width / frameImage.height
           : 16 / 9;
       
-      // Determine if width or height is the constraint
+      // Fit maximum size at target aspect ratio within available space
       const containerAspectRatio = availableWidth / availableHeight;
       
       let width, height;
       
-      if (containerAspectRatio > frameAspectRatio) {
+      if (containerAspectRatio > targetAspect) {
         // Height is the constraint
         height = availableHeight;
-        width = height * frameAspectRatio;
+        width = height * targetAspect;
       } else {
         // Width is the constraint
         width = availableWidth;
-        height = width / frameAspectRatio;
+        height = width / targetAspect;
       }
       
       setContainerSize({ width, height });
@@ -454,7 +496,7 @@ export default function CameraCapture({
               }}
             />
 
-            {/* Frame Overlay - Always on top */}
+            {/* Frame Overlay - Always on top, exact size match */}
             {frameImage && (
               <div className="absolute inset-0 pointer-events-none z-10">
                 <img

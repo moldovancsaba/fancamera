@@ -51,8 +51,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       consents,
     } = body;
 
-  if (!imageData || !frameId) {
-    throw apiBadRequest('Image data and frame ID are required');
+  // frameId can be null if event has no frames (v2.8.0)
+  if (!imageData) {
+    throw apiBadRequest('Image data is required');
   }
 
     // Convert base64 to buffer and upload to imgbb
@@ -62,12 +63,16 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     });
 
     // Get frame details from database (using frameId UUID)
+    // Frame is optional - events with 0 frames submit frameId=null
     const db = await connectToDatabase();
-    const frame = await db.collection('frames').findOne({ frameId });
-
-  if (!frame) {
-    throw apiNotFound('Frame');
-  }
+    let frame = null;
+    
+    if (frameId) {
+      frame = await db.collection('frames').findOne({ frameId });
+      if (!frame) {
+        throw apiNotFound('Frame');
+      }
+    }
 
     // Validate userInfo if provided (v2.0.0)
     // If userInfo is provided from 'who-are-you' page, validate structure
@@ -113,9 +118,10 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       userId: session?.user?.id || 'anonymous',
       userEmail: session?.user?.email || 'anonymous@event',
       userName: session?.user?.name || session?.user?.email || 'Event Guest',
-      frameId: frame.frameId,
-      frameName: frame.name,
-      frameCategory: frame.category,
+      // Frame data (null if no frame assigned to event)
+      frameId: frame?.frameId || null,
+      frameName: frame?.name || null,
+      frameCategory: frame?.category || null,
       // Partner/Event context (for gallery filtering)
       partnerId: partnerId || null,
       partnerName: partnerName || null,
@@ -134,9 +140,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         device: request.headers.get('user-agent'),
         ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         finalFileSize: uploadResult.fileSize,
-        // Image dimensions for slideshow aspect ratio detection
-        finalWidth: imageWidth || frame.width || 1920,
-        finalHeight: imageHeight || frame.height || 1080,
+        // Image dimensions for slideshow aspect ratio detection (default 16:9 if no frame)
+        finalWidth: imageWidth || frame?.width || 1920,
+        finalHeight: imageHeight || frame?.height || 1080,
       },
       createdAt: new Date().toISOString(),
     };

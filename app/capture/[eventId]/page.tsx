@@ -217,9 +217,71 @@ export default function EventCapturePage({
       if (selectedFrame) {
         compositeImageWithFrame();
       } else {
-        // No frame - use captured image as-is
-        setCompositeImage(capturedImage);
-        setStep('preview');
+        // No frame - use captured image, optionally resize to 16:9 aspect ratio
+        // v2.8.0: For frameless events, keep maximum camera view in 16:9
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            setCompositeImage(capturedImage);
+            setStep('preview');
+            return;
+          }
+          
+          // Calculate 16:9 dimensions from image
+          const targetAspect = 16 / 9;
+          const imgAspect = img.width / img.height;
+          
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          
+          // If image is not 16:9, crop to 16:9 (take center portion)
+          if (Math.abs(imgAspect - targetAspect) > 0.01) {
+            if (imgAspect > targetAspect) {
+              // Image is wider than 16:9, crop width
+              targetWidth = img.height * targetAspect;
+              targetHeight = img.height;
+            } else {
+              // Image is taller than 16:9, crop height
+              targetWidth = img.width;
+              targetHeight = img.width / targetAspect;
+            }
+          }
+          
+          // Limit size to max 2048px on longest side
+          const maxDimension = 2048;
+          if (targetWidth > maxDimension || targetHeight > maxDimension) {
+            const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+            targetWidth = Math.floor(targetWidth * scale);
+            targetHeight = Math.floor(targetHeight * scale);
+          }
+          
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          
+          // Store dimensions for submission
+          setImageDimensions({ width: targetWidth, height: targetHeight });
+          
+          // Draw scaled/cropped image
+          const sourceX = (img.width - (targetHeight * targetAspect)) / 2;
+          const sourceY = (img.height - (targetWidth / targetAspect)) / 2;
+          const sourceWidth = imgAspect > targetAspect ? targetHeight * targetAspect : img.width;
+          const sourceHeight = imgAspect > targetAspect ? img.height : targetWidth / targetAspect;
+          
+          ctx.drawImage(
+            img,
+            Math.max(0, sourceX), Math.max(0, sourceY),
+            sourceWidth, sourceHeight,
+            0, 0,
+            canvas.width, canvas.height
+          );
+          
+          const composite = canvas.toDataURL('image/jpeg', 0.85);
+          setCompositeImage(composite);
+          setStep('preview');
+        };
+        img.src = capturedImage;
       }
     }
   }, [capturedImage, selectedFrame]);
@@ -267,24 +329,10 @@ export default function EventCapturePage({
         photoImg.src = capturedImage;
       });
 
-      const frameAspect = canvas.width / canvas.height;
-      const photoAspect = photoImg.width / photoImg.height;
-      
-      let drawWidth, drawHeight, offsetX, offsetY;
-      
-      if (photoAspect > frameAspect) {
-        drawHeight = canvas.height;
-        drawWidth = photoImg.width * (canvas.height / photoImg.height);
-        offsetX = (canvas.width - drawWidth) / 2;
-        offsetY = 0;
-      } else {
-        drawWidth = canvas.width;
-        drawHeight = photoImg.height * (canvas.width / photoImg.width);
-        offsetX = 0;
-        offsetY = (canvas.height - drawHeight) / 2;
-      }
-
-      ctx.drawImage(photoImg, offsetX, offsetY, drawWidth, drawHeight);
+      // v2.8.0: SCALE (not crop) the camera image to fit the canvas
+      // This ensures the full camera view is used and scaled down to match canvas dimensions
+      // The frame is then overlaid on top
+      ctx.drawImage(photoImg, 0, 0, canvas.width, canvas.height);
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
       // Convert to JPEG with compression to reduce file size (quality 0.85 = ~85%)
@@ -514,25 +562,36 @@ export default function EventCapturePage({
    */
   const handleRestartFlow = () => {
     // Reset capture state
-    setSelectedFrame(null);
     setCapturedImage(null);
     setCompositeImage(null);
     setShareUrl(null);
-    setStep('select-frame');
     setImageDimensions(null);
+    
+    // CRITICAL: Auto-select frame if 0 or 1 frame available
+    // PROHIBITED to show frame selector in these cases
+    if (frames.length === 1) {
+      setSelectedFrame(frames[0]);
+    } else if (frames.length === 0) {
+      setSelectedFrame(null);
+    } else {
+      // Multiple frames: reset selection, will show selector during flow
+      setSelectedFrame(null);
+    }
     
     // Reset flow state
     setCollectedData({ consents: [] });
     
-    // Restart from beginning
+    // ALWAYS restart from the very beginning
     const takePhotoIndex = customPages.findIndex(p => p.pageType === 'take-photo');
     if (takePhotoIndex > 0) {
-      // Has onboarding pages
+      // Has onboarding pages - start from first onboarding page
       setFlowPhase('onboarding');
       setCurrentPageIndex(0);
     } else {
-      // No onboarding, go to capture
+      // No onboarding - go straight to capture phase
       setFlowPhase('capture');
+      // Set step based on frame count (enforces strict rule)
+      setStep(frames.length > 1 ? 'select-frame' : 'capture-photo');
     }
   };
 

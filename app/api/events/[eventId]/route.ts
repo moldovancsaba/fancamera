@@ -1,9 +1,10 @@
 /**
  * Event Detail API
- * Version: 2.0.0
+ * Version: 2.8.0
  * 
  * GET: Retrieve single event details with assigned frames and custom pages
  * PATCH: Update event details including customPages array (v2.0.0)
+ * DELETE: Delete event (admin only, v2.8.0)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -239,5 +240,48 @@ export const PATCH = withErrorHandler(async (
       ...updatedEvent,
       _id: updatedEvent!._id.toString(),
     }
+  });
+});
+
+/**
+ * DELETE /api/events/[eventId]
+ * Delete an event
+ * 
+ * Admin only
+ * Version: 2.8.0
+ */
+export const DELETE = withErrorHandler(async (
+  request: NextRequest,
+  context: { params: Promise<{ eventId: string }> }
+) => {
+  // Check authentication and authorization - only admin users can delete events
+  await requireAdmin();
+
+  const { eventId } = await context.params;
+
+  // Validate ObjectId format
+  if (!ObjectId.isValid(eventId)) {
+    throw apiBadRequest('Invalid event ID format');
+  }
+
+  const db = await connectToDatabase();
+
+  // Check event exists
+  const event = await db
+    .collection(COLLECTIONS.EVENTS)
+    .findOne({ _id: new ObjectId(eventId) });
+
+  if (!event) {
+    throw apiNotFound('Event');
+  }
+
+  // Delete the event
+  await db
+    .collection(COLLECTIONS.EVENTS)
+    .deleteOne({ _id: new ObjectId(eventId) });
+
+  return apiSuccess({
+    message: 'Event deleted successfully',
+    eventId,
   });
 });
