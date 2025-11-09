@@ -60,22 +60,13 @@ export default async function Home() {
               </a>
             </>
           ) : (
-            // Not logged in - show login buttons
-            <>
-              <a
-                href="/api/auth/login"
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-              >
-                🔐 Login with SSO
-              </a>
-              
-              <a
-                href="/api/auth/dev-login"
-                className="px-8 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors shadow-lg"
-              >
-                🛠️ Dev Login (Bypass SSO)
-              </a>
-            </>
+            // Not logged in - show login button
+            <a
+              href="/api/auth/login"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+            >
+              🔐 Login with SSO
+            </a>
           )}
         </div>
 
