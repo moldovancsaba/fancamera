@@ -292,6 +292,16 @@ export default function EventCapturePage({
     setIsProcessing(true);
 
     try {
+      // Load captured photo
+      const photoImg = new window.Image();
+      photoImg.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        photoImg.onload = resolve;
+        photoImg.onerror = reject;
+        photoImg.src = capturedImage;
+      });
+
+      // Load frame
       const frameImg = new window.Image();
       frameImg.crossOrigin = 'anonymous';
       await new Promise((resolve, reject) => {
@@ -304,10 +314,11 @@ export default function EventCapturePage({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas not supported');
 
-      // Limit canvas size to prevent large payloads (max 2048px on longest side)
+      // v2.8.0: Use captured photo dimensions as base (already cropped to correct aspect by camera component)
+      // Only scale down if exceeds max dimension limit
       const maxDimension = 2048;
-      let targetWidth = frameImg.width;
-      let targetHeight = frameImg.height;
+      let targetWidth = photoImg.width;
+      let targetHeight = photoImg.height;
       
       if (targetWidth > maxDimension || targetHeight > maxDimension) {
         const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
@@ -321,18 +332,10 @@ export default function EventCapturePage({
       // Store dimensions for submission
       setImageDimensions({ width: targetWidth, height: targetHeight });
 
-      const photoImg = new window.Image();
-      photoImg.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => {
-        photoImg.onload = resolve;
-        photoImg.onerror = reject;
-        photoImg.src = capturedImage;
-      });
-
-      // v2.8.0: SCALE (not crop) the camera image to fit the canvas
-      // This ensures the full camera view is used and scaled down to match canvas dimensions
-      // The frame is then overlaid on top
+      // Draw captured photo (already correct aspect ratio and crop)
       ctx.drawImage(photoImg, 0, 0, canvas.width, canvas.height);
+      
+      // Overlay frame (scale to match canvas)
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
 
       // Convert to JPEG with compression to reduce file size (quality 0.85 = ~85%)
