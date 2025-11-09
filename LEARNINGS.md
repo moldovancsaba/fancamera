@@ -848,6 +848,70 @@ Executed 9-phase comprehensive refactoring:
 
 ---
 
+## Backend
+
+### [BACK-003] SSO Userinfo Endpoint Missing — 2025-11-09T12:35:00.000Z
+
+**Issue**: SSO authentication failing with 404 error when trying to fetch user information from `/api/oauth/userinfo` endpoint.
+
+**Context**:
+- SSO v5.23.1 does not implement the `/api/oauth/userinfo` endpoint
+- Discovery document (/.well-known/openid-configuration) references the endpoint
+- Camera app was calling the non-existent endpoint after token exchange
+- Authentication flow was completely broken in production
+
+**Solution**:
+- Extract user information from OIDC ID token (JWT) instead of calling userinfo endpoint
+- Created `decodeIdToken()` function to parse JWT payload and extract user claims
+- ID token includes all required claims: sub, email, name, role, email_verified
+- Updated `TokenResponse` interface to include `id_token` field
+- Modified callback route to use ID token decoding
+
+**Technical Implementation**:
+```typescript
+// JWT format: header.payload.signature
+const parts = idToken.split('.');
+const payload = JSON.parse(
+  Buffer.from(parts[1], 'base64url').toString('utf-8')
+);
+
+return {
+  id: payload.sub,
+  email: payload.email,
+  name: payload.name,
+  email_verified: payload.email_verified,
+  role: payload.role,
+};
+```
+
+**Key Decisions**:
+- Decode ID token client-side instead of calling external endpoint
+- Standard OIDC practice (ID token is designed for user identity)
+- More efficient (eliminates HTTP round trip)
+- More secure (no access token sent over network)
+- Deprecated `getUserInfo()` function but kept for future compatibility
+
+**Lessons Learned**:
+- Always verify endpoint availability before relying on discovery documents
+- Discovery documents can reference unimplemented endpoints
+- OIDC ID tokens are self-contained and include all user claims
+- Prefer client-side token decoding over server-side API calls when possible
+- Test authentication flow end-to-end in production environment
+
+**Impact**:
+- **Critical fix**: Restored SSO authentication functionality
+- Reduced authentication latency (one fewer HTTP request)
+- Improved reliability (no dependency on external endpoint)
+- Better security posture (fewer network calls with credentials)
+
+**Prevention**:
+- Add end-to-end authentication tests (when tests are allowed)
+- Verify all SSO endpoints exist before deploying
+- Prefer OIDC standard practices (ID token decoding) over custom implementations
+- Document SSO endpoint availability in ARCHITECTURE.md
+
+---
+
 ## Other
 
 ### [OTHER-001] External Service Integration Strategy — 2025-11-03T18:31:18.000Z
@@ -932,15 +996,15 @@ _Use this template for new learnings:_
 
 ## Statistics
 
-**Total Learnings**: 11
+**Total Learnings**: 12
 - Development: 2
 - Design: 0
-- Backend: 2
+- Backend: 3
 - Frontend: 5
 - Process: 3
 - Other: 1
 
-**Last Updated**: 2025-11-08T17:53:00.000Z
+**Last Updated**: 2025-11-09T12:35:00.000Z
 
 ---
 
