@@ -95,7 +95,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
+    // Check app-specific role (appRole), not SSO-level role (user.role)
+    if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -197,7 +198,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'admin' && session.user.role !== 'super-admin') {
+    // Check app-specific role (appRole), not SSO-level role (user.role)
+    if (session.appRole !== 'admin' && session.appRole !== 'superadmin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
