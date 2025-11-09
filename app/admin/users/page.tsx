@@ -88,9 +88,10 @@ export default async function AdminUsersPage() {
       const hasUserInfo = submission.userInfo?.email && submission.userInfo?.name;
       const isMergedPseudo = hasUserInfo && submission.userInfo?.mergedWith;
       
-      // If merged, use real user's email as identifier, otherwise use userInfo email or userId
+      // CRITICAL: If merged, ALWAYS use the real user's email to consolidate all submissions
+      // This prevents duplicate user entries in the list
       const identifier = isMergedPseudo
-        ? submission.userEmail  // Real user's email after merge
+        ? submission.userInfo.mergedWith  // Use the SSO user ID they were merged with
         : (hasUserInfo ? submission.userInfo.email : (submission.userId || submission.userEmail));
       
       const isAnonymous = !hasUserInfo && 
@@ -109,8 +110,20 @@ export default async function AdminUsersPage() {
         
         if (isAnonymous) {
           userType = 'anonymous';
-        } else if (isRealOrAdmin || isMergedUser) {
-          // Check SSO for role (works for both regular real users and merged users)
+        } else if (isMergedUser) {
+          // Merged pseudo users are now real users - look them up by merged ID
+          const mergedUserId = submission.userInfo.mergedWith;
+          // Find SSO user by ID
+          const ssoUser = ssoUsers.find(u => u.id === mergedUserId);
+          if (ssoUser) {
+            role = ssoUser.role || 'user';
+            isActive = ssoUser.isActive !== false;
+            userType = role === 'admin' ? 'administrator' : 'real';
+          } else {
+            userType = 'real'; // Fallback - merged but SSO data not found
+          }
+        } else if (isRealOrAdmin) {
+          // Regular SSO users - check by email
           const ssoData = ssoUserMap.get(submission.userEmail);
           if (ssoData) {
             role = ssoData.role;
@@ -120,8 +133,9 @@ export default async function AdminUsersPage() {
             userType = 'real'; // Fallback
           }
         } else if (isPseudoUser) {
-          // Check pseudo user status from userInfo
+          // Unmerged pseudo users
           isActive = submission.userInfo?.isActive !== false;
+          userType = 'pseudo';
         }
         
         userMap.set(identifier, {
