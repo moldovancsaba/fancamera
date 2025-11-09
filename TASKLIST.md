@@ -1,9 +1,29 @@
 # TASKLIST.md
 
-Current Version: 2.4.0
-Last Updated: 2025-11-09T12:35:00.000Z
+Current Version: 2.5.0
+Last Updated: 2025-11-09T19:45:00.000Z
 
 ## Recently Completed
+
+### User Management System Phase 1 (v2.5.0) - COMPLETE
+- **Completed**: 2025-11-09T19:45:00.000Z
+- **Type**: MINOR release (new feature)
+- **Status**: ✅ Complete
+- **Summary**: Implemented comprehensive user management system with role management, status management, and user merging
+- **Deliverables**:
+  - ✅ 4 user types (Administrator, Real User, Pseudo User, Anonymous User)
+  - ✅ Role management (user ↔ admin toggle)
+  - ✅ Status management (active ↔ inactive)
+  - ✅ User merging (pseudo → real user)
+  - ✅ 3 API endpoints with admin authentication
+  - ✅ UserManagementActions component (267 lines)
+  - ✅ Admin users page completely rewritten with SSO integration
+  - ✅ Database schema extensions (isActive, mergedWith, audit fields)
+  - ✅ All changes logged with admin ID and timestamps
+  - ✅ Build verified (0 TypeScript errors)
+  - ✅ Documentation updated (README, RELEASE_NOTES, ARCHITECTURE)
+- **Impact**: Full user lifecycle management now available to administrators
+- **Future**: Phase 2 will add submission visibility filtering and bulk operations
 
 ### Safari Camera Initialization Fix (v2.0.1) - COMPLETE
 - **Completed**: 2025-11-08T17:53:00.000Z

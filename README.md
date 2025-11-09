@@ -1,8 +1,8 @@
 # Camera — Photo Frame Webapp
 
-**Version**: 2.4.0  
-**Last Updated**: 2025-11-09T12:35:00.000Z  
-**Status**: Production-ready with working SSO authentication
+**Version**: 2.5.0  
+**Last Updated**: 2025-11-09T13:58:00.000Z  
+**Status**: Production-ready with comprehensive user management
 
 A Next.js photo frame web application allowing users to capture photos and automatically apply decorative frames, built with comprehensive refactoring for maintainability and scalability.
 
@@ -41,6 +41,14 @@ Open http://localhost:3000 to view the application.
 - **Hosting**: Vercel
 
 ### Key Features (v2.0.0)
+
+**User Management System** (v2.5.0):
+- 4 user types: Administrator, Real User, Pseudo User, Anonymous
+- Role management: Promote/demote users to admin
+- Status control: Activate/deactivate users
+- User merging: Link pseudo users with real accounts
+- Visual status badges and management actions
+- SSO database integration for role/status persistence
 
 **Custom Pages System** (v2.0.0):
 - Onboarding pages before photo capture (data collection, terms acceptance)

@@ -1,10 +1,189 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.4.0
-**Last Updated**: 2025-11-09T12:35:00.000Z
+**Current Version**: 2.5.0
+**Last Updated**: 2025-11-09T13:58:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.5.0] — 2025-11-09T13:58:00.000Z
+
+### Major Feature — User Management System
+
+**Status**: Phase 1 Complete  
+**Release Type**: MINOR (major new feature)
+
+#### Summary
+Implemented comprehensive user management system for administrators, enabling role management, user status control, and pseudo user merging with real accounts. Introduces 4-tier user classification with full administrative controls.
+
+#### User Types
+1. **Administrator**: SSO authenticated users with admin role
+2. **Real User**: SSO authenticated users with user role
+3. **Pseudo User**: Event guests who provided name/email through onboarding
+4. **Anonymous User**: Session-based users with no personal information
+
+#### Features Implemented
+
+**Role Management**:
+- Promote users from 'user' to 'admin' role
+- Demote admins back to 'user' role
+- Changes stored in SSO database
+- Cannot demote yourself
+- Requires logout/login for role change to take effect
+- All changes logged with admin ID and timestamp
+
+**Status Management**:
+- Activate/deactivate any user type
+- Inactive real users cannot login
+- Inactive pseudo users' submissions hidden (Phase 2)
+- Cannot deactivate yourself
+- Deactivation tracked with timestamp and admin ID
+
+**User Merging**:
+- Link pseudo user submissions with real user accounts
+- One-way permanent operation
+- Preserves userInfo for historical record
+- Adds mergedWith and mergedAt timestamps
+- All submissions transferred to real user
+
+**Admin UI**:
+- Visual status badges (Admin, Pseudo, Inactive, Merged)
+- Action buttons for each user
+- Merge dialog with validation
+- Real-time feedback and loading states
+- Integrated with SSO database
+
+#### New API Endpoints
+
+**PATCH /api/admin/users/[email]/role**:
+- Update user role (user ↔ admin)
+- Requires admin authentication
+- Prevents self-demotion
+- Validates role values
+- Updates SSO publicUsers collection
+
+**PATCH /api/admin/users/[email]/status**:
+- Activate/deactivate users
+- Supports all user types
+- Requires admin authentication
+- Prevents self-deactivation
+- Updates SSO (real/admin) or camera submissions (pseudo)
+
+**POST /api/admin/users/merge**:
+- Merge pseudo user with real user
+- Requires admin authentication
+- Validates both users exist
+- Prevents duplicate merges
+- Updates all submissions with pseudo email
+
+#### New Components
+
+**UserManagementActions** (`components/admin/UserManagementActions.tsx`):
+- Client component for user management
+- 267 lines of interactive UI
+- Role toggle buttons
+- Status toggle buttons
+- Merge dialog with form
+- Error handling and feedback
+- Prevents self-actions
+
+**Updated Users Page** (`app/admin/users/page.tsx`):
+- Fetches SSO users for roles/status
+- 4-tier user classification
+- Status badge display
+- Integrated management actions
+- Dynamic rendering (uses cookies)
+
+#### Files Created
+- `app/api/admin/users/[email]/role/route.ts` (107 lines)
+- `app/api/admin/users/[email]/status/route.ts` (171 lines)
+- `app/api/admin/users/merge/route.ts` (132 lines)
+- `components/admin/UserManagementActions.tsx` (267 lines)
+
+#### Files Modified
+- `app/admin/users/page.tsx` — Complete rewrite with SSO integration
+- `package.json` — Version 2.4.0 → 2.5.0
+- `README.md` — Updated features and version
+- `RELEASE_NOTES.md` — This entry
+
+#### Technical Implementation
+
+**SSO Database Integration**:
+```typescript
+const SSO_MONGODB_URI = 'mongodb+srv://...@doneisbetter.49s2z.mongodb.net';
+const client = new MongoClient(SSO_MONGODB_URI);
+const db = client.db('sso');
+
+// Update role
+await db.collection('publicUsers').updateOne(
+  { email: decodedEmail },
+  {
+    $set: {
+      role: newRole,
+      roleChangedBy: session.user.id,
+      roleChangedAt: new Date().toISOString(),
+    }
+  }
+);
+```
+
+**User Type Detection**:
+```typescript
+const hasUserInfo = submission.userInfo?.email && submission.userInfo?.name;
+const isAnonymous = submission.userId === 'anonymous';
+const isRealOrAdmin = !hasUserInfo && !isAnonymous;
+
+if (isRealOrAdmin) {
+  const ssoData = ssoUserMap.get(submission.userEmail);
+  userType = ssoData?.role === 'admin' ? 'administrator' : 'real';
+}
+```
+
+**Status Badges**:
+- Purple badge: Administrator
+- Blue badge: Pseudo User
+- Red badge: Inactive
+- Green badge: Merged
+- Gray badge: Anonymous
+
+#### Security Considerations
+
+- All endpoints require admin authentication via `requireAdmin()`
+- Self-demotion prevented (cannot demote yourself from admin)
+- Self-deactivation prevented (cannot deactivate yourself)
+- All changes logged with admin ID and timestamps
+- Merge operations are one-way and permanent
+- Role changes stored in SSO database for persistence
+- Status changes affect both SSO and camera databases
+
+#### Impact
+
+- Administrators can now manage user roles without database access
+- User status control enables content moderation
+- Pseudo user merging solves duplicate account issues
+- Clear visual indicators improve user management UX
+- Centralized user management in admin panel
+
+#### Phase 2 (Upcoming)
+
+- Submission visibility filtering (hide inactive users' content)
+- Bulk user operations
+- User activity logs
+- Email notifications on role/status changes
+- Automatic pseudo user merging
+
+#### Breaking Changes
+
+None - All changes are additive and backward compatible
+
+#### Known Limitations
+
+- Role changes require user to logout and login again
+- Submission visibility filtering not yet implemented
+- No bulk operations (must update users one at a time)
+- No undo functionality for merges
 
 ---
 
