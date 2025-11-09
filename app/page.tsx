@@ -14,13 +14,16 @@ export const dynamic = 'force-dynamic';
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { logout?: string };
+  searchParams: Promise<{ logout?: string }>;
 }) {
   // Get current session to show user info
   const session = await getSession();
   
+  // Await searchParams (Next.js 15 requires this)
+  const params = await searchParams;
+  
   // Check if user just logged out
-  const justLoggedOut = searchParams.logout === 'success';
+  const justLoggedOut = params.logout === 'success';
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
