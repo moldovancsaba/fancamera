@@ -1,13 +1,33 @@
 /**
  * Admin Users Page
- * Version: 36.1.0
+ * Version: 2.5.0
  * 
- * Compact list of users with core info only.
- * Fields: name, email, Last Event, Registered, photos
+ * Comprehensive user management interface.
+ * 
+ * Features:
+ * - Lists all user types: Administrators, Real users, Pseudo users, Anonymous users
+ * - Role management (user ↔ admin)
+ * - Status management (active ↔ inactive)
+ * - Merge pseudo users with real users
+ * - Visual indicators for user status and role
+ * 
+ * User Types:
+ * - Administrator: SSO authenticated with admin role
+ * - Real: SSO authenticated with user role
+ * - Pseudo: Event guests who provided name/email
+ * - Anonymous: Session-based, no personal info
  */
 
 import { connectToDatabase } from '@/lib/db/mongodb';
+import { getSession } from '@/lib/auth/session';
+import { MongoClient } from 'mongodb';
 import Link from 'next/link';
+import UserManagementActions from '@/components/admin/UserManagementActions';
+
+const SSO_MONGODB_URI = 'mongodb+srv://thanperfect:CuW54NNNFKnGQtt6@doneisbetter.49s2z.mongodb.net/?retryWrites=true&w=majority&appName=doneisbetter';
+
+// Force dynamic rendering (uses cookies for session)
+export const dynamic = 'force-dynamic';
 
 /**
  * Sanitize username for URL
@@ -18,16 +38,17 @@ function sanitizeUsername(name: string): string {
 }
 
 export default async function AdminUsersPage() {
-  let pseudoUsers: any[] = [];
+  let users: any[] = [];
   let error = null;
+  let currentUserEmail = '';
 
   try {
-    const db = await connectToDatabase();
+    // Get current session for admin email
+    const session = await getSession();
+    currentUserEmail = session?.user.email || '';
     
-    // Fetch ALL submissions (both with and without userInfo)
-    // Users with userInfo.name/email are real users who provided their information
-    // Users without userInfo or with 'anonymous' userId are truly anonymous
-    // Note: isArchived might not exist on older submissions, so we check for both false and null/undefined
+    // Fetch camera database submissions
+    const db = await connectToDatabase();
     const submissions = await db
       .collection('submissions')
       .find({ 
@@ -39,11 +60,31 @@ export default async function AdminUsersPage() {
       .sort({ createdAt: -1 })
       .toArray();
 
-    // Group submissions by user identifier (email or userId)
+    // Fetch SSO users to get roles and status
+    const ssoClient = new MongoClient(SSO_MONGODB_URI);
+    await ssoClient.connect();
+    let ssoUsers: any[] = [];
+    try {
+      const ssoDb = ssoClient.db('sso');
+      ssoUsers = await ssoDb.collection('publicUsers').find({}).toArray();
+    } finally {
+      await ssoClient.close();
+    }
+    
+    // Create SSO user lookup map
+    const ssoUserMap = new Map();
+    ssoUsers.forEach(u => {
+      ssoUserMap.set(u.email, {
+        id: u.id,
+        role: u.role || 'user',
+        isActive: u.isActive !== false, // Default to true
+      });
+    });
+
+    // Group submissions by user identifier
     const userMap = new Map<string, any>();
     
     for (const submission of submissions) {
-      // Determine user identifier and whether they're anonymous
       const hasUserInfo = submission.userInfo?.email && submission.userInfo?.name;
       const identifier = hasUserInfo 
         ? submission.userInfo.email 
@@ -53,42 +94,57 @@ export default async function AdminUsersPage() {
         (submission.userId === 'anonymous' || submission.userEmail === 'anonymous@event');
       
       if (!userMap.has(identifier)) {
-        // Determine user type: administrator (SSO user) or pseudo (event guest with userInfo)
-        const isPseudoUser = hasUserInfo; // Has userInfo = provided name/email at event
-        const isAdministrator = !hasUserInfo && !isAnonymous; // Has userId/userName but no userInfo
+        // Determine user type
+        const isPseudoUser = hasUserInfo;
+        const isRealOrAdmin = !hasUserInfo && !isAnonymous;
         
         let userType = 'pseudo';
-        if (isAdministrator) userType = 'administrator';
-        if (isAnonymous) userType = 'anonymous';
+        let role = 'user';
+        let isActive = true;
+        
+        if (isAnonymous) {
+          userType = 'anonymous';
+        } else if (isRealOrAdmin) {
+          // Check SSO for role
+          const ssoData = ssoUserMap.get(submission.userEmail);
+          if (ssoData) {
+            role = ssoData.role;
+            isActive = ssoData.isActive;
+            userType = role === 'admin' ? 'administrator' : 'real';
+          } else {
+            userType = 'real'; // Fallback
+          }
+        } else if (isPseudoUser) {
+          // Check pseudo user status from userInfo
+          isActive = submission.userInfo?.isActive !== false;
+        }
         
         userMap.set(identifier, {
           email: hasUserInfo ? submission.userInfo.email : submission.userEmail,
           name: hasUserInfo ? submission.userInfo.name : (isAnonymous ? 'Anonymous User' : submission.userName || 'Unknown'),
           isAnonymous: isAnonymous,
           type: userType,
+          role: role,
+          isActive: isActive,
+          mergedWith: submission.userInfo?.mergedWith,
           collectedAt: submission.userInfo?.collectedAt || submission.createdAt,
           eventId: submission.eventId,
           eventName: submission.eventName || 'Unknown Event',
-          partnerId: submission.partnerId,
-          partnerName: submission.partnerName,
-          consents: submission.consents || [],
           submissions: [],
         });
       }
       
-      // Add submission to user's submissions array
       userMap.get(identifier)?.submissions.push({
         _id: submission._id,
         imageUrl: submission.imageUrl,
-        frameName: submission.frameName,
         createdAt: submission.createdAt,
       });
     }
 
-    pseudoUsers = Array.from(userMap.values());
+    users = Array.from(userMap.values());
 
   } catch (err) {
-    console.error('Error fetching pseudo users:', err);
+    console.error('Error fetching users:', err);
     error = err instanceof Error ? err.message : 'Unknown error';
   }
 
@@ -106,7 +162,7 @@ export default async function AdminUsersPage() {
         </div>
       )}
 
-      {!error && pseudoUsers.length === 0 ? (
+      {!error && users.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <div className="text-6xl mb-4">👥</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No users yet</h3>
@@ -115,7 +171,7 @@ export default async function AdminUsersPage() {
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {pseudoUsers.map((user: any, index: number) => {
+            {users.map((user: any, index: number) => {
               const profileHref = `/users/${sanitizeUsername(user.name || 'Anonymous')}`;
               const emailDisplay = user.isAnonymous ? 'anonymous@event.com' : (user.email || 'unknown');
               const registeredAt = new Date(user.collectedAt).toLocaleString();
@@ -123,23 +179,55 @@ export default async function AdminUsersPage() {
               const lastEvent = user.eventName || 'Unknown Event';
 
               return (
-                <div key={`${user.email}-${index}`} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Link href={profileHref} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate">
-                        {user.name || 'Anonymous'}
-                      </Link>
-                      {user.isAnonymous && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">Anon</span>
-                      )}
+                <div key={`${user.email}-${index}`} className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <Link href={profileHref} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate">
+                          {user.name || 'Anonymous'}
+                        </Link>
+                        
+                        {/* Status Badges */}
+                        {user.isAnonymous && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">Anonymous</span>
+                        )}
+                        {user.type === 'administrator' && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">Admin</span>
+                        )}
+                        {user.type === 'pseudo' && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">Pseudo</span>
+                        )}
+                        {!user.isActive && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">Inactive</span>
+                        )}
+                        {user.mergedWith && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">Merged</span>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">📧 {emailDisplay}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">📸 {photosCount} photos</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">🎉 Last Event: {lastEvent}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 truncate">📅 Registered: {registeredAt}</div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">email: {emailDisplay}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">type: {user.type || 'unknown'}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">Last Event: {lastEvent}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">Registered: {registeredAt}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-white">photos: {photosCount}</div>
+                    
+                    {/* Management Actions */}
+                    <div className="lg:w-80">
+                      <UserManagementActions 
+                        user={{
+                          email: user.email,
+                          name: user.name,
+                          type: user.type,
+                          role: user.role,
+                          isActive: user.isActive,
+                          mergedWith: user.mergedWith,
+                        }}
+                        currentUserEmail={currentUserEmail}
+                      />
+                    </div>
                   </div>
                 </div>
               );
