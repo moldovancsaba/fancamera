@@ -151,9 +151,17 @@ export function generatePKCEPair(): PKCEPair {
  * 
  * @param codeChallenge - PKCE code challenge
  * @param state - Random state string for CSRF protection
+ * @param options - Optional parameters
+ * @param options.prompt - OIDC prompt parameter ('login', 'consent', 'none')
  * @returns Authorization URL to redirect user to
  */
-export function getAuthorizationUrl(codeChallenge: string, state: string): string {
+export function getAuthorizationUrl(
+  codeChallenge: string,
+  state: string,
+  options?: {
+    prompt?: 'login' | 'consent' | 'none' | 'select_account';
+  }
+): string {
   const config = SSO_CONFIG();
   const endpoints = SSO_ENDPOINTS();
   
@@ -166,6 +174,12 @@ export function getAuthorizationUrl(codeChallenge: string, state: string): strin
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
   });
+  
+  // Add prompt parameter if provided (OIDC standard)
+  // prompt=login forces re-authentication even if user has SSO session
+  if (options?.prompt) {
+    params.set('prompt', options.prompt);
+  }
 
   return `${endpoints.authorize}?${params.toString()}`;
 }

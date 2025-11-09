@@ -11,11 +11,11 @@
  * 4. Redirect user to SSO authorization endpoint
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { generatePKCEPair, generateState, getAuthorizationUrl } from '@/lib/auth/sso';
 import { storePendingSession } from '@/lib/auth/session';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Generate PKCE pair for security
     const { codeVerifier, codeChallenge } = generatePKCEPair();
@@ -29,11 +29,18 @@ export async function GET() {
       codeVerifier,
       state,
     });
-
+    
+    // Check if user just logged out (from query param or referer)
+    const { searchParams } = new URL(request.url);
+    const fromLogout = searchParams.get('from_logout') === 'true';
+    
     // Build authorization URL with PKCE challenge
-    const authUrl = getAuthorizationUrl(codeChallenge, state);
+    // If user just logged out, force re-authentication with prompt=login
+    const authUrl = getAuthorizationUrl(codeChallenge, state, {
+      prompt: fromLogout ? 'login' : undefined,
+    });
 
-    console.log('✓ Initiating OAuth flow, redirecting to SSO');
+    console.log(`✓ Initiating OAuth flow${fromLogout ? ' (force re-auth after logout)' : ''}, redirecting to SSO`);
 
     // Redirect user to SSO for authentication
     return NextResponse.redirect(authUrl);

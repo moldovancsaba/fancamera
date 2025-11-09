@@ -11,9 +11,17 @@ import { getSession } from '@/lib/auth/session';
 // This page uses cookies, so it must be dynamic
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { logout?: string };
+}) {
   // Get current session to show user info
   const session = await getSession();
+  
+  // Check if user just logged out
+  const justLoggedOut = searchParams.logout === 'success';
+  
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <main className="flex flex-col items-center justify-center px-8 py-16 text-center">
@@ -61,8 +69,9 @@ export default async function Home() {
             </>
           ) : (
             // Not logged in - show login button
+            // If user just logged out, add from_logout param to force re-authentication
             <a
-              href="/api/auth/login"
+              href={justLoggedOut ? "/api/auth/login?from_logout=true" : "/api/auth/login"}
               className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
             >
               🔐 Login with SSO
