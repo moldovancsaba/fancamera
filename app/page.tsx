@@ -41,22 +41,8 @@ export default async function Home() {
 
         <div className="flex flex-col sm:flex-row gap-4">
           {session ? (
-            // Logged in - show app buttons
+            // Logged in - show admin and logout buttons only
             <>
-              <a
-                href="/capture"
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg inline-block text-center"
-              >
-                Start Capturing
-              </a>
-              
-              <a
-                href="/profile"
-                className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-lg"
-              >
-                Gallery
-              </a>
-
               {(session.user.role === 'admin' || session.user.role === 'super-admin') && (
                 <a
                   href="/admin"

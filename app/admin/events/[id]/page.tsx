@@ -81,6 +81,32 @@ export default async function EventDetailPage({
       .sort({ createdAt: -1 })
       .toArray();
 
+    // Populate frame details for assigned frames
+    // This enriches event.frames[] with full frame data (name, thumbnailUrl, etc.)
+    if (event.frames && event.frames.length > 0) {
+      const frameIds = event.frames.map((f: any) => f.frameId);
+      const frames = await db
+        .collection(COLLECTIONS.FRAMES)
+        .find({ frameId: { $in: frameIds } })
+        .toArray();
+      
+      // Map frame details to each assignment
+      event.frames = event.frames.map((assignment: any) => {
+        const frameDetails = frames.find((f: any) => f.frameId === assignment.frameId);
+        return {
+          ...assignment,
+          frameDetails: frameDetails ? {
+            frameId: frameDetails.frameId,
+            name: frameDetails.name,
+            thumbnailUrl: frameDetails.thumbnailUrl,
+            width: frameDetails.width,
+            height: frameDetails.height,
+            hashtags: frameDetails.hashtags,
+          } : null
+        };
+      });
+    }
+
   } catch (error) {
     console.error('Error fetching event details:', error);
     dbError = error instanceof Error ? error.message : 'Unknown error';
