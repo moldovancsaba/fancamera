@@ -34,6 +34,8 @@ export interface Session {
   accessTokenExpiresAt: string;  // ISO 8601 timestamp
   createdAt: string;              // ISO 8601 timestamp
   expiresAt: string;              // ISO 8601 timestamp (30 days from creation)
+  appRole?: 'none' | 'user' | 'admin' | 'superadmin';  // App-specific role from SSO
+  appAccess?: boolean;            // Whether user has access to this app
 }
 
 /**
@@ -52,11 +54,13 @@ export interface PendingSession {
  * 
  * @param user - User information from SSO
  * @param tokens - Access and refresh tokens
+ * @param appPermission - App-specific permission from SSO (optional)
  * @returns Created session
  */
 export async function createSession(
   user: SSOUser,
-  tokens: TokenResponse
+  tokens: TokenResponse,
+  appPermission?: { appRole?: 'none' | 'user' | 'admin' | 'superadmin'; appAccess?: boolean }
 ): Promise<Session> {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE * 1000);
@@ -69,6 +73,8 @@ export async function createSession(
     accessTokenExpiresAt: accessTokenExpiresAt.toISOString(),
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
+    appRole: appPermission?.appRole,
+    appAccess: appPermission?.appAccess,
   };
 
   // Store session in HttpOnly cookie

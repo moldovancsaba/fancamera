@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForToken, decodeIdToken } from '@/lib/auth/sso';
 import { consumePendingSession, createSession } from '@/lib/auth/session';
+import { getAppPermission, hasAppAccess, isAppAdmin } from '@/lib/auth/sso-permissions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,13 +68,34 @@ export async function GET(request: NextRequest) {
     console.log('✓ Tokens obtained, extracting user info from ID token');
 
     // Extract user information from ID token (JWT)
-    // SSO v5.23.1 includes all user claims in the id_token
+    // SSO v5.24.0 includes all user claims in the id_token
     const user = decodeIdToken(tokens.id_token);
 
     console.log('✓ User info extracted:', user.email);
 
-    // Create session with user and tokens
-    await createSession(user, tokens);
+    // WHAT: Query SSO for user's app-specific permission
+    // WHY: SSO is the source of truth for app-level roles (user/admin)
+    // HOW: Use access token to authenticate with SSO permission endpoint
+    let appRole: 'none' | 'user' | 'admin' | 'superadmin' = 'none';
+    let appAccess = false;
+    
+    try {
+      const permission = await getAppPermission(user.id, tokens.access_token);
+      appRole = permission.role;
+      appAccess = hasAppAccess(permission);
+      
+      console.log('✓ App permission retrieved:', {
+        role: appRole,
+        hasAccess: appAccess,
+        status: permission.status
+      });
+    } catch (error) {
+      console.error('✗ Failed to get app permission:', error);
+      // Continue with default (no access) - user will see access denied page
+    }
+
+    // Create session with user, tokens, and app permission
+    await createSession(user, tokens, { appRole, appAccess });
 
     console.log('✓ Session created, redirecting to homepage');
 
