@@ -1,15 +1,18 @@
 /**
  * Slideshow Playlist API
- * Version: 1.0.0
+ * Version: 2.0.0
  * 
  * GET: Generate next 5 slides for a slideshow with smart playlist logic
  * Returns slides with mosaic layouts for 1:1 and 9:16 images
+ * 
+ * v2.0.0: Filters out submissions from inactive users (SSO database check)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { COLLECTIONS } from '@/lib/db/schemas';
 import { generatePlaylist } from '@/lib/slideshow/playlist';
+import { getInactiveUserEmails } from '@/lib/db/sso';
 
 /**
  * GET /api/slideshows/[slideshowId]/playlist?limit=N&exclude=id1,id2,id3
@@ -59,7 +62,12 @@ export async function GET(
     console.log(`[Playlist] Event UUID (event.eventId): ${eventUuid}`);
     console.log(`[Playlist] Event Name: ${event.name}`);
 
-    // Build match filter: event + exclude IDs in other playlists + archived/hidden check
+    // Get inactive user emails from SSO database
+    // These users' submissions will be filtered out from the playlist
+    const inactiveEmails = await getInactiveUserEmails();
+    console.log(`[Playlist] Filtering out ${inactiveEmails.size} inactive users`);
+
+    // Build match filter: event + exclude IDs in other playlists + archived/hidden check + active users only
     // BACKWARD COMPATIBILITY: Support both eventId (singular) and eventIds (array)
     const matchFilter: any = {
       $and: [
@@ -74,6 +82,28 @@ export async function GET(
           $or: [
             { hiddenFromEvents: { $exists: false } },     // Field doesn't exist (old data)
             { hiddenFromEvents: { $nin: [eventUuid] } }  // Not hidden from this event
+          ]
+        },
+        // Exclude submissions from inactive SSO users (real users)
+        // Also exclude pseudo users who have been marked inactive
+        {
+          $and: [
+            // Filter out inactive real users (SSO authenticated)
+            {
+              $or: [
+                // Real users: check userEmail against inactive list
+                { userEmail: { $nin: Array.from(inactiveEmails) } },
+                // Pseudo users: userId='anonymous' is always kept (not real SSO user)
+                { userId: 'anonymous' }
+              ]
+            },
+            // Filter out inactive pseudo users (userInfo.isActive = false)
+            {
+              $or: [
+                { 'userInfo.isActive': { $ne: false } },  // Not inactive pseudo
+                { userInfo: { $exists: false } }          // Not a pseudo user
+              ]
+            }
           ]
         }
       ]

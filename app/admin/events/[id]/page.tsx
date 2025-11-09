@@ -1,8 +1,9 @@
 /**
  * Event Detail Page
- * Version: 1.2.0
+ * Version: 2.0.0
  * 
  * Display event details with partner info, assigned frames, and slideshows
+ * v2.0.0: Filters out submissions from inactive users
  */
 
 import { connectToDatabase } from '@/lib/db/mongodb';
@@ -12,6 +13,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import SlideshowManager from '@/components/admin/SlideshowManager';
 import EventGallery from '@/components/admin/EventGallery';
+import { getInactiveUserEmails } from '@/lib/db/sso';
 
 export default async function EventDetailPage({
   params,
@@ -48,6 +50,11 @@ export default async function EventDetailPage({
       .collection(COLLECTIONS.PARTNERS)
       .findOne({ partnerId: event.partnerId });
 
+    // Get inactive user emails from SSO database
+    // These users' submissions will be filtered out
+    const inactiveEmails = await getInactiveUserEmails();
+    console.log(`[Event Gallery] Filtering out ${inactiveEmails.size} inactive users`);
+
     // Get submissions for this event (limit to most recent 50)
     // BACKWARD COMPATIBILITY: Support both eventId (singular, old data) and eventIds (array, new data)
     // Also exclude submissions that are hidden from this specific event
@@ -66,6 +73,28 @@ export default async function EventDetailPage({
             $or: [
               { hiddenFromEvents: { $exists: false } },  // Field doesn't exist yet (old data)
               { hiddenFromEvents: { $nin: [event.eventId] } } // Field exists and event not in it
+            ]
+          },
+          // Exclude submissions from inactive SSO users (real users)
+          // Also exclude pseudo users who have been marked inactive
+          {
+            $and: [
+              // Filter out inactive real users (SSO authenticated)
+              {
+                $or: [
+                  // Real users: check userEmail against inactive list
+                  { userEmail: { $nin: Array.from(inactiveEmails) } },
+                  // Pseudo users: userId='anonymous' is always kept (not real SSO user)
+                  { userId: 'anonymous' }
+                ]
+              },
+              // Filter out inactive pseudo users (userInfo.isActive = false)
+              {
+                $or: [
+                  { 'userInfo.isActive': { $ne: false } },  // Not inactive pseudo
+                  { userInfo: { $exists: false } }          // Not a pseudo user
+                ]
+              }
             ]
           }
         ]

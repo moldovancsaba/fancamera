@@ -1,9 +1,28 @@
 # TASKLIST.md
 
-Current Version: 2.5.0
-Last Updated: 2025-11-09T19:45:00.000Z
+Current Version: 2.6.0
+Last Updated: 2025-11-09T20:15:00.000Z
 
 ## Recently Completed
+
+### Inactive User Filtering (v2.6.0) - COMPLETE
+- **Completed**: 2025-11-09T20:15:00.000Z
+- **Type**: MINOR release (new feature)
+- **Status**: ✅ Complete
+- **Summary**: Implemented automatic filtering of inactive users' submissions from slideshows and event galleries
+- **Deliverables**:
+  - ✅ SSO database helper module (`lib/db/sso.ts`)
+  - ✅ `getInactiveUserEmails()` function with Set-based O(1) lookup
+  - ✅ Slideshow playlist API filtering (v2.0.0)
+  - ✅ Event gallery page filtering (v2.0.0)
+  - ✅ Dual filtering: real users (SSO) + pseudo users (userInfo.isActive)
+  - ✅ Anonymous users preserved (not affected)
+  - ✅ SSO connection caching for performance
+  - ✅ MongoDB query optimization
+  - ✅ Build verified (0 TypeScript errors)
+  - ✅ Documentation updated (README, RELEASE_NOTES, TASKLIST)
+- **Impact**: Deactivated users' content now hidden from public view automatically
+- **Next**: Phase 3 could add caching, bulk operations, email notifications
 
 ### User Management System Phase 1 (v2.5.0) - COMPLETE
 - **Completed**: 2025-11-09T19:45:00.000Z

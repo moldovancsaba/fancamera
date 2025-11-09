@@ -1,8 +1,8 @@
 # Camera — Photo Frame Webapp
 
-**Version**: 2.5.0  
-**Last Updated**: 2025-11-09T13:58:00.000Z  
-**Status**: Production-ready with comprehensive user management
+**Version**: 2.6.0  
+**Last Updated**: 2025-11-09T20:15:00.000Z  
+**Status**: Production-ready with inactive user filtering
 
 A Next.js photo frame web application allowing users to capture photos and automatically apply decorative frames, built with comprehensive refactoring for maintainability and scalability.
 
