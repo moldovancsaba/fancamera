@@ -54,7 +54,8 @@ export default async function Home({
           {session ? (
             // Logged in - show admin and logout buttons only
             <>
-              {(session.user.role === 'admin' || session.user.role === 'super-admin') && (
+              {/* Check appRole from SSO app permissions (not user.role from ID token) */}
+              {(session.appRole === 'admin' || session.appRole === 'superadmin') && (
                 <a
                   href="/admin"
                   className="px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors shadow-lg"
