@@ -170,7 +170,7 @@ export default function StyleSections({
               )}
             </div>
             <Link
-              href={isPartner ? `/admin/partners/${id}/edit#frames` : `/admin/events/${id}/frames`}
+              href={isPartner ? `/admin/partners/${id}/frames` : `/admin/events/${id}/frames`}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
             >
               Manage Frames
@@ -189,7 +189,7 @@ export default function StyleSections({
               }
             </p>
             <Link
-              href={isPartner ? `/admin/partners/${id}/edit#frames` : `/admin/events/${id}/frames`}
+              href={isPartner ? `/admin/partners/${id}/frames` : `/admin/events/${id}/frames`}
               className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
             >
               Assign Frames
@@ -268,7 +268,7 @@ export default function StyleSections({
               )}
             </div>
             <Link
-              href={isPartner ? `/admin/partners/${id}/edit#logos` : `/admin/events/${id}/logos`}
+              href={isPartner ? `/admin/partners/${id}/logos` : `/admin/events/${id}/logos`}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
             >
               Manage Logos
@@ -287,7 +287,7 @@ export default function StyleSections({
               }
             </p>
             <Link
-              href={isPartner ? `/admin/partners/${id}/edit#logos` : `/admin/events/${id}/logos`}
+              href={isPartner ? `/admin/partners/${id}/logos` : `/admin/events/${id}/logos`}
               className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
             >
               Assign Logos
