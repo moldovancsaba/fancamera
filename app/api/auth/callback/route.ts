@@ -69,9 +69,42 @@ export async function GET(request: NextRequest) {
 
     // Extract user information from ID token (JWT)
     // SSO v5.24.0 includes all user claims in the id_token
-    const user = decodeIdToken(tokens.id_token);
+    let user = decodeIdToken(tokens.id_token);
 
     console.log('✓ User info extracted:', user.email);
+
+    // WORKAROUND: If email is sso@doneisbetter.com, query SSO database for real email
+    // This is a bug in SSO service - it should include federated email in ID token
+    if (user.email === 'sso@doneisbetter.com' && user.id) {
+      console.log('⚠ Email is SSO service email, querying database for real user email');
+      try {
+        const { MongoClient } = await import('mongodb');
+        const SSO_URI = 'mongodb+srv://thanperfect:CuW54NNNFKnGQtt6@doneisbetter.49s2z.mongodb.net';
+        const client = new MongoClient(SSO_URI);
+        await client.connect();
+        
+        try {
+          const db = client.db('sso');
+          const ssoUser = await db.collection('publicUsers').findOne({ id: user.id });
+          
+          if (ssoUser && ssoUser.email && ssoUser.email !== 'sso@doneisbetter.com') {
+            console.log('✓ Found real email in SSO database:', ssoUser.email);
+            user = {
+              ...user,
+              email: ssoUser.email,
+              name: ssoUser.name || user.name,
+            };
+          } else {
+            console.warn('✗ Could not find real email in SSO database for user:', user.id);
+          }
+        } finally {
+          await client.close();
+        }
+      } catch (error) {
+        console.error('✗ Failed to query SSO database for real email:', error);
+        // Continue with ID token email as fallback
+      }
+    }
 
     // WHAT: Query SSO for user's app-specific permission
     // WHY: SSO is the source of truth for app-level roles (user/admin)
