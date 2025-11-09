@@ -86,17 +86,22 @@ export default async function AdminUsersPage() {
     
     for (const submission of submissions) {
       const hasUserInfo = submission.userInfo?.email && submission.userInfo?.name;
-      const identifier = hasUserInfo 
-        ? submission.userInfo.email 
-        : submission.userId || submission.userEmail;
+      const isMergedPseudo = hasUserInfo && submission.userInfo?.mergedWith;
+      
+      // If merged, use real user's email as identifier, otherwise use userInfo email or userId
+      const identifier = isMergedPseudo
+        ? submission.userEmail  // Real user's email after merge
+        : (hasUserInfo ? submission.userInfo.email : (submission.userId || submission.userEmail));
       
       const isAnonymous = !hasUserInfo && 
         (submission.userId === 'anonymous' || submission.userEmail === 'anonymous@event');
       
       if (!userMap.has(identifier)) {
         // Determine user type
-        const isPseudoUser = hasUserInfo;
+        // If submission has userInfo with mergedWith, it's now a real user (merged)
+        const isPseudoUser = hasUserInfo && !isMergedPseudo;
         const isRealOrAdmin = !hasUserInfo && !isAnonymous;
+        const isMergedUser = isMergedPseudo;
         
         let userType = 'pseudo';
         let role = 'user';
@@ -104,8 +109,8 @@ export default async function AdminUsersPage() {
         
         if (isAnonymous) {
           userType = 'anonymous';
-        } else if (isRealOrAdmin) {
-          // Check SSO for role
+        } else if (isRealOrAdmin || isMergedUser) {
+          // Check SSO for role (works for both regular real users and merged users)
           const ssoData = ssoUserMap.get(submission.userEmail);
           if (ssoData) {
             role = ssoData.role;
@@ -195,12 +200,14 @@ export default async function AdminUsersPage() {
                         {user.type === 'administrator' && (
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">Admin</span>
                         )}
-                        {user.type === 'pseudo' && (
+                        {/* Only show Pseudo badge if NOT merged */}
+                        {user.type === 'pseudo' && !user.mergedWith && (
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">Pseudo</span>
                         )}
                         {!user.isActive && (
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">Inactive</span>
                         )}
+                        {/* Show Merged badge but don't show Pseudo at the same time */}
                         {user.mergedWith && (
                           <span className="px-2 py-0.5 text-[10px] font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">Merged</span>
                         )}

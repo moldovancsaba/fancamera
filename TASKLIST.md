@@ -1,9 +1,27 @@
 # TASKLIST.md
 
-Current Version: 2.6.0
-Last Updated: 2025-11-09T20:15:00.000Z
+Current Version: 2.7.0
+Last Updated: 2025-11-09T20:30:00.000Z
 
 ## Recently Completed
+
+### Admin Panel UX Enhancements (v2.7.0) - COMPLETE
+- **Completed**: 2025-11-09T20:30:00.000Z
+- **Type**: MINOR release (UX improvements)
+- **Status**: ✅ Complete
+- **Summary**: Enhanced admin panel with collapsible sidebar, version display, and fixed merged user detection
+- **Deliverables**:
+  - ✅ Collapsible sidebar component with smooth transitions
+  - ✅ Version number displayed at bottom of sidebar
+  - ✅ Active page highlighting in navigation
+  - ✅ Clickable chips for partner names
+  - ✅ Fixed merged pseudo user detection bug
+  - ✅ Removed confusing "Pseudo" badge from merged users
+  - ✅ User management actions work correctly for merged users
+  - ✅ Build verified (0 TypeScript errors)
+  - ✅ Documentation updated (README, RELEASE_NOTES, TASKLIST)
+- **Impact**: Better admin UX with more screen space and clearer user status
+- **Next**: Could add localStorage persistence and auto-sync version
 
 ### Inactive User Filtering (v2.6.0) - COMPLETE
 - **Completed**: 2025-11-09T20:15:00.000Z

@@ -111,12 +111,12 @@ export default async function PartnersPage() {
                       <div>
                         <Link
                           href={`/admin/partners/${partner._id}`}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         >
                           {partner.name}
                         </Link>
                         {partner.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
                             {partner.description}
                           </div>
                         )}

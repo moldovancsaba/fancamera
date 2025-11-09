@@ -1,10 +1,133 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.6.0
-**Last Updated**: 2025-11-09T20:15:00.000Z
+**Current Version**: 2.7.0
+**Last Updated**: 2025-11-09T20:30:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.7.0] — 2025-11-09T20:30:00.000Z
+
+### UX Improvements — Admin Panel Enhancements
+
+**Status**: Complete  
+**Release Type**: MINOR (UX improvements)
+
+#### Summary
+Enhanced admin panel user experience with collapsible sidebar, version display, improved partner navigation, and fixed merged user detection logic.
+
+#### Features Implemented
+
+**Collapsible Sidebar**:
+- Created `CollapsibleSidebar` component with smooth transitions
+- Toggle button with visual indicators (← / →)
+- Collapsed state shows only icons and user initials
+- Active page highlighting
+- Maintains user context in both states
+- Width transitions: 256px (expanded) ↔ 80px (collapsed)
+
+**Version Display**:
+- Version number shown at bottom of sidebar
+- Synced with package.json (v2.7.0)
+- Visible in both collapsed and expanded states
+- Smaller font in collapsed mode
+
+**Partners Page Enhancement**:
+- Partner names now displayed as clickable chips
+- Blue background with hover effects
+- Consistent with event page design pattern
+- Better visual affordance for clickability
+
+**Merged User Fix**:
+- Fixed bug where merged pseudo users showed both "Pseudo" and "Merged" badges
+- Merged users now correctly detected as real users
+- User type determination considers `userInfo.mergedWith` field
+- Merged users grouped with real users (not pseudo)
+- Management actions now work correctly for merged users
+
+#### Technical Implementation
+
+**CollapsibleSidebar Component** (`components/admin/CollapsibleSidebar.tsx`):
+```typescript
+const [isCollapsed, setIsCollapsed] = useState(false);
+
+<aside className={`${
+  isCollapsed ? 'w-20' : 'w-64'
+} transition-all duration-300`}>
+  {/* Toggle button, navigation, user info */}
+</aside>
+```
+
+**User Type Detection Fix** (`app/admin/users/page.tsx`):
+```typescript
+const isMergedPseudo = hasUserInfo && submission.userInfo?.mergedWith;
+
+const identifier = isMergedPseudo
+  ? submission.userEmail  // Real user's email after merge
+  : (hasUserInfo ? submission.userInfo.email : userId);
+
+if (isRealOrAdmin || isMergedUser) {
+  // Treat merged users as real users
+  const ssoData = ssoUserMap.get(submission.userEmail);
+  userType = ssoData.role === 'admin' ? 'administrator' : 'real';
+}
+```
+
+**Badge Display Logic**:
+```typescript
+{/* Only show Pseudo badge if NOT merged */}
+{user.type === 'pseudo' && !user.mergedWith && (
+  <span>Pseudo</span>
+)}
+
+{/* Show Merged badge separately */}
+{user.mergedWith && (
+  <span>Merged</span>
+)}
+```
+
+#### Files Created
+- `components/admin/CollapsibleSidebar.tsx` (143 lines) — Collapsible sidebar with version
+
+#### Files Modified
+- `app/admin/layout.tsx` — v1.1.0 → v2.0.0 (integrated CollapsibleSidebar)
+- `app/admin/partners/page.tsx` — Added clickable chips to partner names
+- `app/admin/users/page.tsx` — Fixed merged user detection and badge display
+- `components/admin/CollapsibleSidebar.tsx` — Created
+- `package.json` — Version 2.6.0 → 2.7.0
+- `README.md` — Updated version and status
+- `RELEASE_NOTES.md` — This entry
+
+#### Impact
+
+**User Experience**:
+- More screen space available when sidebar collapsed
+- Better visual consistency across admin pages
+- Clear version information always visible
+- Improved navigation for merged users
+
+**Bug Fixes**:
+- Merged users no longer show confusing "Pseudo" badge
+- User management actions work correctly for merged accounts
+- Consistent user type classification
+
+#### Breaking Changes
+
+None - All changes are additive and backward compatible
+
+#### Known Limitations
+
+- Sidebar collapse state not persisted (resets on page reload)
+- Version number hardcoded in component (should be auto-synced)
+
+#### Future Enhancements
+
+- Persist sidebar collapse state in localStorage
+- Auto-sync version from package.json at build time
+- Add keyboard shortcuts for sidebar toggle (e.g., Cmd+B)
+- Mobile responsive sidebar (drawer on small screens)
 
 ---
 
