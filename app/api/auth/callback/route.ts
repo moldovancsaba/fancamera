@@ -85,17 +85,27 @@ export async function GET(request: NextRequest) {
         
         try {
           const db = client.db('sso');
-          const ssoUser = await db.collection('publicUsers').findOne({ id: user.id });
+          // Try to find by ID first, then fall back to name matching
+          let ssoUser = await db.collection('publicUsers').findOne({ id: user.id });
+          
+          // If not found by ID, try to find by name (Facebook federated users may have different ID)
+          if (!ssoUser && user.name) {
+            console.log('⚠ User not found by ID, trying to find by name:', user.name);
+            ssoUser = await db.collection('publicUsers').findOne({ name: user.name });
+          }
           
           if (ssoUser && ssoUser.email && ssoUser.email !== 'sso@doneisbetter.com') {
             console.log('✓ Found real email in SSO database:', ssoUser.email);
+            console.log('✓ Found user role:', ssoUser.role);
             user = {
               ...user,
+              id: ssoUser.id, // Use the real database ID
               email: ssoUser.email,
               name: ssoUser.name || user.name,
+              role: ssoUser.role || user.role,
             };
           } else {
-            console.warn('✗ Could not find real email in SSO database for user:', user.id);
+            console.warn('✗ Could not find real user in SSO database. Token ID:', user.id, 'Name:', user.name);
           }
         } finally {
           await client.close();
