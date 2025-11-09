@@ -19,6 +19,7 @@ interface CollapsibleSidebarProps {
       email: string;
       role?: string;
     };
+    appRole?: 'none' | 'user' | 'admin' | 'superadmin';
   };
 }
 
@@ -100,7 +101,7 @@ export default function CollapsibleSidebar({ session }: CollapsibleSidebarProps)
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {session.user.name || session.user.email}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{session.user.role || 'user'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{session.appRole || 'user'}</p>
               </>
             ) : (
               <div className="text-center">
