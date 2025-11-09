@@ -12,6 +12,7 @@ import { ObjectId } from 'mongodb';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import DeletePartnerButton from '@/components/admin/DeletePartnerButton';
+import StyleSections from '@/components/admin/StyleSections';
 
 export default async function PartnerDetailPage({
   params,
@@ -62,6 +63,52 @@ export default async function PartnerDetailPage({
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
+
+    // Populate frame details for default frames (v2.8.0)
+    if (partner.defaultFrames && partner.defaultFrames.length > 0) {
+      const frames = await db
+        .collection(COLLECTIONS.FRAMES)
+        .find({ frameId: { $in: partner.defaultFrames } })
+        .toArray();
+      
+      // Map frame details to assignments
+      partner.defaultFramesWithDetails = partner.defaultFrames.map((frameId: string) => {
+        const frameDetails = frames.find((f: any) => f.frameId === frameId);
+        return {
+          frameId,
+          isActive: true,
+          frameDetails: frameDetails ? {
+            frameId: frameDetails.frameId,
+            name: frameDetails.name,
+            thumbnailUrl: frameDetails.thumbnailUrl,
+            width: frameDetails.width,
+            height: frameDetails.height,
+            hashtags: frameDetails.hashtags,
+          } : null
+        };
+      });
+    }
+
+    // Populate logo details for default logos (v2.8.0)
+    if (partner.defaultLogos && partner.defaultLogos.length > 0) {
+      const logoIds = partner.defaultLogos.map((l: any) => l.logoId);
+      const logos = await db
+        .collection(COLLECTIONS.LOGOS)
+        .find({ logoId: { $in: logoIds } })
+        .toArray();
+      
+      // Merge logo details
+      partner.defaultLogosWithDetails = partner.defaultLogos.map((logoAssignment: any) => {
+        const logo = logos.find((l: any) => l.logoId === logoAssignment.logoId);
+        return {
+          ...logoAssignment,
+          isActive: true,
+          name: logo?.name,
+          imageUrl: logo?.imageUrl,
+          thumbnailUrl: logo?.thumbnailUrl,
+        };
+      });
+    }
 
   } catch (error) {
     console.error('Error fetching partner details:', error);
@@ -196,94 +243,16 @@ export default async function PartnerDetailPage({
 
         {/* Right Column - Default Styles and Events */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Default Styles Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Default Styles for Child Events</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    These defaults cascade to all child events (marked with 🟢)
-                  </p>
-                </div>
-                <Link
-                  href={`/admin/partners/${id}/edit`}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Edit Defaults
-                </Link>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Brand Colors */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Brand Colors</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                      Primary Color
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-sm"
-                        style={{ backgroundColor: partner.defaultBrandColors?.primary || '#3B82F6' }}
-                      ></div>
-                      <div>
-                        <p className="text-sm font-mono text-gray-900 dark:text-white font-semibold">
-                          {partner.defaultBrandColors?.primary || '#3B82F6'}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Buttons, focus states
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                      Border/Accent Color
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-sm"
-                        style={{ backgroundColor: partner.defaultBrandColors?.secondary || '#3B82F6' }}
-                      ></div>
-                      <div>
-                        <p className="text-sm font-mono text-gray-900 dark:text-white font-semibold">
-                          {partner.defaultBrandColors?.secondary || '#3B82F6'}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Borders, inputs
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Frames and Logos Info */}
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">Default Frames</p>
-                    <p className="text-gray-900 dark:text-white font-semibold">
-                      {partner.defaultFrames?.length || 0} frames
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">Default Logos</p>
-                    <p className="text-gray-900 dark:text-white font-semibold">
-                      {partner.defaultLogos?.length || 0} logos
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
-                  💡 New events will automatically inherit these defaults. Events with custom styles (🔴) remain independent.
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Default Styles Section - Using Unified StyleSections Component */}
+          <StyleSections
+            type="partner"
+            id={id}
+            name={partner.name}
+            brandColor={partner.defaultBrandColors?.primary}
+            brandBorderColor={partner.defaultBrandColors?.secondary}
+            frames={partner.defaultFramesWithDetails || []}
+            logos={partner.defaultLogosWithDetails || []}
+          />
 
           {/* Events List */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
