@@ -10,6 +10,7 @@ import { COLLECTIONS } from '@/lib/db/schemas';
 import { ObjectId } from 'mongodb';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import DeletePartnerButton from '@/components/admin/DeletePartnerButton';
 
 export default async function PartnerDetailPage({
   params,
@@ -178,6 +179,17 @@ export default async function PartnerDetailPage({
             >
               View Gallery →
             </Link>
+          </div>
+
+          {/* Delete Partner Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Danger Zone</h2>
+            <DeletePartnerButton
+              partnerId={id}
+              partnerName={partner.name}
+              hasEvents={events.length > 0}
+              eventCount={events.length}
+            />
           </div>
         </div>
 
