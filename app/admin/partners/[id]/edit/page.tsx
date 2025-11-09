@@ -1,8 +1,9 @@
 /**
  * Edit Partner Page
- * Version: 1.1.0
+ * Version: 2.8.0
  * 
  * Form to edit partner details
+ * v2.8.0: Added default style settings for child events
  */
 
 'use client';
@@ -22,6 +23,8 @@ export default function EditPartnerPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partner, setPartner] = useState<any>(null);
+  const [primaryColor, setPrimaryColor] = useState('#3B82F6');
+  const [secondaryColor, setSecondaryColor] = useState('#3B82F6');
 
   // Unwrap params
   useEffect(() => {
@@ -42,6 +45,8 @@ export default function EditPartnerPage({
         }
 
         setPartner(data.partner);
+        setPrimaryColor(data.partner.defaultBrandColors?.primary || '#3B82F6');
+        setSecondaryColor(data.partner.defaultBrandColors?.secondary || '#3B82F6');
         setIsLoading(false);
       } catch (err: any) {
         console.error('Fetch partner error:', err);
@@ -61,13 +66,21 @@ export default function EditPartnerPage({
     const formData = new FormData(e.currentTarget);
     
     // Build request body from form data
-    const data = {
+    const data: any = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       contactEmail: formData.get('contactEmail') as string,
       contactName: formData.get('contactName') as string,
       isActive: formData.get('isActive') === 'on',
     };
+
+    // Default brand colors (v2.8.0)
+    if (primaryColor || secondaryColor) {
+      data.defaultBrandColors = {
+        primary: primaryColor || undefined,
+        secondary: secondaryColor || undefined,
+      };
+    }
 
     try {
       const response = await fetch(`/api/partners/${partnerId}`, {
@@ -217,6 +230,80 @@ export default function EditPartnerPage({
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., contact@partner.com"
             />
+          </div>
+        </div>
+
+        {/* Default Styles for Child Events (v2.8.0) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Default Styles for Events</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Set default brand colors that will automatically apply to all new events under this partner.
+              Events can override these later to become independent.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Default Primary Color */}
+            <div>
+              <label htmlFor="defaultPrimaryColor" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Default Primary Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  id="defaultPrimaryColor"
+                  name="defaultPrimaryColor"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-16 h-12 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  placeholder="#3B82F6"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Used for buttons, focus states
+              </p>
+            </div>
+
+            {/* Default Secondary Color */}
+            <div>
+              <label htmlFor="defaultSecondaryColor" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Default Border/Accent Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  id="defaultSecondaryColor"
+                  name="defaultSecondaryColor"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  className="w-16 h-12 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  placeholder="#3B82F6"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Used for borders, inputs, checkboxes
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              💡 <strong>Note:</strong> Changes to default styles will automatically update all child events that haven't been customized (marked with 🟢).
+              Events with custom styles (marked with 🔴) will keep their own values.
+            </p>
           </div>
         </div>
 
