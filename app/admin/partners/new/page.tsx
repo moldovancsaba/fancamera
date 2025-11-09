@@ -46,14 +46,16 @@ export default function NewPartnerPage() {
         throw new Error(result.error || 'Failed to create partner');
       }
 
-      // Validate response structure
-      if (!result || !result.partner || !result.partner._id) {
+      // API returns { success: true, data: { partner: {...} } }
+      const partner = result.data?.partner || result.partner;
+      
+      if (!partner || !partner._id) {
         console.error('Invalid API response:', result);
         throw new Error('Invalid response from server');
       }
 
       // Navigate to partner detail page on success
-      router.push(`/admin/partners/${result.partner._id}`);
+      router.push(`/admin/partners/${partner._id}`);
       router.refresh();
     } catch (err: any) {
       console.error('Create partner error:', err);
