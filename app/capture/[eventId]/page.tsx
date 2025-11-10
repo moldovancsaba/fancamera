@@ -150,6 +150,10 @@ export default function EventCapturePage({
   useEffect(() => {
     async function fetchData() {
       try {
+        // Check if we're resuming from SSO - if so, don't reset flow state
+        const urlParams = new URLSearchParams(window.location.search);
+        const isResume = urlParams.get('resume') === 'true';
+        
         const response = await fetch(`/api/events/${eventId}`);
         if (!response.ok) throw new Error('Event not found');
         
@@ -207,19 +211,25 @@ export default function EventCapturePage({
           const sortedPages = [...pages].sort((a, b) => a.order - b.order);
           setCustomPages(sortedPages);
           
-          // Start with onboarding if there are pages before 'take-photo'
-          const takePhotoIndex = sortedPages.findIndex(p => p.pageType === 'take-photo');
-          if (takePhotoIndex > 0) {
-            // Has onboarding pages
-            setFlowPhase('onboarding');
-            setCurrentPageIndex(0);
-          } else {
-            // No onboarding, go straight to capture
-            setFlowPhase('capture');
+          // Only set initial flow state if NOT resuming from SSO
+          // SSO resume logic will set the correct page index
+          if (!isResume) {
+            // Start with onboarding if there are pages before 'take-photo'
+            const takePhotoIndex = sortedPages.findIndex(p => p.pageType === 'take-photo');
+            if (takePhotoIndex > 0) {
+              // Has onboarding pages
+              setFlowPhase('onboarding');
+              setCurrentPageIndex(0);
+            } else {
+              // No onboarding, go straight to capture
+              setFlowPhase('capture');
+            }
           }
         } else {
           // No custom pages, go straight to capture (legacy behavior)
-          setFlowPhase('capture');
+          if (!isResume) {
+            setFlowPhase('capture');
+          }
         }
 
         // Get frames assigned to this event
