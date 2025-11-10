@@ -75,8 +75,9 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandCo
     document.cookie = `captureEventId=${eventId}; path=/; max-age=600; SameSite=Lax`; // 10 min
     document.cookie = `capturePageIndex=${pageIndex}; path=/; max-age=600; SameSite=Lax`;
     
-    // Redirect to SSO login page
-    window.location.href = '/api/auth/login';
+    // Redirect to SSO login page with prompt=login to force login screen
+    // This ensures SSO shows login form even if user has existing session
+    window.location.href = '/api/auth/login?from_logout=true';
   };
 
   /**
