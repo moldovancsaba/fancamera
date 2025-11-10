@@ -40,20 +40,29 @@ export default async function UserProfilePage({ params }: PageProps) {
     console.log('Looking for user with sanitized name:', sanitizedUrlName);
     
     // Get all submissions and find matching user by sanitized name comparison
+    // Note: Don't filter by isArchived - we want to show all user submissions
     const allSubmissions = await db
       .collection('submissions')
-      .find({ isArchived: false })
+      .find({})
       .sort({ createdAt: -1 })
       .toArray();
     
     console.log('Total submissions:', allSubmissions.length);
-    console.log('Sample submission with userInfo:', allSubmissions.find((s: any) => s.userInfo?.name));
+    console.log('Sample submission:', allSubmissions[0] ? {
+      userId: allSubmissions[0].userId,
+      userName: allSubmissions[0].userName,
+      userEmail: allSubmissions[0].userEmail,
+      userInfo: allSubmissions[0].userInfo,
+    } : 'none');
     
     // Filter submissions where sanitized username matches the URL parameter
     const submissions = allSubmissions.filter((sub: any) => {
       const nameFromUserInfo = sub.userInfo?.name;
       const nameFromSession = sub.userName;  // From SSO session when user authenticated
-      const isAnonymous = sub.userId === 'anonymous' || sub.userEmail === 'anonymous@event.com';
+      // Check multiple variations of anonymous email for backward compatibility
+      const isAnonymous = sub.userId === 'anonymous' || 
+                         sub.userEmail === 'anonymous@event.com' ||
+                         sub.userEmail === 'anonymous@event';
       
       // Priority: userInfo (from pseudo reg) > session name (from SSO) > Anonymous > Unknown
       const actualName = nameFromUserInfo || 
@@ -61,7 +70,7 @@ export default async function UserProfilePage({ params }: PageProps) {
                         'Unknown';
       const sanitized = sanitizeUsername(actualName);
       
-      console.log(`Checking submission: sanitized="${sanitized}" vs urlName="${sanitizedUrlName}" (userInfo=${nameFromUserInfo}, userName=${nameFromSession}, isAnon=${isAnonymous})`);
+      console.log(`Checking submission: sanitized="${sanitized}" vs urlName="${sanitizedUrlName}" (userInfo=${nameFromUserInfo}, userName=${nameFromSession}, userEmail=${sub.userEmail}, isAnon=${isAnonymous})`);
       
       return sanitized === sanitizedUrlName;
     });
@@ -84,7 +93,9 @@ export default async function UserProfilePage({ params }: PageProps) {
     const firstSubmission = submissions[0];
     const hasUserInfo = firstSubmission.userInfo?.email && firstSubmission.userInfo?.name;
     const isAnonymous = !hasUserInfo && 
-      (firstSubmission.userId === 'anonymous' || firstSubmission.userEmail === 'anonymous@event');
+      (firstSubmission.userId === 'anonymous' || 
+       firstSubmission.userEmail === 'anonymous@event.com' ||
+       firstSubmission.userEmail === 'anonymous@event');
 
     // Get unique events this user participated in
     const eventsMap = new Map();
