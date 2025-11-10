@@ -101,45 +101,8 @@ export default function EventCapturePage({
   const copyErrorMessage = takePhotoPage?.config.copyErrorMessage || 'Failed to copy link. Please copy it manually.';
   const saveFirstMessage = takePhotoPage?.config.saveFirstMessage || 'Please save the photo first to get a shareable link.';
 
-  // Check for SSO resume on mount
-  useEffect(() => {
-    // Check URL params for resume signal
-    const urlParams = new URLSearchParams(window.location.search);
-    const isResume = urlParams.get('resume') === 'true';
-    const resumePageIndex = urlParams.get('page');
-    
-    if (isResume) {
-      // User is resuming from SSO login - check for session
-      fetch('/api/auth/session')
-        .then(res => res.json())
-        .then(sessionData => {
-          if (sessionData.authenticated) {
-            // Auto-populate userInfo from session
-            const user = sessionData.user;
-            setCollectedData(prev => ({
-              ...prev,
-              userInfo: {
-                name: user.name || '',
-                email: user.email || '',
-              },
-            }));
-            
-            // Move to next page if resumePageIndex is provided, or advance from who-are-you
-            if (resumePageIndex !== null) {
-              const pageIndex = parseInt(resumePageIndex, 10);
-              if (!isNaN(pageIndex)) {
-                // Advance to next page after who-are-you
-                setCurrentPageIndex(pageIndex + 1);
-              }
-            }
-            
-            // Clean URL
-            window.history.replaceState({}, '', window.location.pathname);
-          }
-        })
-        .catch(err => console.warn('Failed to fetch session:', err));
-    }
-  }, []);
+  // Note: SSO resume check moved to WhoAreYouPage component
+  // This prevents loops when admin users visit capture pages
 
   // Fetch event and frames
   useEffect(() => {
