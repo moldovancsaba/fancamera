@@ -57,34 +57,12 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandCo
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Default to both enabled if not specified (backward compatibility)
   const enableSSOLogin = config.enableSSOLogin ?? false;
   const enablePseudoReg = config.enablePseudoReg ?? true;
   const ssoButtonText = config.ssoButtonText || 'Sign in with Social Media';
   const pseudoFormTitle = config.pseudoFormTitle || 'Or enter your details';
-  
-  // Check if user is already authenticated and pre-fill form
-  useEffect(() => {
-    // Only check if SSO login is enabled
-    if (!enableSSOLogin) {
-      setIsCheckingAuth(false);
-      return;
-    }
-    
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(sessionData => {
-        if (sessionData.authenticated && sessionData.user) {
-          // Pre-fill form with authenticated user data
-          setName(sessionData.user.name || '');
-          setEmail(sessionData.user.email || '');
-        }
-      })
-      .catch(err => console.warn('Failed to check auth status:', err))
-      .finally(() => setIsCheckingAuth(false));
-  }, [enableSSOLogin]);
 
   /**
    * Handle SSO login button click

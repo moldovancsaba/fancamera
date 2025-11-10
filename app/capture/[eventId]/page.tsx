@@ -101,8 +101,50 @@ export default function EventCapturePage({
   const copyErrorMessage = takePhotoPage?.config.copyErrorMessage || 'Failed to copy link. Please copy it manually.';
   const saveFirstMessage = takePhotoPage?.config.saveFirstMessage || 'Please save the photo first to get a shareable link.';
 
-  // Note: SSO resume check moved to WhoAreYouPage component
-  // This prevents loops when admin users visit capture pages
+  // Check for SSO resume after authentication
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isResume = urlParams.get('resume') === 'true';
+    const resumePageIndex = urlParams.get('page');
+    
+    // Only process resume once and only if explicitly signaled
+    if (isResume && resumePageIndex !== null) {
+      const pageIndex = parseInt(resumePageIndex, 10);
+      
+      if (!isNaN(pageIndex)) {
+        // Fetch session to get authenticated user data
+        fetch('/api/auth/session')
+          .then(res => res.json())
+          .then(sessionData => {
+            if (sessionData.authenticated && sessionData.user) {
+              // Auto-populate userInfo from authenticated session
+              setCollectedData(prev => ({
+                ...prev,
+                userInfo: {
+                  name: sessionData.user.name || '',
+                  email: sessionData.user.email || '',
+                },
+              }));
+              
+              // Advance to next page (skip who-are-you since we have the data)
+              setCurrentPageIndex(pageIndex + 1);
+              setFlowPhase('onboarding');
+            }
+            
+            // Clean URL to prevent re-processing on refresh
+            window.history.replaceState({}, '', window.location.pathname);
+          })
+          .catch(err => {
+            console.warn('Failed to fetch session during resume:', err);
+            // Clean URL even on error
+            window.history.replaceState({}, '', window.location.pathname);
+          });
+      } else {
+        // Invalid page index, just clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []); // Empty deps array - only run once on mount
 
   // Fetch event and frames
   useEffect(() => {
