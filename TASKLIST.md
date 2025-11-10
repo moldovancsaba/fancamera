@@ -1,140 +1,56 @@
 # TASKLIST.md
 
-Current Version: 2.7.0
-Last Updated: 2025-11-09T20:30:00.000Z
+Current Version: 2.8.0
+Last Updated: 2025-11-10T11:18:00.000Z
 
-## Recently Completed
+## Active Tasks (High Priority / Urgent Only)
 
-### Admin Panel UX Enhancements (v2.7.0) - COMPLETE
-- **Completed**: 2025-11-09T20:30:00.000Z
-- **Type**: MINOR release (UX improvements)
-- **Status**: ✅ Complete
-- **Summary**: Enhanced admin panel with collapsible sidebar, version display, and fixed merged user detection
-- **Deliverables**:
-  - ✅ Collapsible sidebar component with smooth transitions
-  - ✅ Version number displayed at bottom of sidebar
-  - ✅ Active page highlighting in navigation
-  - ✅ Clickable chips for partner names
-  - ✅ Fixed merged pseudo user detection bug
-  - ✅ Removed confusing "Pseudo" badge from merged users
-  - ✅ User management actions work correctly for merged users
-  - ✅ Build verified (0 TypeScript errors)
-  - ✅ Documentation updated (README, RELEASE_NOTES, TASKLIST)
-- **Impact**: Better admin UX with more screen space and clearer user status
-- **Next**: Could add localStorage persistence and auto-sync version
-
-### Inactive User Filtering (v2.6.0) - COMPLETE
-- **Completed**: 2025-11-09T20:15:00.000Z
-- **Type**: MINOR release (new feature)
-- **Status**: ✅ Complete
-- **Summary**: Implemented automatic filtering of inactive users' submissions from slideshows and event galleries
-- **Deliverables**:
-  - ✅ SSO database helper module (`lib/db/sso.ts`)
-  - ✅ `getInactiveUserEmails()` function with Set-based O(1) lookup
-  - ✅ Slideshow playlist API filtering (v2.0.0)
-  - ✅ Event gallery page filtering (v2.0.0)
-  - ✅ Dual filtering: real users (SSO) + pseudo users (userInfo.isActive)
-  - ✅ Anonymous users preserved (not affected)
-  - ✅ SSO connection caching for performance
-  - ✅ MongoDB query optimization
-  - ✅ Build verified (0 TypeScript errors)
-  - ✅ Documentation updated (README, RELEASE_NOTES, TASKLIST)
-- **Impact**: Deactivated users' content now hidden from public view automatically
-- **Next**: Phase 3 could add caching, bulk operations, email notifications
-
-### User Management System Phase 1 (v2.5.0) - COMPLETE
-- **Completed**: 2025-11-09T19:45:00.000Z
-- **Type**: MINOR release (new feature)
-- **Status**: ✅ Complete
-- **Summary**: Implemented comprehensive user management system with role management, status management, and user merging
-- **Deliverables**:
-  - ✅ 4 user types (Administrator, Real User, Pseudo User, Anonymous User)
-  - ✅ Role management (user ↔ admin toggle)
-  - ✅ Status management (active ↔ inactive)
-  - ✅ User merging (pseudo → real user)
-  - ✅ 3 API endpoints with admin authentication
-  - ✅ UserManagementActions component (267 lines)
-  - ✅ Admin users page completely rewritten with SSO integration
-  - ✅ Database schema extensions (isActive, mergedWith, audit fields)
-  - ✅ All changes logged with admin ID and timestamps
-  - ✅ Build verified (0 TypeScript errors)
-  - ✅ Documentation updated (README, RELEASE_NOTES, ARCHITECTURE)
-- **Impact**: Full user lifecycle management now available to administrators
-- **Future**: Phase 2 will add submission visibility filtering and bulk operations
-
-### Safari Camera Initialization Fix (v2.0.1) - COMPLETE
-- **Completed**: 2025-11-08T17:53:00.000Z
-- **Type**: PATCH release (bug fix)
-- **Status**: ✅ Complete
-- **Summary**: Fixed critical Safari camera capture issues with comprehensive video readiness validation
-- **Deliverables**:
-  - ✅ Enhanced video initialization with multiple event listeners
-  - ✅ Safari-specific readiness checks (videoWidth, playback state, currentTime)
-  - ✅ Double requestAnimationFrame for render completion
-  - ✅ Explicit canvas context configuration
-  - ✅ Tested on Safari iOS, Safari Desktop, Chrome, Firefox
-  - ✅ Documentation updated (LEARNINGS.md [FRONT-005])
-- **Impact**: Camera now works reliably on Safari iOS (primary mobile platform)
-
-## Recently Completed
-
-### Custom Pages System Implementation (v2.0.0) - COMPLETE
-- **Completed**: 2025-11-07T00:00:00.000Z
-- **Type**: MAJOR release
-- **Status**: ✅ Complete
-- **Summary**: Implemented comprehensive custom pages system with onboarding/thank you pages
-- **Deliverables**:
-  - ✅ Database schemas extended (CustomPage, UserConsent types)
-  - ✅ API endpoints (PATCH /api/events/[eventId], updated POST endpoints)
-  - ✅ 4 new components (WhoAreYouPage, AcceptPage, CTAPage, CustomPagesManager)
-  - ✅ Capture flow refactored for multi-step navigation
-  - ✅ Admin UI integrated into event edit page
-  - ✅ Build verified (TypeScript 0 errors, all pages generated)
-  - ✅ Documentation updated to v2.0.0 across all files
-
----
-
-## Active Tasks
-
-### High Priority — Initial Project Setup (In Progress)
-
-**Task 1.1: Project Initialization and Core Setup**
+### Documentation Update (v2.8.0) - IN PROGRESS
 - **Owner**: Development Team
-- **Expected Delivery**: 2025-11-04T12:00:00.000Z
-- **Status**: Planning
-- **Description**: Initialize Next.js 15+ project with TypeScript, configure dependencies, and set up development environment
+- **Expected Delivery**: 2025-11-10T18:00:00.000Z
+- **Status**: In Progress
+- **Description**: Update documentation to reflect v2.8.0 changes and move completed tasks to RELEASE_NOTES.md
 - **Actions**:
-  - Create Next.js app with TypeScript
-  - Configure ES Modules in package.json
-  - Set initial version to 1.0.0
-  - Install core dependencies (mongodb, axios, resend)
-  - Create environment variable templates
-  - Configure TypeScript and Next.js config
+  - ⏳ Update RELEASE_NOTES.md with v2.8.0 entry
+  - ⏳ Update README.md to v2.8.0
+  - ⏳ Update ARCHITECTURE.md with camera capture changes
+  - ⏳ Update LEARNINGS.md with object-cover insights
+  - ⏳ Sync version across all documentation files
+- **Acceptance Criteria**:
+  - All docs reference v2.8.0
+  - v2.8.0 release notes complete
+  - No version mismatches
 
-**Task 1.2: Documentation Suite Creation**
+### Remove Brand Colors from Event Edit Page (v2.8.0) - PLANNED
 - **Owner**: Development Team
-- **Expected Delivery**: 2025-11-04T12:00:00.000Z
-- **Status**: In Progress (Core docs created)
-- **Description**: Create all required professional documentation following established conventions
-- **Progress**:
-  - ✅ README.md
-  - ✅ WARP.DEV_AI_CONVERSATION.md
-  - ✅ TASKLIST.md (this file)
-  - ⏳ ARCHITECTURE.md
-  - ⏳ ROADMAP.md
-  - ⏳ RELEASE_NOTES.md
-  - ⏳ LEARNINGS.md
-  - ⏳ SSO_INTEGRATION.md
-  - ⏳ IMGBB_INTEGRATION.md
-  - ⏳ FRAME_SYSTEM.md
-  - ⏳ IMAGE_PROCESSING.md
-  - ⏳ CODING_STANDARDS.md
+- **Expected Delivery**: 2025-11-10T18:00:00.000Z
+- **Status**: Planned
+- **Description**: Remove "Brand Colors" section from event edit page since it's now displayed on event detail page
+- **Actions**:
+  - Remove brand color inputs from `app/admin/events/[id]/edit/page.tsx`
+  - Verify no broken links or references
+- **Acceptance Criteria**:
+  - Brand colors only editable from event detail page
+  - No duplicate UI elements
+  - Build passes
 
 ---
 
-## Planned Tasks
+---
 
-### High Priority — Phase 1: Core Infrastructure (Q4 2025)
+## Notes
+
+- All timestamps follow ISO 8601 format: YYYY-MM-DDTHH:MM:SS.sssZ
+- Completed tasks moved to RELEASE_NOTES.md immediately upon completion
+- Only urgent/high-priority active tasks shown here
+- For long-term planning, see ROADMAP.md
+- For completed work history, see RELEASE_NOTES.md
+
+---
+
+##Planned Tasks (Lower Priority - See ROADMAP.md for details)
+
+### Phase 1: Core Infrastructure (Q4 2025)
 
 **Task 2.1: Database and External Service Configuration**
 - **Expected Delivery**: 2025-11-05T18:00:00.000Z
@@ -301,17 +217,6 @@ Last Updated: 2025-11-09T20:30:00.000Z
   - RELEASE_NOTES.md updated with v1.0.0 entry
   - Final commit and push completed
   - Production deployment updated
-
----
-
-## Notes
-
-- All timestamps follow ISO 8601 format: YYYY-MM-DDTHH:MM:SS.sssZ
-- Tasks must be marked complete before moving to next dependent task
-- Testing prohibited per MVP factory approach - validation through manual testing only
-- All code must include functional and strategic comments explaining implementation decisions
-- All completed tasks must be moved to RELEASE_NOTES.md immediately upon completion
-- Version must be incremented according to protocol before each commit
 
 ---
 

@@ -1,45 +1,44 @@
 # ROADMAP.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.0.1
-**Last Updated**: 2025-11-08T17:53:00.000Z
+**Current Version**: 2.8.0
+**Last Updated**: 2025-11-10T11:18:00.000Z
 
-**Recent Completion**: v2.0.1 Safari camera fixes - comprehensive video initialization validation
+**Recent Completion**: v2.8.0 Camera maximum view with frame overlay, event DELETE endpoint, frameless submissions
 
 This document contains only forward-looking development plans and milestones. No historical entries are included.
+For completed work, see RELEASE_NOTES.md. For current urgent tasks, see TASKLIST.md.
 
 ---
 
-## Q4 2025 — Initial Release (v1.0.0)
+## Q4 2025 / Q1 2026 — Stability and Polish
 
-### Milestone: MVP Launch
+### Milestone: Production-Ready MVP
 
-**Target Release Date**: 2025-11-25T18:00:00.000Z
+**Target Release Date**: 2026-01-31T18:00:00.000Z
 
-**Core Deliverables**:
-- ✅ Complete project initialization and setup
-- ⏳ MongoDB Atlas database with all collections
-- ⏳ SSO authentication integration (OAuth2/OIDC)
-- ⏳ Camera capture (mobile + desktop webcam support)
-- ⏳ File upload alternative
-- ⏳ Admin frame management system (CRUD operations)
-- ⏳ Canvas-based image composition
-- ⏳ imgbb.com CDN integration
-- ⏳ Email delivery of final images
-- ⏳ User profile with image gallery
-- ⏳ Social sharing features
-- ⏳ Comprehensive documentation suite
-- ⏳ Vercel production deployment
+**Focus Areas**:
 
-**Success Criteria**:
-- Users can capture/upload photos successfully
-- Frames can be selected and applied automatically
-- Final images delivered to user via email
-- Images shareable on social media platforms
-- User history accessible and functional
-- Admin can manage frame library
-- System handles 100+ concurrent users
-- Response time < 2 seconds for image composition
+**Performance Optimization**:
+- Image caching and preloading
+- Frame asset optimization (WebP, AVIF formats)
+- CDN caching strategy implementation
+- Database query optimization
+- Progressive image loading
+
+**User Experience Enhancements**:
+- Batch photo processing
+- Recent frames quick access
+- Enhanced frame preview (zoom, details)
+- Mobile PWA features
+- Improved error handling and user feedback
+
+**Admin Tools**:
+- Bulk frame operations
+- Frame usage analytics
+- User activity monitoring
+- System health dashboard
+- Advanced filtering and search
 
 ---
 
