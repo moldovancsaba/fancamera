@@ -1,10 +1,203 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.7.0
-**Last Updated**: 2025-11-09T20:30:00.000Z
+**Current Version**: 2.8.0
+**Last Updated**: 2025-11-10T11:18:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.8.0] — 2025-11-10T11:18:00.000Z
+
+### Feature — Camera Maximum View, Event Management, Frame Flow Fixes
+
+**Status**: Complete  
+**Release Type**: MINOR (new features + bug fixes)
+
+#### Summary
+Major camera capture improvements ensuring full sensor utilization with proper object-cover scaling, added event DELETE endpoint, fixed frameless submission support, repositioned camera controls for better UX, and enforced strict frame selector suppression rules.
+
+#### Features Implemented
+
+**Camera Maximum View with Object-Cover Scaling**:
+- Camera now shows **maximum available view** at target aspect ratio
+- Uses full sensor scaled to fill frame dimensions (not cropped at sensor resolution)
+- Example: 3000x4000 sensor → 1500x1000 frame shows all content scaled to 1500x2000, clipped to 1500x1000
+- Implements CSS object-cover math: scale full sensor, center, let canvas clip
+- **What you see is what you capture** - exact 1:1 correspondence
+- Works for any camera sensor / frame aspect ratio combination
+- Automatic recalculation on device rotation
+
+**Event DELETE Endpoint**:
+- Added `DELETE /api/events/[eventId]` endpoint (admin-only)
+- Validates event existence before deletion
+- Returns success message with deleted eventId
+- Version updated to 2.8.0 in endpoint comments
+
+**Frameless Submission Support**:
+- Submission API now allows `frameId: null` for events with 0 frames
+- Updated validation to only require `imageData` (frame optional)
+- Frame data in submissions safely handled with optional chaining
+- Frameless events default to 16:9 aspect ratio with maximum camera view
+
+**Frame Selector Suppression**:
+- Fixed restart flow to never show frame selector when 0 or 1 frame available
+- `handleRestartFlow()` now auto-selects single frame or skips selector for 0 frames
+- Flow always restarts from beginning (onboarding if configured)
+- Enforces strict rule: frame selector PROHIBITED when frames ≤ 1
+
+**Camera Controls Repositioning**:
+- Controls moved outside camera frame using fixed positioning
+- **Portrait mode**: Capture button at bottom center, switch camera at bottom right
+- **Landscape mode**: Capture button at right middle, switch camera at right bottom
+- Uses Tailwind `portrait:` and `landscape:` modifiers for automatic adaptation
+- Consistent 16px (1rem) padding from screen edges
+
+#### Technical Implementation
+
+**Camera Component** (`components/camera/CameraCapture.tsx`):
+```typescript
+// Calculate how to scale FULL video to fill canvas (object-cover)
+const scaleX = canvas.width / video.videoWidth;
+const scaleY = canvas.height / video.videoHeight;
+const scale = Math.max(scaleX, scaleY); // Scale to fill
+
+const scaledWidth = video.videoWidth * scale;
+const scaledHeight = video.videoHeight * scale;
+
+// Center the scaled video
+const offsetX = (canvas.width - scaledWidth) / 2;
+const offsetY = (canvas.height - scaledHeight) / 2;
+
+// Draw FULL video (not cropped source)
+ctx.drawImage(
+  video,
+  0, 0, video.videoWidth, video.videoHeight, // Full sensor
+  offsetX, offsetY, scaledWidth, scaledHeight
+);
+```
+
+**Compositing Logic** (`app/capture/[eventId]/page.tsx`):
+```typescript
+// Frame sets canvas size (not photo)
+let targetWidth = frameImg.width;
+let targetHeight = frameImg.height;
+
+// Scale down if exceeds max dimension
+if (targetWidth > maxDimension || targetHeight > maxDimension) {
+  const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+  targetWidth = Math.floor(targetWidth * scale);
+  targetHeight = Math.floor(targetHeight * scale);
+}
+
+canvas.width = targetWidth;
+canvas.height = targetHeight;
+
+// Photo scales to fit frame
+ctx.drawImage(photoImg, 0, 0, canvas.width, canvas.height);
+ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+```
+
+**Submission API** (`app/api/submissions/route.ts`):
+```typescript
+// Frame is optional (null for frameless events)
+if (!imageData) {
+  throw apiBadRequest('Image data is required');
+}
+
+let frame = null;
+if (frameId) {
+  frame = await db.collection('frames').findOne({ frameId });
+  if (!frame) throw apiNotFound('Frame');
+}
+
+const submission = {
+  frameId: frame?.frameId || null,
+  frameName: frame?.name || null,
+  frameCategory: frame?.category || null,
+  // ...
+};
+```
+
+**Restart Flow Fix** (`app/capture/[eventId]/page.tsx`):
+```typescript
+const handleRestartFlow = () => {
+  // Auto-select frame if 0 or 1 frame (PROHIBITED to show selector)
+  if (frames.length === 1) {
+    setSelectedFrame(frames[0]);
+  } else if (frames.length === 0) {
+    setSelectedFrame(null);
+  } else {
+    setSelectedFrame(null); // Multiple frames: reset for selector
+  }
+  
+  // ALWAYS restart from beginning
+  const takePhotoIndex = customPages.findIndex(p => p.pageType === 'take-photo');
+  if (takePhotoIndex > 0) {
+    setFlowPhase('onboarding');
+    setCurrentPageIndex(0);
+  } else {
+    setFlowPhase('capture');
+    setStep(frames.length > 1 ? 'select-frame' : 'capture-photo');
+  }
+};
+```
+
+#### Files Modified
+- `components/camera/CameraCapture.tsx` — Maximum view object-cover scaling, controls repositioning
+- `app/capture/[eventId]/page.tsx` — Frame-as-canvas-size compositing, restart flow fixes
+- `app/api/submissions/route.ts` — Optional frameId support
+- `app/api/events/[eventId]/route.ts` — Added DELETE endpoint
+- `TASKLIST.md` — Version 2.7.0 → 2.8.0, focus on urgent tasks only
+- `ROADMAP.md` — Version 2.7.0 → 2.8.0, long-term focus
+- `package.json` — Version 2.7.0 → 2.8.0
+- `RELEASE_NOTES.md` — This entry
+
+#### Impact
+
+**Camera Capture Quality**:
+- Users now see maximum possible view from their camera sensor
+- No content lost due to premature cropping
+- All 3 people in group photo visible (previous bug: only center person)
+- Works across all device orientations and aspect ratios
+- Generic algorithm handles any sensor/frame combination
+
+**Event Management**:
+- Admins can now delete events from UI
+- Events with 0 frames work correctly
+- No more "Image data and frame ID are required" errors
+
+**User Experience**:
+- Camera controls don't obstruct frame view
+- Consistent button positioning across orientations
+- Frame selector never shows when inappropriate
+- Flow restart always begins at proper starting point
+
+#### Breaking Changes
+
+None — All changes are additive and backward compatible
+
+#### Known Limitations
+
+- Controls use `fixed` positioning (may overlap content on very small screens)
+- Frame selector suppression logic tied to `frames.length` state
+- No frame upload size validation (relies on browser/API limits)
+
+#### Browser Compatibility
+
+- ✅ Chrome/Edge (Desktop, Android): Full support
+- ✅ Safari (iOS, Desktop): Full support with object-cover scaling
+- ✅ Firefox (Desktop): Full support
+- ✅ Responsive across portrait/landscape orientations
+
+#### Future Enhancements
+
+- Add frame dimension validation on upload
+- Implement frame preview with live camera view
+- Add camera resolution selector (SD/HD/FHD/4K)
+- Support manual crop/zoom before capture
+- Add flash/torch control for mobile devices
 
 ---
 
