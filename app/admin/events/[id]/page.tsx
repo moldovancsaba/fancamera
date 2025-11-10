@@ -16,6 +16,7 @@ import SlideshowManager from '@/components/admin/SlideshowManager';
 import EventGallery from '@/components/admin/EventGallery';
 import { getInactiveUserEmails } from '@/lib/db/sso';
 import StyleInheritanceIndicator from '@/components/admin/StyleInheritanceIndicator';
+import DeleteEventButton from '@/components/admin/DeleteEventButton';
 
 export default async function EventDetailPage({
   params,
@@ -172,6 +173,7 @@ export default async function EventDetailPage({
             >
               Edit Event
             </Link>
+            <DeleteEventButton eventId={id} eventName={event.name} />
             <span className={`inline-flex px-3 py-2 text-sm font-semibold rounded-lg ${
               event.isActive
                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
