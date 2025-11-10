@@ -300,7 +300,7 @@ export default function CameraCapture({
       requestAnimationFrame(() => {
         // Double RAF ensures we're definitely on a rendered frame
         
-        // Calculate target aspect ratio
+        // Calculate target aspect ratio from frame (or default 16:9)
         const targetAspect = (frameWidth && frameHeight)
           ? frameWidth / frameHeight
           : frameImage
@@ -309,31 +309,30 @@ export default function CameraCapture({
         
         const videoAspect = video.videoWidth / video.videoHeight;
         
-        // Calculate crop area to show MAXIMUM view (minimal crop)
-        // We want to use as much of the sensor as possible
-        let sourceX = 0;
-        let sourceY = 0;
-        let sourceWidth = video.videoWidth;
-        let sourceHeight = video.videoHeight;
+        // v2.8.0: Draw FULL sensor, scaled to frame size
+        // This shows maximum visible area, matching what CSS object-cover displays
+        // Example: 3000x4000 sensor → 1500x1000 frame (3:2)
+        //   - Draw full 3000x4000 scaled to 1500x2000 (matches width)
+        //   - Canvas clips to 1500x1000, showing all 3 people
         
-        if (videoAspect > targetAspect) {
-          // Video is wider than target - use FULL HEIGHT, crop width
-          // Example: 4000x3000 sensor, 1:1 target -> use full 3000 height, crop to 3000 width
-          sourceWidth = video.videoHeight * targetAspect;
-          sourceX = (video.videoWidth - sourceWidth) / 2;
-          // sourceHeight = video.videoHeight (full height)
-        } else if (videoAspect < targetAspect) {
-          // Video is taller than target - use FULL WIDTH, crop height
-          // Example: 3000x4000 sensor, 16:9 target -> use full 3000 width, crop height
-          sourceHeight = video.videoWidth / targetAspect;
-          sourceY = (video.videoHeight - sourceHeight) / 2;
-          // sourceWidth = video.videoWidth (full width)
-        }
-        // If aspects match exactly, use full sensor (no crop)
+        // Set canvas to frame dimensions
+        const frameTargetWidth = frameWidth || (frameImage ? frameImage.width : 1920);
+        const frameTargetHeight = frameHeight || (frameImage ? frameImage.height : 1080);
         
-        // Set canvas to target dimensions (will be scaled by frame later)
-        canvas.width = sourceWidth;
-        canvas.height = sourceHeight;
+        canvas.width = frameTargetWidth;
+        canvas.height = frameTargetHeight;
+        
+        // Calculate how to scale and position the FULL video to fill canvas (object-cover)
+        const scaleX = canvas.width / video.videoWidth;
+        const scaleY = canvas.height / video.videoHeight;
+        const scale = Math.max(scaleX, scaleY); // Scale to fill (largest dimension)
+        
+        const scaledWidth = video.videoWidth * scale;
+        const scaledHeight = video.videoHeight * scale;
+        
+        // Center the scaled video
+        const offsetX = (canvas.width - scaledWidth) / 2;
+        const offsetY = (canvas.height - scaledHeight) / 2;
 
         // Get canvas context
         const ctx = canvas.getContext('2d', { 
@@ -351,22 +350,22 @@ export default function CameraCapture({
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         try {
-          // Draw video frame to canvas - crop to center area matching target aspect
+          // Draw FULL video scaled to fill canvas (object-cover behavior)
           // If front camera, flip horizontally to match mirror view
           if (facingMode === 'user') {
             ctx.save();
             ctx.scale(-1, 1);
             ctx.drawImage(
               video,
-              sourceX, sourceY, sourceWidth, sourceHeight,
-              -canvas.width, 0, canvas.width, canvas.height
+              0, 0, video.videoWidth, video.videoHeight,
+              -offsetX - scaledWidth, offsetY, scaledWidth, scaledHeight
             );
             ctx.restore();
           } else {
             ctx.drawImage(
               video,
-              sourceX, sourceY, sourceWidth, sourceHeight,
-              0, 0, canvas.width, canvas.height
+              0, 0, video.videoWidth, video.videoHeight,
+              offsetX, offsetY, scaledWidth, scaledHeight
             );
           }
           
