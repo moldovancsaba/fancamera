@@ -353,6 +353,11 @@ function PageEditModal({
   const [title, setTitle] = useState(page.config.title);
   const [description, setDescription] = useState(page.config.description);
   const [buttonText, setButtonText] = useState(page.config.buttonText);
+  // Who-are-you SSO options (v2.9.0)
+  const [enableSSOLogin, setEnableSSOLogin] = useState(page.config.enableSSOLogin || false);
+  const [enablePseudoReg, setEnablePseudoReg] = useState(page.config.enablePseudoReg !== false); // Default true
+  const [ssoButtonText, setSsoButtonText] = useState(page.config.ssoButtonText || 'Login with SSO');
+  const [pseudoFormTitle, setPseudoFormTitle] = useState(page.config.pseudoFormTitle || '');
   const [nameLabel, setNameLabel] = useState(page.config.nameLabel || 'Your Name');
   const [emailLabel, setEmailLabel] = useState(page.config.emailLabel || 'Your Email');
   const [namePlaceholder, setNamePlaceholder] = useState(page.config.namePlaceholder || 'Enter your name');
@@ -391,6 +396,10 @@ function PageEditModal({
         description,
         buttonText,
         ...(page.pageType === CustomPageType.WHO_ARE_YOU && {
+          enableSSOLogin,
+          enablePseudoReg,
+          ssoButtonText,
+          pseudoFormTitle,
           nameLabel,
           emailLabel,
           namePlaceholder,
@@ -465,54 +474,130 @@ function PageEditModal({
 
           {page.pageType === CustomPageType.WHO_ARE_YOU && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Name Field Label *
-                </label>
-                <input
-                  type="text"
-                  value={nameLabel}
-                  onChange={(e) => setNameLabel(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
+              <div className="space-y-4 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white">Authentication Options</h4>
+                
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <input
+                      type="checkbox"
+                      checked={enableSSOLogin}
+                      onChange={(e) => setEnableSSOLogin(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    Enable SSO Login
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Allow users to authenticate with Facebook/Google SSO
+                  </p>
+                </div>
+
+                {enableSSOLogin && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      SSO Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={ssoButtonText}
+                      onChange={(e) => setSSOButtonText(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="e.g., Sign in with Social Media"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <input
+                      type="checkbox"
+                      checked={enablePseudoReg}
+                      onChange={(e) => setEnablePseudoReg(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    Enable Pseudo Registration
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Allow users to provide name and email without authentication
+                  </p>
+                </div>
+
+                {enablePseudoReg && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Form Title
+                    </label>
+                    <input
+                      type="text"
+                      value={pseudoFormTitle}
+                      onChange={(e) => setPseudoFormTitle(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="e.g., Enter your details"
+                    />
+                  </div>
+                )}
+
+                {!enableSSOLogin && !enablePseudoReg && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ At least one authentication method must be enabled
+                    </p>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Name Field Placeholder
-                </label>
-                <input
-                  type="text"
-                  value={namePlaceholder}
-                  onChange={(e) => setNamePlaceholder(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="e.g., Enter your name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Email Field Label *
-                </label>
-                <input
-                  type="text"
-                  value={emailLabel}
-                  onChange={(e) => setEmailLabel(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Email Field Placeholder
-                </label>
-                <input
-                  type="text"
-                  value={emailPlaceholder}
-                  onChange={(e) => setEmailPlaceholder(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="e.g., your.email@example.com"
-                />
-              </div>
+
+              {enablePseudoReg && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Name Field Label *
+                    </label>
+                    <input
+                      type="text"
+                      value={nameLabel}
+                      onChange={(e) => setNameLabel(e.target.value)}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Name Field Placeholder
+                    </label>
+                    <input
+                      type="text"
+                      value={namePlaceholder}
+                      onChange={(e) => setNamePlaceholder(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="e.g., Enter your name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Email Field Label *
+                    </label>
+                    <input
+                      type="text"
+                      value={emailLabel}
+                      onChange={(e) => setEmailLabel(e.target.value)}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Email Field Placeholder
+                    </label>
+                    <input
+                      type="text"
+                      value={emailPlaceholder}
+                      onChange={(e) => setEmailPlaceholder(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="e.g., your.email@example.com"
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 

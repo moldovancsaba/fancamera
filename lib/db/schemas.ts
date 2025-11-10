@@ -135,7 +135,11 @@ export interface CustomPage {
     title: string;             // Page heading displayed to user
     description: string;       // Explanatory text shown above form/content
     buttonText: string;        // Next/Continue button label
-    // For 'who-are-you' type only
+    // For 'who-are-you' type only (v2.9.0: SSO integration)
+    enableSSOLogin?: boolean;     // Show "Login with SSO" button (default: false)
+    enablePseudoReg?: boolean;    // Show name/email form for guest registration (default: true)
+    ssoButtonText?: string;       // Custom text for SSO button (default: "Login with SSO")
+    pseudoFormTitle?: string;     // Optional title above name/email form (e.g., "Or continue as guest")
     nameLabel?: string;        // Label for name input (e.g., "Your Name")
     emailLabel?: string;       // Label for email input (e.g., "Your Email")
     namePlaceholder?: string;  // Placeholder for name input (e.g., "Enter your name")

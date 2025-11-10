@@ -138,9 +138,32 @@ export async function GET(request: NextRequest) {
     }
 
     // Create session with user, tokens, and app permission
-    await createSession(user, tokens, { appRole, appAccess });
+    const response = await createSession(user, tokens, { appRole, appAccess });
 
-    console.log('✓ Session created, redirecting to homepage');
+    console.log('✓ Session created');
+
+    // Check for capture flow resume (v2.9.0: SSO in capture flow)
+    const captureEventId = request.cookies.get('captureEventId')?.value;
+    const capturePageIndex = request.cookies.get('capturePageIndex')?.value;
+    
+    if (captureEventId) {
+      console.log('✓ Resuming capture flow:', captureEventId, 'page:', capturePageIndex);
+      
+      // Clear capture cookies
+      response.cookies.delete('captureEventId');
+      response.cookies.delete('capturePageIndex');
+      
+      // Redirect back to capture page with resume signal
+      const resumeUrl = new URL(`/capture/${captureEventId}`, request.url);
+      resumeUrl.searchParams.set('resume', 'true');
+      if (capturePageIndex) {
+        resumeUrl.searchParams.set('page', capturePageIndex);
+      }
+      
+      return NextResponse.redirect(resumeUrl);
+    }
+
+    console.log('✓ Redirecting to homepage');
 
     // Redirect to homepage
     // Note: Future enhancement - redirect to /profile or "where you left off" page

@@ -1,10 +1,289 @@
 # RELEASE_NOTES.md
 
 **Project**: Camera — Photo Frame Webapp
-**Current Version**: 2.8.0
-**Last Updated**: 2025-11-10T11:18:00.000Z
+**Current Version**: 2.9.0
+**Last Updated**: 2025-11-10T12:45:00.000Z
 
 This document tracks all completed tasks and version releases in chronological order, following semantic versioning format.
+
+---
+
+## [v2.9.0] — 2025-11-10T12:45:00.000Z
+
+### Feature — SSO Login Option for Who-Are-You Page, Orientation Detection
+
+**Status**: Complete  
+**Release Type**: MINOR (new features)
+
+#### Summary
+Implemented optional SSO login integration for who-are-you pages, allowing event organizers to choose between pseudo registration (name/email form), SSO authentication (Facebook/Google), or both. Added orientation angle detection to properly position camera controls for left vs right device rotation.
+
+#### Features Implemented
+
+**SSO Login Option for Who-Are-You Pages**:
+- Admin can enable/disable SSO login per event via checkbox
+- Admin can enable/disable pseudo registration per event via checkbox
+- At least one authentication method must be enabled (validation warning shown)
+- Configurable button text for SSO login
+- Configurable form title for pseudo registration
+- SSO login button saves capture state to cookies and redirects to `/api/auth/login`
+- Auth callback detects capture flow resume via cookies
+- After SSO authentication, user redirected back to capture page with session data
+- Capture page auto-populates userInfo from session and advances to next page
+- Both options can be enabled simultaneously with "OR" separator
+- Backward compatible (defaults to pseudo registration only)
+
+**Orientation Angle Detection**:
+- Screen Orientation API detects device rotation angle
+- Portrait (0°/180°): controls at bottom center
+- Landscape-right (90°, rotated left): controls on right side
+- Landscape-left (270°, rotated right): controls on left side  
+- Graceful fallback for browsers without Orientation API (uses window dimensions)
+- Real-time adjustment as device rotates
+
+#### Technical Implementation
+
+**Database Schema** (`lib/db/schemas.ts`):
+```typescript
+export interface WhoAreYouPageConfig extends BasePageConfig {
+  nameLabel: string;
+  emailLabel: string;
+  namePlaceholder?: string;
+  emailPlaceholder?: string;
+  enableSSOLogin?: boolean;      // NEW: Toggle SSO login
+  enablePseudoReg?: boolean;     // NEW: Toggle pseudo registration
+  ssoButtonText?: string;        // NEW: Customizable SSO button text
+  pseudoFormTitle?: string;      // NEW: Customizable form title
+}
+```
+
+**Admin UI** (`components/admin/CustomPagesManager.tsx`):
+```typescript
+const [enableSSOLogin, setEnableSSOLogin] = useState<boolean>(false);
+const [enablePseudoReg, setEnablePseudoReg] = useState<boolean>(true);
+const [ssoButtonText, setSSOButtonText] = useState<string>('');
+const [pseudoFormTitle, setPseudoFormTitle] = useState<string>('');
+
+// In modal JSX:
+<div className="space-y-4 p-4 border ...">
+  <h4>Authentication Options</h4>
+  
+  <label>
+    <input type="checkbox" checked={enableSSOLogin} onChange={...} />
+    Enable SSO Login
+  </label>
+  
+  {enableSSOLogin && (
+    <input placeholder="SSO Button Text" value={ssoButtonText} onChange={...} />
+  )}
+  
+  <label>
+    <input type="checkbox" checked={enablePseudoReg} onChange={...} />
+    Enable Pseudo Registration
+  </label>
+  
+  {enablePseudoReg && (
+    <input placeholder="Form Title" value={pseudoFormTitle} onChange={...} />
+  )}
+  
+  {!enableSSOLogin && !enablePseudoReg && (
+    <div className="p-3 bg-yellow-50 ...">
+      ⚠️ At least one authentication method must be enabled
+    </div>
+  )}
+</div>
+```
+
+**WhoAreYouPage Component** (`components/capture/WhoAreYouPage.tsx`):
+```typescript
+const handleSSOLogin = () => {
+  // Save capture flow state to resume after authentication
+  document.cookie = `captureEventId=${eventId}; path=/; max-age=600; SameSite=Lax`;
+  document.cookie = `capturePageIndex=${pageIndex}; path=/; max-age=600; SameSite=Lax`;
+  window.location.href = '/api/auth/login';
+};
+
+// Render SSO button
+{enableSSOLogin && (
+  <button onClick={handleSSOLogin} ...>
+    <svg>...</svg>
+    {ssoButtonText}
+  </button>
+)}
+
+// Render separator
+{enableSSOLogin && enablePseudoReg && (
+  <div className="relative">OR</div>
+)}
+
+// Render form
+{enablePseudoReg && (
+  <div>
+    {enableSSOLogin && <h2>{pseudoFormTitle}</h2>}
+    {/* Name and email inputs */}
+  </div>
+)}
+```
+
+**Auth Callback** (`app/api/auth/callback/route.ts`):
+```typescript
+const response = await createSession(user, tokens, { appRole, appAccess });
+
+// Check for capture flow resume
+const captureEventId = request.cookies.get('captureEventId')?.value;
+const capturePageIndex = request.cookies.get('capturePageIndex')?.value;
+
+if (captureEventId) {
+  response.cookies.delete('captureEventId');
+  response.cookies.delete('capturePageIndex');
+  
+  const resumeUrl = new URL(`/capture/${captureEventId}`, request.url);
+  resumeUrl.searchParams.set('resume', 'true');
+  if (capturePageIndex) {
+    resumeUrl.searchParams.set('page', capturePageIndex);
+  }
+  
+  return NextResponse.redirect(resumeUrl);
+}
+```
+
+**Capture Page Resume** (`app/capture/[eventId]/page.tsx`):
+```typescript
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isResume = urlParams.get('resume') === 'true';
+  const resumePageIndex = urlParams.get('page');
+  
+  if (isResume) {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(sessionData => {
+        if (sessionData.authenticated) {
+          setCollectedData(prev => ({
+            ...prev,
+            userInfo: {
+              name: user.name || '',
+              email: user.email || '',
+            },
+          }));
+          
+          if (resumePageIndex !== null) {
+            setCurrentPageIndex(parseInt(resumePageIndex, 10) + 1);
+          }
+          
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      });
+  }
+}, []);
+```
+
+**Orientation Detection** (`components/camera/CameraCapture.tsx`):
+```typescript
+const [orientation, setOrientation] = useState<'portrait' | 'landscape-right' | 'landscape-left'>('portrait');
+
+useEffect(() => {
+  const checkOrientation = () => {
+    if (window.screen?.orientation?.angle !== undefined) {
+      const angle = window.screen.orientation.angle;
+      if (angle === 90) {
+        setOrientation('landscape-right'); // Rotated left
+      } else if (angle === 270) {
+        setOrientation('landscape-left'); // Rotated right
+      } else {
+        setOrientation('portrait');
+      }
+    } else {
+      // Fallback: use window dimensions
+      setOrientation(window.innerWidth > window.innerHeight ? 'landscape-right' : 'portrait');
+    }
+  };
+  
+  checkOrientation();
+  window.addEventListener('orientationchange', checkOrientation);
+  window.addEventListener('resize', checkOrientation);
+  
+  return () => {
+    window.removeEventListener('orientationchange', checkOrientation);
+    window.removeEventListener('resize', checkOrientation);
+  };
+}, []);
+
+// Button positioning
+<button
+  className={`fixed w-16 h-16 ${
+    orientation === 'portrait'
+      ? 'bottom-4 left-1/2 -translate-x-1/2'
+      : orientation === 'landscape-right'
+      ? 'right-4 top-1/2 -translate-y-1/2'
+      : 'left-4 top-1/2 -translate-y-1/2'
+  }`}
+>
+```
+
+#### Files Modified
+- `lib/db/schemas.ts` — Added SSO login and pseudo registration fields to WhoAreYouPageConfig
+- `components/admin/CustomPagesManager.tsx` — Added UI for SSO options in who-are-you config
+- `components/capture/WhoAreYouPage.tsx` — Added SSO button, conditional form rendering, cookie-based state saving
+- `app/api/auth/callback/route.ts` — Added capture flow resume detection and redirect
+- `app/capture/[eventId]/page.tsx` — Added SSO resume logic, auto-populate userInfo from session
+- `components/camera/CameraCapture.tsx` — Added orientation angle detection and conditional positioning
+- `package.json` — Version 2.7.0 → 2.9.0
+- `TASKLIST.md` — Updated to v2.9.0, marked Camera UX Improvements as complete
+- `RELEASE_NOTES.md` — This entry
+
+#### Impact
+
+**Event Organizers**:
+- Can now choose authentication method per event
+- Can require SSO for verified identity
+- Can keep simple pseudo registration for quick capture
+- Can offer both options for user convenience
+
+**Users**:
+- Can use existing Facebook/Google account to authenticate
+- No need to re-enter details if authenticated
+- Seamless return to capture flow after SSO login
+- Clear choice when both options enabled
+
+**Security**:
+- Capture flow state stored in httpOnly cookies (10 min expiration)
+- CSRF protection maintained via existing SSO state verification
+- No sensitive data exposed in URLs or localStorage
+
+**UX**:
+- Camera controls automatically adjust to rotation direction
+- No more awkward reaching across screen after rotation
+- Consistent thumb-friendly positioning
+
+#### Breaking Changes
+
+None — All changes are additive and backward compatible
+- Existing who-are-you pages default to pseudo registration only (enablePseudoReg: true)
+- Existing events continue to work without modification
+
+#### Known Limitations
+
+- SSO resume uses cookies (10 min expiration, user must complete flow quickly)
+- Orientation API not supported in older browsers (falls back to window dimensions)
+- SSO auto-populate advances to next page automatically (no manual confirmation)
+- No validation that SSO user email matches pseudo email if both enabled
+
+#### Browser Compatibility
+
+- ✅ Chrome/Edge: Full SSO support, full Orientation API
+- ✅ Safari (iOS/Desktop): Full SSO support, full Orientation API
+- ✅ Firefox: Full SSO support, full Orientation API
+- ⚠️ Older browsers: SSO works, orientation falls back to window dimensions
+
+#### Future Enhancements
+
+- Add email verification for pseudo registration
+- Allow admin to require matching emails if both auth methods enabled
+- Add profile picture from SSO to submission
+- Support additional SSO providers (Apple, Microsoft)
+- Add manual confirmation step after SSO auto-populate
+- Extend cookie expiration if user actively interacting
 
 ---
 

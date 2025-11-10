@@ -23,6 +23,10 @@ export interface WhoAreYouPageConfig {
   buttonText: string;
   namePlaceholder?: string;
   emailPlaceholder?: string;
+  enableSSOLogin?: boolean;
+  enablePseudoReg?: boolean;
+  ssoButtonText?: string;
+  pseudoFormTitle?: string;
 }
 
 export interface WhoAreYouPageData {
@@ -37,18 +41,43 @@ export interface WhoAreYouPageProps {
   logoUrl?: string | null;
   brandColor?: string;
   brandBorderColor?: string;
+  eventId: string;
+  pageIndex: number;
 }
 
 /**
  * WhoAreYouPage Component
  * 
- * Renders a form to collect user name and email
- * Both fields are required to proceed
+ * Renders authentication options:
+ * - SSO login (if enabled)
+ * - Pseudo registration form (if enabled)
+ * At least one option must be enabled
  */
-export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandColor = '#3B82F6', brandBorderColor = '#3B82F6' }: WhoAreYouPageProps) {
+export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandColor = '#3B82F6', brandBorderColor = '#3B82F6', eventId, pageIndex }: WhoAreYouPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+
+  // Default to both enabled if not specified (backward compatibility)
+  const enableSSOLogin = config.enableSSOLogin ?? false;
+  const enablePseudoReg = config.enablePseudoReg ?? true;
+  const ssoButtonText = config.ssoButtonText || 'Sign in with Social Media';
+  const pseudoFormTitle = config.pseudoFormTitle || 'Or enter your details';
+
+  /**
+   * Handle SSO login button click
+   * Saves capture state to cookies and redirects to SSO login
+   * Why cookies: Need to persist across redirect and be accessible in API routes
+   */
+  const handleSSOLogin = () => {
+    // Save capture flow state to resume after authentication
+    // Use cookies so they're accessible in auth callback API route
+    document.cookie = `captureEventId=${eventId}; path=/; max-age=600; SameSite=Lax`; // 10 min
+    document.cookie = `capturePageIndex=${pageIndex}; path=/; max-age=600; SameSite=Lax`;
+    
+    // Redirect to SSO login page
+    window.location.href = '/api/auth/login';
+  };
 
   /**
    * Validate form fields
@@ -125,8 +154,45 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandCo
             </p>
           )}
 
-          {/* Form */}
-          <div className="space-y-4">
+          {/* SSO Login Button */}
+          {enableSSOLogin && (
+            <div className="mb-6">
+              <button
+                onClick={handleSSOLogin}
+                style={{ backgroundColor: brandColor }}
+                className="w-full px-6 py-3 text-white rounded-lg font-semibold transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                aria-label={ssoButtonText}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+                {ssoButtonText}
+              </button>
+            </div>
+          )}
+
+          {/* Separator when both options are enabled */}
+          {enableSSOLogin && enablePseudoReg && (
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  OR
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Pseudo Registration Form */}
+          {enablePseudoReg && (
+            <div className="space-y-4">
+              {enableSSOLogin && (
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-4">
+                  {pseudoFormTitle}
+                </h2>
+              )}
             {/* Name Input */}
             <div>
               <label 
@@ -211,29 +277,30 @@ export default function WhoAreYouPage({ config, onNext, onBack, logoUrl, brandCo
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              {onBack && (
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                {onBack && (
+                  <button
+                    onClick={onBack}
+                    className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    aria-label="Go back to previous page"
+                  >
+                    Back
+                  </button>
+                )}
                 <button
-                  onClick={onBack}
-                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  aria-label="Go back to previous page"
+                  onClick={handleNext}
+                  style={{ backgroundColor: brandColor }}
+                  className={`px-6 py-3 text-white rounded-lg font-semibold transition-all hover:opacity-90 ${
+                    onBack ? 'flex-1' : 'w-full'
+                  }`}
+                  aria-label={config.buttonText}
                 >
-                  Back
+                  {config.buttonText}
                 </button>
-              )}
-              <button
-                onClick={handleNext}
-                style={{ backgroundColor: brandColor }}
-                className={`px-6 py-3 text-white rounded-lg font-semibold transition-all hover:opacity-90 ${
-                  onBack ? 'flex-1' : 'w-full'
-                }`}
-                aria-label={config.buttonText}
-              >
-                {config.buttonText}
-              </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
