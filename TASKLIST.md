@@ -34,6 +34,26 @@ Last Updated: 2025-11-10T11:18:00.000Z
   - No duplicate UI elements
   - Build passes
 
+### Camera UX Improvements (v2.9.0) - IN PROGRESS
+- **Owner**: Development Team
+- **Expected Delivery**: 2025-11-11T18:00:00.000Z
+- **Status**: In Progress
+- **Plan Document**: Camera UX Improvements Plan
+- **Description**: Three interconnected UX improvements for capture flow and event configuration
+- **Features**:
+  1. Take-Photo Button Text Config Layout (Low complexity)
+  2. Left/Right Rotation Detection (Medium complexity)
+  3. SSO Login Option for Who-Are-You Page (High complexity)
+- **Actions**:
+  - ⏳ Implement Feature 1: Button text visual layout
+  - ⏳ Implement Feature 2: Rotation angle detection
+  - ⏳ Implement Feature 3: SSO login integration
+- **Acceptance Criteria**:
+  - Button text fields positioned visually to match screen
+  - Controls flip sides based on rotation direction
+  - SSO login option configurable per event
+  - All features backward compatible
+
 ---
 
 ---
