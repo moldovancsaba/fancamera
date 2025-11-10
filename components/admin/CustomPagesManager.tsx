@@ -500,7 +500,7 @@ function PageEditModal({
                     <input
                       type="text"
                       value={ssoButtonText}
-                      onChange={(e) => setSSOButtonText(e.target.value)}
+                      onChange={(e) => setSsoButtonText(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="e.g., Sign in with Social Media"
                     />

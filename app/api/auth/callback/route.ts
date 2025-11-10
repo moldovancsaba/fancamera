@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Create session with user, tokens, and app permission
-    const response = await createSession(user, tokens, { appRole, appAccess });
+    await createSession(user, tokens, { appRole, appAccess });
 
     console.log('✓ Session created');
 
@@ -149,10 +149,6 @@ export async function GET(request: NextRequest) {
     if (captureEventId) {
       console.log('✓ Resuming capture flow:', captureEventId, 'page:', capturePageIndex);
       
-      // Clear capture cookies
-      response.cookies.delete('captureEventId');
-      response.cookies.delete('capturePageIndex');
-      
       // Redirect back to capture page with resume signal
       const resumeUrl = new URL(`/capture/${captureEventId}`, request.url);
       resumeUrl.searchParams.set('resume', 'true');
@@ -160,7 +156,14 @@ export async function GET(request: NextRequest) {
         resumeUrl.searchParams.set('page', capturePageIndex);
       }
       
-      return NextResponse.redirect(resumeUrl);
+      // Create response with redirect
+      const response = NextResponse.redirect(resumeUrl);
+      
+      // Clear capture cookies on the response
+      response.cookies.delete('captureEventId');
+      response.cookies.delete('capturePageIndex');
+      
+      return response;
     }
 
     console.log('✓ Redirecting to homepage');
