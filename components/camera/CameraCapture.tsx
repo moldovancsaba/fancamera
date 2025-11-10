@@ -472,7 +472,7 @@ export default function CameraCapture({
   }, []);
 
   return (
-    <div ref={containerRef} className={`flex items-center justify-center w-full h-full ${className}`}>
+    <div ref={containerRef} className={`relative flex items-center justify-center w-full h-full ${className}`}>
       {/* Camera view with calculated dimensions to fit viewport */}
       <div 
         className="relative bg-gray-900 overflow-hidden"
@@ -506,44 +506,9 @@ export default function CameraCapture({
               </div>
             )}
 
-            {/* Camera Controls Overlay */}
-            {stream && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4 z-20">
-                {/* Capture Button */}
-                <button
-                  onClick={capturePhoto}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white transition-colors shadow-lg flex-shrink-0"
-                  style={{
-                    borderWidth: '4px',
-                    borderStyle: 'solid',
-                    borderColor: captureButtonBorderColor
-                  }}
-                  aria-label="Capture photo"
-                >
-                  <div 
-                    className="w-full h-full rounded-full"
-                    style={{ backgroundColor: captureButtonColor }}
-                  ></div>
-                </button>
-
-                {/* Switch Camera Button (mobile) */}
-                {hasMultipleCameras && (
-                  <button
-                    onClick={switchCamera}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg flex-shrink-0"
-                    aria-label="Switch camera"
-                  >
-                    <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-
             {/* Loading Overlay */}
             {isLoading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
                   <p className="text-sm">Starting camera...</p>
@@ -553,7 +518,7 @@ export default function CameraCapture({
 
             {/* Error Overlay */}
             {error && !stream && (
-              <div className="absolute inset-0 bg-red-900/90 flex items-center justify-center p-6 z-10">
+              <div className="absolute inset-0 bg-red-900/90 flex items-center justify-center p-6 z-30">
                 <div className="text-white text-center max-w-md">
                   <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -574,7 +539,7 @@ export default function CameraCapture({
             {!stream && !isLoading && !error && (
               <button
                 onClick={() => startCamera(facingMode)}
-                className="absolute inset-0 flex items-center justify-center p-3 md:p-4 w-full h-full cursor-pointer transition-all z-10"
+                className="absolute inset-0 flex items-center justify-center p-3 md:p-4 w-full h-full cursor-pointer transition-all z-30"
                 style={{
                   background: `linear-gradient(to bottom right, ${captureButtonColor}dd, ${captureButtonColor}aa)`,
                 }}
@@ -600,19 +565,55 @@ export default function CameraCapture({
               alt="Captured photo"
               className="w-full h-full object-cover"
             />
-
-            {/* Retake Button */}
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
-              <button
-                onClick={retake}
-                className="px-4 py-2 md:px-6 md:py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg text-sm md:text-base"
-              >
-                Retake Photo
-              </button>
-            </div>
           </>
         )}
       </div>
+
+      {/* Camera Controls - Outside frame, positioned at screen edges */}
+      {/* Portrait: bottom center | Landscape: right middle */}
+      {stream && !capturedImage && (
+        <>
+          {/* Capture Button - Portrait: bottom, Landscape: right */}
+          <button
+            onClick={capturePhoto}
+            className="fixed portrait:bottom-4 portrait:left-1/2 portrait:-translate-x-1/2 landscape:right-4 landscape:top-1/2 landscape:-translate-y-1/2 w-16 h-16 rounded-full bg-white transition-colors shadow-lg z-50"
+            style={{
+              borderWidth: '4px',
+              borderStyle: 'solid',
+              borderColor: captureButtonBorderColor
+            }}
+            aria-label="Capture photo"
+          >
+            <div 
+              className="w-full h-full rounded-full"
+              style={{ backgroundColor: captureButtonColor }}
+            ></div>
+          </button>
+
+          {/* Switch Camera Button - Next to capture button */}
+          {hasMultipleCameras && (
+            <button
+              onClick={switchCamera}
+              className="fixed portrait:bottom-4 portrait:right-4 landscape:right-4 landscape:bottom-4 w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg z-50"
+              aria-label="Switch camera"
+            >
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Retake Button - Same position as capture button */}
+      {capturedImage && (
+        <button
+          onClick={retake}
+          className="fixed portrait:bottom-4 portrait:left-1/2 portrait:-translate-x-1/2 landscape:right-4 landscape:top-1/2 landscape:-translate-y-1/2 px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg z-50"
+        >
+          Retake Photo
+        </button>
+      )}
 
       {/* Hidden Canvas for Image Capture */}
       <canvas ref={canvasRef} className="hidden" />
