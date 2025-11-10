@@ -55,6 +55,7 @@ export default function CameraCapture({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape-left' | 'landscape-right'>('portrait');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -72,6 +73,45 @@ export default function CameraCapture({
       img.src = frameOverlay;
     }
   }, [frameOverlay]);
+
+  /**
+   * Detect device orientation angle for precise control positioning
+   * v2.9.0: Distinguishes left rotation (90°) from right rotation (270°)
+   */
+  useEffect(() => {
+    const handleOrientation = () => {
+      // Try Screen Orientation API first (modern browsers)
+      if (typeof window !== 'undefined' && window.screen?.orientation) {
+        const angle = window.screen.orientation.angle;
+        if (angle === 0 || angle === 180) {
+          setOrientation('portrait');
+        } else if (angle === 90) {
+          setOrientation('landscape-right'); // Device rotated left, controls go right
+        } else if (angle === 270) {
+          setOrientation('landscape-left'); // Device rotated right, controls go left
+        }
+      } else {
+        // Fallback: use window dimensions (portrait vs landscape only)
+        const isLandscape = window.innerWidth > window.innerHeight;
+        setOrientation(isLandscape ? 'landscape-right' : 'portrait');
+      }
+    };
+    
+    handleOrientation();
+    
+    // Listen for orientation changes
+    if (window.screen?.orientation) {
+      window.screen.orientation.addEventListener('change', handleOrientation);
+    }
+    window.addEventListener('resize', handleOrientation);
+    
+    return () => {
+      if (window.screen?.orientation) {
+        window.screen.orientation.removeEventListener('change', handleOrientation);
+      }
+      window.removeEventListener('resize', handleOrientation);
+    };
+  }, []);
 
   /**
    * Check if device has multiple cameras
@@ -569,14 +609,20 @@ export default function CameraCapture({
         )}
       </div>
 
-      {/* Camera Controls - Outside frame, positioned at screen edges */}
-      {/* Portrait: bottom center | Landscape: right middle */}
+      {/* Camera Controls - Outside frame, positioned based on orientation */}
+      {/* Portrait: bottom center | Landscape-right (rotated left): right side | Landscape-left (rotated right): left side */}
       {stream && !capturedImage && (
         <>
-          {/* Capture Button - Portrait: bottom, Landscape: right */}
+          {/* Capture Button */}
           <button
             onClick={capturePhoto}
-            className="fixed portrait:bottom-4 portrait:left-1/2 portrait:-translate-x-1/2 landscape:right-4 landscape:top-1/2 landscape:-translate-y-1/2 w-16 h-16 rounded-full bg-white transition-colors shadow-lg z-50"
+            className={`fixed w-16 h-16 rounded-full bg-white transition-all shadow-lg z-50 ${
+              orientation === 'portrait'
+                ? 'bottom-4 left-1/2 -translate-x-1/2'
+                : orientation === 'landscape-right'
+                ? 'right-4 top-1/2 -translate-y-1/2'
+                : 'left-4 top-1/2 -translate-y-1/2'
+            }`}
             style={{
               borderWidth: '4px',
               borderStyle: 'solid',
@@ -590,11 +636,17 @@ export default function CameraCapture({
             ></div>
           </button>
 
-          {/* Switch Camera Button - Next to capture button */}
+          {/* Switch Camera Button - Positioned near capture button */}
           {hasMultipleCameras && (
             <button
               onClick={switchCamera}
-              className="fixed portrait:bottom-4 portrait:right-4 landscape:right-4 landscape:bottom-4 w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg z-50"
+              className={`fixed w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg z-50 ${
+                orientation === 'portrait'
+                  ? 'bottom-4 right-4'
+                  : orientation === 'landscape-right'
+                  ? 'right-4 bottom-4'
+                  : 'left-4 bottom-4'
+              }`}
               aria-label="Switch camera"
             >
               <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -609,7 +661,13 @@ export default function CameraCapture({
       {capturedImage && (
         <button
           onClick={retake}
-          className="fixed portrait:bottom-4 portrait:left-1/2 portrait:-translate-x-1/2 landscape:right-4 landscape:top-1/2 landscape:-translate-y-1/2 px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg z-50"
+          className={`fixed px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-all shadow-lg z-50 ${
+            orientation === 'portrait'
+              ? 'bottom-4 left-1/2 -translate-x-1/2'
+              : orientation === 'landscape-right'
+              ? 'right-4 top-1/2 -translate-y-1/2'
+              : 'left-4 top-1/2 -translate-y-1/2'
+          }`}
         >
           Retake Photo
         </button>
