@@ -52,14 +52,16 @@ export default async function UserProfilePage({ params }: PageProps) {
     // Filter submissions where sanitized username matches the URL parameter
     const submissions = allSubmissions.filter((sub: any) => {
       const nameFromUserInfo = sub.userInfo?.name;
-      const nameFromUser = sub.userName;
-      const isAnonymous = sub.userId === 'anonymous' || sub.userEmail === 'anonymous@event';
-      const actualName = nameFromUserInfo || (isAnonymous ? 'Anonymous User' : nameFromUser) || 'Unknown';
+      const nameFromSession = sub.userName;  // From SSO session when user authenticated
+      const isAnonymous = sub.userId === 'anonymous' || sub.userEmail === 'anonymous@event.com';
+      
+      // Priority: userInfo (from pseudo reg) > session name (from SSO) > Anonymous > Unknown
+      const actualName = nameFromUserInfo || 
+                        (isAnonymous ? 'Anonymous User' : nameFromSession) || 
+                        'Unknown';
       const sanitized = sanitizeUsername(actualName);
       
-      if (nameFromUserInfo) {
-        console.log(`Comparing: "${sanitized}" === "${sanitizedUrlName}" (from userInfo: ${nameFromUserInfo})`);
-      }
+      console.log(`Checking submission: sanitized="${sanitized}" vs urlName="${sanitizedUrlName}" (userInfo=${nameFromUserInfo}, userName=${nameFromSession}, isAnon=${isAnonymous})`);
       
       return sanitized === sanitizedUrlName;
     });
